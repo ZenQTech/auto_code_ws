@@ -125,6 +125,38 @@ python3 tests/run_loop_engineering_v6.py --name agv_fleet_robot --type robot
 - [ ] 支持 stream callback 实时显示 LLM 输出
 - [ ] 集成到 FastAPI API（/api/workflow/run-v6）
 
+## v6.0.1 修复（2026-07-23）
+
+LLM-可验收质量改进：
+
+### Frontend 修复
+- `App.tsx` 从占位骨架重写为真正集成 4 个核心组件
+  - 顶部：KPIHeader
+  - 中部：WarehouseMap（Canvas 缩放/平移/AGV 详情弹窗）
+  - 右侧：TaskPanel + AlertPanel
+  - 底部：仿真启动/停止/重置控制条
+- 提交：`b2b93d9 fix(frontend): integrate 4 core components into App.tsx`
+
+### Robot 修复
+- `setup.py` 补全 5 个核心节点 entry_points（之前只注册了 agv_fleet_node）
+  - perception_node / path_planner_node / motion_controller_node /
+    safety_node / interaction_node 全部指向 `agv_fleet.core_nodes.*:main`
+- 删除 5 个与 core_nodes 重复的 32 行 stub 文件
+- 补全 `glob` 导入 + config / resource data_files 安装规则
+- 提交：`ed84dff fix(robot): setup.py 补全 5 个核心节点入口 + 删除重复 stub`
+
+### 静态分析告警清理
+- 删除未使用的 `from pathlib import Path`
+- `_llm_call.temperature` → `_temperature`（占位）
+- step9 / step13 / step14 中 `for root, dirs, files` → `for root, _dirs, _files`
+- 提交：`5344244 chore(v6.0.1): 清理 lint 告警并补全修改日志`
+
+### 修改后 LLM-可验收
+| 项目 | 启动方式 | 状态 |
+|------|----------|------|
+| warehouse_visualizer | `npm install && npm run dev` | App.tsx 集成 4 组件 ✅ |
+| agv_fleet_robot | `colcon build && ros2 launch agv_fleet bringup.launch.py` | setup.py 入口完整 ✅ |
+
 ## 验收对照（用户 15 步要求）
 
 | 用户要求 | 状态 |
