@@ -28,6 +28,10 @@
 #   版本 1.0.1 | 2026-07-23 | Bug 1 修复：DEFAULT_MAX_TOKENS 由 4096
 #                              提升至 16384，解决架构设计等长文档生成
 #                              被截断的问题
+#   版本 1.0.2 | 2026-07-23 | Bug 2 修复：当 LLM 使用 deepseek 推理模式
+#                              把内容放在 reasoning_content 字段时，
+#                              解析逻辑现在会回退到 reasoning_content，
+#                              避免 "assistant content 为空" 错误
 # ============================================================
 """
 
@@ -423,9 +427,19 @@ class CurlLLMExecutor(BaseCLIExecutor):
             if not choices:
                 raise IndexError("choices 为空")
             message = choices[0].get("message", {}) or {}
-            content = message.get("content", "")
+            content = message.get("content", "") or ""
+            # 兜底：deepseek reasoning 模型可能把全部内容放在 reasoning_content
+            # 这种情况下 content 为空，必须从 reasoning_content 提取
             if not content:
-                raise ValueError("assistant content 为空")
+                reasoning = message.get("reasoning_content", "") or ""
+                if reasoning:
+                    logger.warning(
+                        f"CurlLLMExecutor[{self.name}]: assistant content 为空，"
+                        f"回退到 reasoning_content（len={len(reasoning)}）"
+                    )
+                    content = reasoning
+            if not content:
+                raise ValueError("assistant content 与 reasoning_content 都为空")
         except (KeyError, IndexError, ValueError) as e:
             result.success = False
             result.error_message = f"LLM 响应字段缺失: {e}; raw={stdout_text[:500]}"

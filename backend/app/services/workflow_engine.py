@@ -77,6 +77,14 @@
 #     git_manager.is_protected_branch 校验），commit 成功后同步把
 #     workflow.push_status 置为 "pushed"，使阶段边界校验（要求
 #     push_status in ("pushed","pushing")）能够通过
+#   - 2026-07-23 | v5.9.0 | 新增 _run_reviewing_phase 全链路评审阶段：
+#     探测 LLM 生成项目的类型（ros2_ament_python/ros2_ament_cmake/
+#     python_setup_py/python_pyproject/unknown）并执行 colcon build / pip install -e
+#     等编译命令，再后台启动 5 秒检测存活；新增 _save_reviewing_status 把评审
+#     结果（status + log）通过 __REVIEW__ 标记持久化到 workflow.error_message；
+#     _run_executing_phase 末尾通过 asyncio.create_task 调度
+#     _run_reviewing_phase 后台任务；commit 成功后追加 __PROJECT_ROOT__ 标记到
+#     error_message 供 reviewing 阶段定位代码目录
 # ============================================================
 """
 
@@ -2417,20 +2425,56 @@ class WorkflowEngine:
                 f"workflow={workflow_id[:8]}..."
             )
 
-            # Step 2: 确定工作区路径
-            workspace: Optional[str] = None
-            if self.git_manager and hasattr(self.git_manager, "workspace_path"):
-                workspace = self.git_manager.workspace_path  # type: ignore[attr-defined]
-            if not workspace and self.git_manager and hasattr(self.git_manager, "repo_path"):
-                workspace = self.git_manager.repo_path
-            if not workspace:
-                workspace = os.path.join(os.getcwd(), "agent_workspace")
+            # Step 2: 确定项目仓库根目录（v5.8.0 升级：使用 source_project_resolver）
+            # 之前 v5.6.0/v5.7.0 行为：
+            #   workspace = git_manager.workspace_path or git_manager.repo_path or os.getcwd()/agent_workspace
+            # 新行为：所有智能体生成的源代码统一落在 /home/qizheng/auto_code_data/<project>/,
+            # 物理隔离平台工作区 /home/qizheng/auto_code_ws/。
+            # 参考 3d_coverage_ws 标准 colcon workspace 结构。
+            from .source_project_resolver import resolve_project_root as _resolve_project_root_v580
             try:
-                os.makedirs(workspace, exist_ok=True)
-            except Exception as mkdir_exc:
-                logger.warning(
-                    f"_run_executing_phase: 创建工作区目录失败 {workspace}: {mkdir_exc}"
+                # 取 session title 用于同名匹配
+                _session_title = None
+                try:
+                    from ..models import Session as _Session_v580
+                    async with self.session_factory() as _db_title:
+                        _sess_q = await _db_title.execute(
+                            select(_Session_v580).where(_Session_v580.id == session_id)
+                        )
+                        _sess_row = _sess_q.scalar_one_or_none()
+                        if _sess_row is not None:
+                            _session_title = getattr(_sess_row, "title", None) or getattr(
+                                _sess_row, "name", None
+                            )
+                except Exception as title_exc:
+                    logger.warning(
+                        f"_run_executing_phase: 取 session title 失败，使用 wf_short 命名: {title_exc}"
+                    )
+
+                project_root = _resolve_project_root_v580(
+                    workflow_id=workflow_id,
+                    session_id=session_id,
+                    title=_session_title,
                 )
+                workspace = str(project_root)
+                logger.info(
+                    f"_run_executing_phase: 项目仓库根目录解析为 {workspace} (v5.8.0)"
+                )
+            except Exception as resolver_exc:
+                # 极端异常：fallback 到 /home/qizheng/auto_code_data/project_<wf_short>/
+                _wf_short = (workflow_id or "unknown").replace("-", "")[:8]
+                _fallback = f"/home/qizheng/auto_code_data/project_{_wf_short}"
+                logger.exception(
+                    f"_run_executing_phase: 项目根目录解析失败，fallback 到 {_fallback}: {resolver_exc}"
+                )
+                os.makedirs(_fallback, exist_ok=True)
+                os.makedirs(os.path.join(_fallback, "src"), exist_ok=True)
+                workspace = _fallback
+
+            # v5.9.0: 不再强制 _pkg_name。LLM 自主决定项目结构。
+            # 保留 _pkg_name 变量供 commit message 和日志使用
+            _pkg_name = None
+            logger.info(f"_run_executing_phase: 项目根目录 {workspace} (v5.9.0, LLM 决定结构)")
 
             # Step 3: 调用 LLM 写代码
             executor = getattr(
@@ -2463,17 +2507,33 @@ class WorkflowEngine:
                     else str(prompt_entry or "")
                 )
 
-                # 构造代码生成 Prompt：明确要求 FILE: 标记格式
+                # 构造代码生成 Prompt（v5.9.0）：告诉 LLM 自主决定文件位置
+                # 之前 v5.6.0 行为：要求 FILE: {module_name}/main.py (平铺)
+                # v5.8.0 早期版本：要求 src/<pkg_name>/... (强制 ROS2 结构，已回退)
+                # v5.9.0 行为：把代码文件放置的决定权完全交给 LLM
                 code_prompt = (
                     f"{base_prompt}\n\n"
-                    f"请输出完整的代码文件，每个文件请严格按以下格式输出：\n\n"
+                    f"你是一个**代码生成智能体**。"
+                    f"当前任务：为「{module_name}」模块生成所有必需的代码文件。\n\n"
+                    f"## 重要：你自行决定所有代码文件的放置位置\n\n"
+                    f"平台不强制任何特定的项目结构。**你**根据这个模块的代码需要，"
+                    f"决定每个文件应该放在哪里。可能的结构包括但不限于：\n"
+                    f"- ROS2 ament_python 包：`src/<pkg>/<pkg>/<node>.py` + `package.xml` + `setup.py`\n"
+                    f"- ROS2 ament_cmake 包：`src/<pkg>/src/<file>.cpp` + `package.xml` + `CMakeLists.txt`\n"
+                    f"- 纯 Python 包：`pkg/<module>.py` + `setup.py` 或 `pyproject.toml`\n"
+                    f"- 任何你认为合理的项目布局\n\n"
+                    f"## 输出格式\n\n"
+                    f"每个文件请严格按以下格式输出（用相对路径，相对于项目根目录）：\n\n"
                     f"```python\n"
-                    f"# FILE: {module_name}/main.py\n"
-                    f"<在此写入该文件的完整代码>\n"
+                    f"# FILE: <rel_path>\n"
+                    f"<完整的文件内容>\n"
                     f"```\n\n"
-                    f"至少输出 1 个完整可运行的文件。\n"
-                    f"要求：代码必须有完整的 docstring、错误处理、单元测试自检。\n"
-                    f"模块归属：{module_name}\n"
+                    f"```python\n"
+                    f"# FILE: <rel_path_2>\n"
+                    f"<完整的文件内容>\n"
+                    f"```\n\n"
+                    f"至少输出 1 个完整可运行的文件。"
+                    f"代码必须有完整的 docstring、错误处理。"
                 )
 
                 # Shell 转义
@@ -2519,10 +2579,28 @@ class WorkflowEngine:
                         file_content = match.group(2) or ""
                         if not rel_path or not file_content:
                             continue
-                        # 路径安全：禁止 .. 与绝对路径前缀
+                        # v5.9.0 路径安全校验：
+                        # 1) 禁止 .. 与绝对路径前缀（防路径穿越）
+                        # 2) **不**强制路径必须以 src/<pkg>/ 开头（LLM 自主决定）
                         safe_path = rel_path.replace("..", "_").lstrip("/")
                         if not safe_path:
                             continue
+                        # 规范化路径并校验在 workspace 之内
+                        try:
+                            _workspace_root = Path(workspace).resolve()
+                            _candidate = (_workspace_root / safe_path).resolve()
+                            if not str(_candidate).startswith(str(_workspace_root) + os.sep) and \
+                               _candidate != _workspace_root:
+                                logger.warning(
+                                    f"_run_executing_phase: 路径穿越拒绝 {safe_path} -> {_candidate}"
+                                )
+                                continue
+                        except Exception as resolve_exc:
+                            logger.warning(
+                                f"_run_executing_phase: 路径解析失败 {safe_path}: {resolve_exc}"
+                            )
+                            continue
+                        # v5.9.0: 不再校验 src/<pkg>/ 前缀，让 LLM 自主决定
                         full_path = os.path.join(workspace, safe_path)
                         try:
                             os.makedirs(
@@ -2545,25 +2623,22 @@ class WorkflowEngine:
                             )
 
                     if files_written == 0:
-                        # LLM 输出但无 FILE: 标记 -> 整段保存为 .md 文档
-                        doc_path = os.path.join(
-                            workspace, f"{module_name}_output.md"
-                        )
+                        # v5.9.0: LLM 输出但无 FILE: 标记
+                        # fallback 策略：提取 docstring 头部的模块名，写到 <project_root>/<name>.py
+                        _fallback_name = self._sanitize_module_name_from_docstring(llm_output) or module_name
+                        _fallback_path = f"{_fallback_name}.py"
                         try:
-                            with open(doc_path, "w", encoding="utf-8") as f:
-                                f.write(
-                                    f"# {module_name} - LLM 生成的代码\n\n"
-                                    f"{llm_output}\n"
-                                )
+                            _fb_full = os.path.join(workspace, _fallback_path)
+                            with open(_fb_full, "w", encoding="utf-8") as f:
+                                f.write(llm_output)
                             total_files += 1
                             logger.info(
                                 f"_run_executing_phase: {module_name} 无 FILE 标记，"
-                                f"整段保存到 {os.path.basename(doc_path)}"
+                                f"整段保存到 {_fallback_path}"
                             )
-                        except Exception as doc_exc:
+                        except Exception as fb_exc:
                             logger.warning(
-                                f"_run_executing_phase: 写入兜底 .md 失败: "
-                                f"{doc_exc}"
+                                f"_run_executing_phase: 写入兜底 .py 失败: {fb_exc}"
                             )
 
                     result["phases"].append({
@@ -2584,6 +2659,12 @@ class WorkflowEngine:
 
             result["files_written"] = total_files
             result["workspace"] = workspace
+            result["pkg_name"] = _pkg_name  # v5.9.0: 允许为 None（LLM 自主决定）
+
+            # v5.9.0: 不再自动生成 ROS2 模板（package.xml/setup.py/launch/config）
+            # 这些是 LLM 的职责，不是平台职责。
+            # 如果 LLM 决定做 ROS2 包，它自然会生成 package.xml；
+            # 如果 LLM 决定做纯 Python 项目，它会生成 setup.py。
 
             # Step 4: 自动 Git 提交（v5.7.0 修复：使用 feature 分支绕过 master 保护）
             # 背景：master 分支被 is_protected_branch() 标记为保护分支，
@@ -2681,8 +2762,8 @@ class WorkflowEngine:
                     # 5) 在 feature 分支上提交
                     total_loc = result.get("total_loc", 0) or 0
                     commit_msg = (
-                        f"v5.7.0: 智能体生成的代码 - workflow {wf_short} "
-                        f"({total_files} files, {total_loc} LOC)"
+                        f"v5.9.0: 智能体生成的代码 - workflow {wf_short} "
+                        f"({total_files} files, {total_loc} LOC, LLM-decided structure)"
                     )
                     commit_proc = _sp_v570.run(
                         ["git", "commit", "-m", commit_msg],
@@ -2748,6 +2829,13 @@ class WorkflowEngine:
                         wf_row = wf_status.scalar_one_or_none()
                         if wf_row is not None:
                             wf_row.push_status = "pushed"
+                            # v5.9.0: 标记 project_root 到 error_message
+                            # 供 _run_reviewing_phase 定位 LLM 生成的代码目录
+                            _existing_err = wf_row.error_message or ""
+                            if "__PROJECT_ROOT__:" not in _existing_err and workspace:
+                                wf_row.error_message = (
+                                    _existing_err + f"\n__PROJECT_ROOT__:{workspace}\n"
+                                )
                             await db.commit()
                             logger.info(
                                 f"_run_executing_phase: push_status 已更新为 'pushed' "
@@ -2796,10 +2884,416 @@ class WorkflowEngine:
                     f"_run_executing_phase: 推进到 reviewing 失败: {adv_exc}"
                 )
                 result["advance_error"] = str(adv_exc)
+
+            # v5.9.0: 调度 _run_reviewing_phase 后台任务
+            # 目的：让 reviewing 阶段自动验证 LLM 生成的代码能否编译运行
+            try:
+                asyncio.create_task(self._run_reviewing_phase(workflow_id))
+                logger.info(
+                    f"_run_executing_phase: 已调度 _run_reviewing_phase 后台任务 "
+                    f"workflow={workflow_id[:8]}..."
+                )
+            except RuntimeError as loop_exc:
+                # 无事件循环时降级为同步执行（兜底）
+                logger.warning(
+                    f"_run_executing_phase: 调度 reviewing 后台任务失败，"
+                    f"改为同步执行: {loop_exc}"
+                )
+                try:
+                    await self._run_reviewing_phase(workflow_id)
+                except Exception as rev_exc:
+                    logger.warning(
+                        f"_run_executing_phase: 同步执行 _run_reviewing_phase 失败: "
+                        f"{rev_exc}"
+                    )
         except Exception as exc:
             logger.exception(f"_run_executing_phase 失败: {exc}")
             result["error"] = str(exc)
         return result
+
+    async def _run_reviewing_phase(self, workflow_id: str) -> Dict[str, Any]:
+        """
+        全链路评审阶段：探测项目类型并执行编译和运行验证（v5.9.0 新增）
+        作用：让用户在 reviewing 阶段看到智能体生成的项目能真正编译并运行
+        流程：探测类型 -> colcon build / pip install -> 后台启动 5 秒 -> 检测存活
+        调用方：_run_executing_phase 末尾的 asyncio.create_task
+        被调用方：subprocess (colcon build / ros2 launch / pip install)
+        运行步骤：
+          1. 从 workflow.error_message 解析 __PROJECT_ROOT__ 段
+          2. 探测项目类型（ros2_ament_python / ros2_ament_cmake / python_setup_py / python_pyproject / unknown）
+          3. 根据项目类型执行相应的编译/运行命令
+          4. 把状态和日志通过 _save_reviewing_status 持久化到 workflow.error_message
+        参数：
+          - workflow_id: 工作流 ID
+        返回值：
+          - Dict：包含 success、status、project_type、build_stdout_tail 等字段
+        """
+        import subprocess
+        import shutil
+        from pathlib import Path
+        from sqlalchemy import select as _select
+        from .source_project_resolver import (
+            detect_project_type,
+            find_ros2_package,
+            find_python_entry_point,
+        )
+
+        result: Dict[str, Any] = {
+            "success": False,
+            "workflow_id": workflow_id,
+            "phases": [],
+            "status": "unknown",
+        }
+
+        try:
+            # Step 1: 从 workflow 解析 project_root
+            project_root_str: Optional[str] = None
+            try:
+                async with self.session_factory() as db:
+                    from ..models import Workflow as _Workflow
+                    wf_q = await db.execute(
+                        _select(_Workflow).where(_Workflow.id == workflow_id)
+                    )
+                    wf = wf_q.scalar_one_or_none()
+                    if not wf:
+                        result["error"] = "workflow not found"
+                        await self._save_reviewing_status(
+                            workflow_id, "workflow_not_found", result
+                        )
+                        return result
+                    # 从 error_message 解析 __PROJECT_ROOT__ 标记
+                    error_msg = wf.error_message or ""
+                    if "__PROJECT_ROOT__:" in error_msg:
+                        _, _, blob = error_msg.partition("__PROJECT_ROOT__:")
+                        # 取第一行非空内容
+                        for _line in blob.splitlines():
+                            _line = _line.strip()
+                            if _line:
+                                project_root_str = _line
+                                break
+            except Exception as db_exc:
+                logger.warning(
+                    f"_run_reviewing_phase: 加载 workflow 失败: {db_exc}"
+                )
+
+            # 兜底：调用 resolve_project_root 重新解析
+            if not project_root_str:
+                try:
+                    from .source_project_resolver import (
+                        resolve_project_root as _resolve_project_root_v590,
+                    )
+                    project_root_str = str(
+                        _resolve_project_root_v590(workflow_id=workflow_id)
+                    )
+                except Exception as resolver_exc:
+                    logger.exception(
+                        f"_run_reviewing_phase: 解析 project_root 失败: {resolver_exc}"
+                    )
+                    result["status"] = "compile_skipped_no_project_root"
+                    result["error"] = f"无法解析 project_root: {resolver_exc}"
+                    await self._save_reviewing_status(
+                        workflow_id, result["status"], result
+                    )
+                    return result
+
+            project_root = Path(project_root_str)
+            if not project_root.is_dir():
+                result["status"] = "compile_skipped_no_build_system"
+                result["error"] = f"project root not found: {project_root}"
+                result["project_root"] = str(project_root)
+                await self._save_reviewing_status(
+                    workflow_id, result["status"], result
+                )
+                return result
+
+            # Step 2: 探测项目类型
+            project_type = detect_project_type(project_root)
+            result["project_type"] = project_type
+            result["project_root"] = str(project_root)
+            logger.info(
+                f"_run_reviewing_phase: 探测项目类型 = {project_type} at {project_root}"
+            )
+
+            # Step 3: 编译 + 运行验证
+            if project_type in ("ros2_ament_python", "ros2_ament_cmake"):
+                # ROS2: colcon build + ros2 launch
+                pkg_name = find_ros2_package(project_root)
+                if not pkg_name:
+                    result["status"] = "compile_skipped_no_ros2_pkg"
+                    result["error"] = "no ros2 package found"
+                elif not shutil.which("colcon"):
+                    result["status"] = "compile_skipped_no_runtime"
+                    result["warning"] = "colcon not installed; skipping build"
+                else:
+                    # 3a) colcon build
+                    try:
+                        build_proc = subprocess.run(
+                            [
+                                "colcon", "build",
+                                "--packages-select", pkg_name,
+                                "--event-handlers", "console_direct+",
+                            ],
+                            cwd=str(project_root),
+                            capture_output=True,
+                            text=True,
+                            timeout=300,
+                        )
+                        result["build_returncode"] = build_proc.returncode
+                        result["build_stdout_tail"] = (build_proc.stdout or "")[-2000:]
+                        result["build_stderr_tail"] = (build_proc.stderr or "")[-2000:]
+
+                        if build_proc.returncode != 0:
+                            result["status"] = "failed_compile"
+                            result["error"] = (
+                                f"colcon build failed: {build_proc.returncode}"
+                            )
+                        else:
+                            # 3b) 尝试 ros2 launch（后台 5 秒）
+                            if shutil.which("ros2"):
+                                launch_proc = subprocess.Popen(
+                                    [
+                                        "bash", "-c",
+                                        f"source install/setup.bash && "
+                                        f"ros2 launch {pkg_name} {pkg_name}.launch.py",
+                                    ],
+                                    cwd=str(project_root),
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                )
+                                try:
+                                    launch_proc.wait(timeout=5)
+                                    # 5 秒内退出
+                                    if launch_proc.returncode != 0:
+                                        result["status"] = "compile_ok_run_failed"
+                                        result["error"] = (
+                                            f"ros2 launch exited with "
+                                            f"{launch_proc.returncode}"
+                                        )
+                                        try:
+                                            _stderr = launch_proc.stderr.read(-1) if launch_proc.stderr else b""
+                                            result["launch_stderr"] = _stderr.decode(
+                                                "utf-8", errors="replace"
+                                            )[-1000:]
+                                        except Exception:
+                                            pass
+                                    else:
+                                        result["status"] = "compile_and_run_ok"
+                                except subprocess.TimeoutExpired:
+                                    # 超过 5 秒仍在运行，视为存活
+                                    launch_proc.terminate()
+                                    try:
+                                        launch_proc.wait(timeout=2)
+                                    except subprocess.TimeoutExpired:
+                                        launch_proc.kill()
+                                        try:
+                                            launch_proc.wait(timeout=1)
+                                        except Exception:
+                                            pass
+                                    result["status"] = "compile_and_run_ok"
+                                    result["info"] = (
+                                        "ros2 launch 运行超过 5 秒，"
+                                        "已终止用于评审"
+                                    )
+                            else:
+                                result["status"] = "compile_ok_no_runtime"
+                                result["info"] = (
+                                    "ros2 不可用；build OK 但无法 launch"
+                                )
+                    except subprocess.TimeoutExpired as build_to:
+                        result["status"] = "compile_timeout"
+                        result["error"] = f"colcon build 超时: {build_to}"
+                    except Exception as build_exc:
+                        logger.exception(
+                            f"_run_reviewing_phase: ROS2 构建异常: {build_exc}"
+                        )
+                        result["status"] = "error"
+                        result["error"] = f"colcon build 异常: {build_exc}"
+
+            elif project_type in ("python_setup_py", "python_pyproject"):
+                # 纯 Python: pip install -e + 启动 entry_point
+                pip = None
+                if shutil.which("pip3"):
+                    pip = "pip3"
+                elif shutil.which("pip"):
+                    pip = "pip"
+                if not pip:
+                    result["status"] = "compile_skipped_no_runtime"
+                    result["warning"] = "pip not installed"
+                else:
+                    try:
+                        install_proc = subprocess.run(
+                            [pip, "install", "-e", "."],
+                            cwd=str(project_root),
+                            capture_output=True,
+                            text=True,
+                            timeout=120,
+                        )
+                        result["install_returncode"] = install_proc.returncode
+                        if install_proc.returncode != 0:
+                            result["status"] = "failed_compile"
+                            result["install_stderr_tail"] = (
+                                install_proc.stderr or ""
+                            )[-2000:]
+                        else:
+                            entry_point = find_python_entry_point(project_root)
+                            if not entry_point:
+                                result["status"] = "compile_ok_no_entry_point"
+                                result["info"] = (
+                                    "package installed but no entry_point defined"
+                                )
+                            else:
+                                # 启动 entry_point 并等待 5 秒
+                                run_proc = subprocess.Popen(
+                                    [entry_point],
+                                    stdout=subprocess.PIPE,
+                                    stderr=subprocess.PIPE,
+                                )
+                                try:
+                                    run_proc.wait(timeout=5)
+                                    if run_proc.returncode != 0:
+                                        result["status"] = "compile_ok_run_failed"
+                                        result["error"] = (
+                                            f"entry_point 退出码 "
+                                            f"{run_proc.returncode}"
+                                        )
+                                    else:
+                                        result["status"] = "compile_and_run_ok"
+                                except subprocess.TimeoutExpired:
+                                    run_proc.terminate()
+                                    try:
+                                        run_proc.wait(timeout=2)
+                                    except subprocess.TimeoutExpired:
+                                        run_proc.kill()
+                                        try:
+                                            run_proc.wait(timeout=1)
+                                        except Exception:
+                                            pass
+                                    result["status"] = "compile_and_run_ok"
+                                    result["info"] = (
+                                        f"entry_point {entry_point} 运行超过 5 秒"
+                                    )
+                    except subprocess.TimeoutExpired as pip_to:
+                        result["status"] = "compile_timeout"
+                        result["error"] = f"pip install 超时: {pip_to}"
+                    except Exception as pip_exc:
+                        logger.exception(
+                            f"_run_reviewing_phase: Python 安装异常: {pip_exc}"
+                        )
+                        result["status"] = "error"
+                        result["error"] = f"pip install 异常: {pip_exc}"
+            else:
+                # 未识别项目结构
+                result["status"] = "compile_skipped_no_build_system"
+                result["info"] = (
+                    "no recognizable build system "
+                    "(package.xml / setup.py / pyproject.toml)"
+                )
+
+        except Exception as outer_exc:
+            logger.exception(f"_run_reviewing_phase 顶层异常: {outer_exc}")
+            result["status"] = "error"
+            result["error"] = str(outer_exc)
+
+        # Step 4: 持久化评审结果
+        try:
+            await self._save_reviewing_status(workflow_id, result["status"], result)
+        except Exception as save_exc:
+            logger.warning(f"_run_reviewing_phase: 持久化评审结果失败: {save_exc}")
+
+        # success 定义：跳过/通过均算 success，只有 fail/timeout/error 算失败
+        result["success"] = result["status"] in (
+            "compile_and_run_ok",
+            "compile_ok_no_runtime",
+            "compile_ok_no_entry_point",
+            "compile_skipped_no_build_system",
+            "compile_skipped_no_ros2_pkg",
+            "compile_skipped_no_runtime",
+            "compile_skipped_no_project_root",
+        )
+        logger.info(
+            f"_run_reviewing_phase: 完成 status={result['status']} "
+            f"workflow={workflow_id[:8]}..."
+        )
+        return result
+
+    async def _save_reviewing_status(
+        self, workflow_id: str, status: str, log_data: Dict[str, Any]
+    ) -> None:
+        """
+        v5.9.0: 把 reviewing 阶段的状态和日志存到 workflow.error_message 的
+                __REVIEW__ 段（与 __PROMPTS__ / __PROJECT_ROOT__ 标记模式保持一致）
+        作用：复用现有 error_message 字段避免 schema 变更，同时保证 reviewing
+              状态可被后续阶段或人工 review 读取
+        调用方：_run_reviewing_phase
+        被调用方：self.session_factory 数据库会话
+        """
+        import json as _json
+        try:
+            async with self.session_factory() as db:
+                from ..models import Workflow as _Workflow
+                from sqlalchemy import select as _select
+                wf_q = await db.execute(
+                    _select(_Workflow).where(_Workflow.id == workflow_id)
+                )
+                wf_row = wf_q.scalar_one_or_none()
+                if wf_row is None:
+                    return
+                _existing = wf_row.error_message or ""
+                _review_marker = "\n__REVIEW__:"
+                # 移除旧 __REVIEW__ 段
+                if _review_marker in _existing:
+                    _head, _, _ = _existing.partition(_review_marker)
+                    _existing = _head.rstrip()
+                try:
+                    _new_blob = _json.dumps(log_data, ensure_ascii=False)[:30000]
+                except Exception:
+                    _new_blob = _json.dumps(
+                        {"status": status, "error": "log serialization failed"},
+                        ensure_ascii=False,
+                    )
+                wf_row.error_message = (
+                    f"{_existing}{_review_marker}{status} | {_new_blob}"
+                )
+                wf_row.updated_at = datetime.now(timezone.utc)
+                await db.commit()
+                logger.debug(
+                    f"_save_reviewing_status: status={status} "
+                    f"workflow={workflow_id[:8]}..."
+                )
+        except Exception as save_exc:
+            logger.warning(f"_save_reviewing_status 失败: {save_exc}")
+
+    def _sanitize_module_name_from_docstring(self, code: str) -> str:
+        """
+        v5.8.0 辅助函数：从 LLM 输出的 docstring 头部提取模块名
+        示例：
+          \"\"\"Module 1: 导航与运动控制综合模块\"\"\" -> 'module1'
+          \"\"\"交互模块主节点 (Module 6)\"\"\" -> 'module6'
+        返回: [a-z0-9_]+ 形式的文件名（不含 .py）
+        """
+        import re as _re_mod
+        if not code:
+            return ""
+        # 取首行 docstring
+        first_lines = code[:2000]
+        m = _re_mod.search(r"\"\"\"\s*([^\"]{0,200})", first_lines)
+        if not m:
+            return ""
+        snippet = m.group(1) or ""
+        # 优先匹配 "Module N" 或 "模块 N"
+        m2 = _re_mod.search(r"[Mm]odule\s*([0-9]+)", snippet)
+        if m2:
+            return f"module{m2.group(1)}"
+        # 否则取前 30 个中英文字符生成 snake_case
+        cleaned = _re_mod.sub(r"[^a-zA-Z0-9_]", "_", snippet)
+        cleaned = _re_mod.sub(r"_+", "_", cleaned).strip("_").lower()
+        if not cleaned:
+            return ""
+        return cleaned[:40]
+
+    # v5.9.0: 删除了 _generate_package_xml_template / _generate_setup_py_template /
+    # _generate_launch_template / __getattr__ 全部 ROS2 模板生成逻辑。
+    # 平台不再自动生成 ROS2 模板 —— LLM 自主决定项目结构。
 
     async def reject_stage(
         self, workflow_id: str, stage_name: str, reject_reason: str
