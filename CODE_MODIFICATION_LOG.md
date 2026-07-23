@@ -400,3 +400,47 @@
 
 ### 状态
 ✅ Vite 端口冲突 + tsconfig 注释 + Step 13 KeyError 全部修复；前端 + 机器人两端到端均通过
+
+---
+
+## v5.6.0 | 2026-07-23 | 修复"跳过不确定项进入架构设计"按钮无防重入 + 设计阶段启动闭包过期
+
+### 修改原因
+- 用户通过浏览器端到端测试时点击"跳过不确定项，进入架构设计"按钮，控制台报错：
+  - `无 workflow_id，无法启动架构设计阶段`
+  - `确认需求文档失败: 阶段边界校验失败（designing → prompting）...`
+- 按钮虽然可点击但设计阶段模态弹窗不弹出，工作流卡在 clarifying→designing 阶段。
+
+### 根因（双 Bug）
+1. **闭包过期**：`handleStartDesignPhase` / `handleConfirmDesign` / `handleRejectDesign`
+   直接使用 `sessionDetail?.session?.workflow_id`，由于 sessionDetail 是异步加载，
+   点击瞬间闭包可能捕获 null 值，导致"无 workflow_id"警告 + 模态弹窗不弹出。
+2. **重复点击**：`onConfirm` 处理函数未做防重入守卫，用户快速双击会导致
+   第一次成功 advancing（clarifying→designing），第二次再次调用
+   `/clarify/confirm` 触发 `designing→prompting` 阶段边界校验失败。
+
+### 修改文件
+- `/home/qizheng/auto_code_ws/frontend/src/App.tsx`：
+  1. `handleStartDesignPhase` (line 841) 改用 `workflowIdRef.current || sessionDetail?.session?.workflow_id || workflowStatus?.workflow_id`
+  2. `handleConfirmDesign` (line 886) 同上修复
+  3. `handleRejectDesign` (line 919) 同上修复
+  4. 文件头注释追加 v5.6.0 修改记录（line 60-65）
+
+### Reuse Statement
+- 直接复用 `workflowIdRef` (v2.0.3 引入) + `skipConfirmInFlightRef` (v5.6.0 引入) 两套现有 ref 模式
+- 不复用：handleStartDesignPhase / handleConfirmDesign / handleRejectDesign 的原始闭包逻辑
+
+### 验证结果（端到端浏览器测试）
+- [x] 浏览器成功进入"选择项目"页 → 编程模式 → 新建会话 test_warehouse_v2
+- [x] 输入需求 → 触发需求澄清（4 轮 方案A 全选）
+- [x] 第 4 轮澄清完成 → 显示需求文档 + "跳过不确定项，进入架构设计"按钮（e40）
+- [x] 点击"跳过不确定项"按钮：
+  - 后端 `/api/workflow/{id}/clarify/confirm` 返回 success=True
+  - 工作流从 clarifying → designing 成功（current_stage="designing"）
+  - handleStartDesignPhase 启动架构批判分析，页面显示"正在执行架构批判分析..."
+  - 控制台无 "无 workflow_id" / "确认需求文档失败" 错误
+- [x] 后端状态确认：`/api/workflow/13bcf6ff-.../status` → status="designing"、stages[clarifying].status="completed"、stages[designing].status="in_progress"
+- [x] TypeScript 类型检查通过（`tsc -p tsconfig.json --noEmit` 无报错）
+
+### 状态
+✅ "跳过不确定项进入架构设计"按钮功能恢复正常，端到端从需求澄清→架构设计阶段打通

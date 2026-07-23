@@ -57,6 +57,12 @@
  * #     ④ onSubmit/onConfirm/onContinueAdd 回调中统一调用 setShowClarifyModal(false) 关闭弹窗
 #   - 2026-06-30 | v3.8.0 | handleClarifyQuestions 移除 data.complete 时关闭弹窗逻辑，澄清完成时保持弹窗打开
 #   - 2026-06-30 | v3.9.0 | 新增 useEffect 监听 clarificationData.isComplete 强制弹窗（防御运行时状态竞争）
+#   - 2026-07-23 | v5.6.0 | 修复"跳过不确定项进入架构设计"按钮无防重入 + 设计阶段启动闭包过期：
+#     ① 新增 skipConfirmInFlightRef 守卫单次点击只发起一次 /clarify/confirm 请求，
+#        防止快速双击/多次点击导致后端 confirming→designing 推进与 designing→prompting 校验失败；
+#     ② handleStartDesignPhase / handleConfirmDesign / handleRejectDesign 改用
+#        workflowIdRef.current 读取最新 workflow_id，避免 sessionDetail 异步加载时闭包
+#        捕获 null 导致 "无 workflow_id" 警告 + 模态弹窗不弹出
 # ============================================================
  */
 
@@ -839,7 +845,10 @@ export default function App() {
    * 输出返回值：Promise<void>
    */
   const handleStartDesignPhase = useCallback(async () => {
-    const wfId = sessionDetail?.session?.workflow_id;
+    // v5.6.0 修复（Bug：跳过不确定项后设计阶段无法启动）：使用 workflowIdRef.current
+    //   读取最新 workflow_id 而非依赖闭包内的 sessionDetail。sessionDetail 为异步加载，
+    //   闭包可能在点击瞬间捕获 null 值导致 "无 workflow_id" 警告 + 模态弹窗不弹出。
+    const wfId = workflowIdRef.current || sessionDetail?.session?.workflow_id || workflowStatus?.workflow_id;
     if (!wfId) {
       console.warn('无 workflow_id，无法启动架构设计阶段');
       return;
@@ -865,7 +874,7 @@ export default function App() {
     } finally {
       setIsDesignLoading(false);
     }
-  }, [sessionDetail?.session?.workflow_id]);
+  }, [sessionDetail?.session?.workflow_id, workflowStatus?.workflow_id]);
 
   /**
    * 确认架构设计（用户确认 V2.0 需求通过）
@@ -881,7 +890,8 @@ export default function App() {
    * 输出返回值：Promise<void>
    */
   const handleConfirmDesign = useCallback(async () => {
-    const wfId = sessionDetail?.session?.workflow_id;
+    // v5.6.0 修复：使用 workflowIdRef.current 避免闭包过期问题
+    const wfId = workflowIdRef.current || sessionDetail?.session?.workflow_id || workflowStatus?.workflow_id;
     if (!wfId) return;
 
     try {
@@ -897,7 +907,7 @@ export default function App() {
     } catch (e) {
       console.error('确认架构设计失败:', e);
     }
-  }, [sessionDetail?.session?.workflow_id]);
+  }, [sessionDetail?.session?.workflow_id, workflowStatus?.workflow_id]);
 
   /**
    * 驳回架构设计（用户驳回 V2.0 需求，触发重新迭代）
@@ -913,7 +923,8 @@ export default function App() {
    * 输出返回值：Promise<void>
    */
   const handleRejectDesign = useCallback(async (reason: string) => {
-    const wfId = sessionDetail?.session?.workflow_id;
+    // v5.6.0 修复：使用 workflowIdRef.current 避免闭包过期问题
+    const wfId = workflowIdRef.current || sessionDetail?.session?.workflow_id || workflowStatus?.workflow_id;
     if (!wfId) return;
 
     setIsDesignLoading(true);
@@ -932,7 +943,7 @@ export default function App() {
     } finally {
       setIsDesignLoading(false);
     }
-  }, [sessionDetail?.session?.workflow_id]);
+  }, [sessionDetail?.session?.workflow_id, workflowStatus?.workflow_id]);
 
   /**
    * v3.6.0：流式发送核心（被 handleSendMessage 与 handleSendClarifyAnswer 共用）
