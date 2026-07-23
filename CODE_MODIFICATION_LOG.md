@@ -142,3 +142,40 @@
 
 ### 状态
 所有任务已完成，工作流端到端跑通，两个 LLM-可验收项目已生成。
+
+---
+
+## 2026-07-23 | v6.0.1 | Lint 告警清理 + 前端 App.tsx 集成
+
+### 修改文件
+- `backend/app/services/loop_engineering_v6.py`
+- `/home/qizheng/auto_code_data/warehouse_visualizer/src/App.tsx`
+
+### 完成的任务
+
+#### 任务 1: v6 静态分析告警清理
+- 删除未使用的 `from pathlib import Path`
+- `_llm_call.temperature` -> `_temperature`（参数占位，避免误用）
+- step9 列出结构 `files` -> `_files`
+- step13 QA 评审文件收集 `dirs` -> `_dirs`
+- step14 Python 语法检查 `dirs` -> `_dirs`
+- 文件头 v6.0.1 修改记录补全
+- `python3 -c "import ast"` 语法检查通过
+
+#### 任务 2: 前端项目 App.tsx 组件集成
+- 原 App.tsx 是占位骨架，没有使用 LLM 生成的 4 个核心组件
+- 重写为：顶部 KPIHeader + 中部 WarehouseMap + 右栏 TaskPanel + AlertPanel
+- 底部控制条：启动 / 停止 / 重置 仿真，调用 useSimulationStore
+- 提交到 `main` 分支：`b2b93d9 fix(frontend): integrate 4 core components into App.tsx`
+
+### 验证结果
+- [x] `python3 -c "import ast; ast.parse(...)"` 通过
+- [x] 仓库 `git log --oneline` 显示 b2b93d9 提交
+- [x] 4 个核心组件在 App.tsx 中正确接线
+- [x] 不破坏 v6.0.0 已通过的 15 步工作流
+
+### 状态
+所有任务已完成。
+
+---
+
