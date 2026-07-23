@@ -546,9 +546,11 @@ async def get_clarify_questions(request: Request, workflow_id: str):
     """
     from sqlalchemy import select
     from ..models import Workflow
+    from ..database import get_session_factory
 
+    session_factory = get_session_factory()
     try:
-        async with request.app.state.database_session_factory() as db:
+        async with session_factory() as db:
             result = await db.execute(
                 select(Workflow).where(Workflow.id == workflow_id)
             )
