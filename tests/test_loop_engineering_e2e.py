@@ -27,7 +27,7 @@ import sys
 import re
 
 BASE_URL = "http://localhost:8080"
-SESSION_ID = "e2689ad0-9013-4951-b53f-a3bfa9ae9793"
+SESSION_ID = "5249d67b-d52f-4487-b1e1-ca7ff8796358"
 WORKFLOW_ID = None
 
 PROMPT = """# 智能仓储多机器人调度与控制系统
@@ -89,7 +89,7 @@ def create_session():
         "title": "智能仓储多机器人调度与控制系统"
     })
     data = resp.json()
-    SESSION_ID = "e2689ad0-9013-4951-b53f-a3bfa9ae9793"
+    SESSION_ID = "5249d67b-d52f-4487-b1e1-ca7ff8796358"
     print(f"✓ 会话已创建: {SESSION_ID[:8]}...")
     return SESSION_ID
 
@@ -274,7 +274,7 @@ def main():
     print("=" * 60)
     
     # 步骤 1: 创建会话
-    SESSION_ID = "e2689ad0-9013-4951-b53f-a3bfa9ae9793"
+    SESSION_ID = "5249d67b-d52f-4487-b1e1-ca7ff8796358"
     
     # 步骤 2: 注入提示词，触发工作流
     print("\n--- 步骤 2: 注入提示词 ---")

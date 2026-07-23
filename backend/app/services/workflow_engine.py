@@ -65,6 +65,12 @@
 #     持久化→设置 prompts_optimized=True→再次 advance 到 executing 的闭环；
 #     validate_stage_boundary 放宽 designing→prompting 转换对 prompts_optimized
 #     的强制要求（仅当 human_confirmed_architecture 也为 False 时才报错）
+#   - 2026-07-23 | v5.6.0 | 新增 _run_executing_phase 真实 LLM 代码生成：填补
+#     executing→reviewing 自动推进 GAP；从 workflow.error_message 解析 __PROMPTS__
+#     JSON 段，为每个模块构造代码生成 Prompt 并通过 hermes_service.executor 调用
+#     真实 LLM；解析 LLM 输出中的 # FILE: 标记按需写入工作区文件；通过 git_manager
+#     自动提交；最后标记 executing 阶段 COMPLETED 并 advance 到 reviewing；
+#     _run_prompting_phase 末尾通过 asyncio.create_task 调度 _run_executing_phase
 # ============================================================
 """
 
@@ -2306,8 +2312,388 @@ class WorkflowEngine:
                     f"_run_prompting_phase: 推进到 executing 失败: {adv_exc}"
                 )
                 result["advance_error"] = str(adv_exc)
+
+            # v5.6.0 修复：调度 _run_executing_phase 后台任务
+            # 填补 executing 阶段没有自动 runner 的 GAP，让 prompting→executing
+            # 推进后由后台异步任务真正调用 LLM 生成代码并写入工作区
+            try:
+                asyncio.create_task(self._run_executing_phase(workflow_id))
+                logger.info(
+                    f"_run_prompting_phase: 已调度 _run_executing_phase 后台任务 "
+                    f"workflow={workflow_id[:8]}..."
+                )
+            except RuntimeError as loop_exc:
+                # 无事件循环时降级为同步执行（兜底）
+                logger.warning(
+                    f"_run_prompting_phase: 调度 executing 后台任务失败，"
+                    f"改为同步执行: {loop_exc}"
+                )
+                try:
+                    await self._run_executing_phase(workflow_id)
+                except Exception as exec_exc:
+                    logger.warning(
+                        f"_run_prompting_phase: 同步执行 _run_executing_phase 失败: "
+                        f"{exec_exc}"
+                    )
         except Exception as exc:
             logger.exception(f"_run_prompting_phase 失败: {exc}")
+            result["error"] = str(exc)
+        return result
+
+    async def _run_executing_phase(self, workflow_id: str) -> Dict[str, Any]:
+        """
+        执行阶段：调用真实 LLM 为每个模块编写代码并写入工作区（v5.6.0 新增）
+        作用：填补 executing→reviewing 的 GAP；
+             被 _run_prompting_phase 末尾调度，调用真实 LLM 而非模板
+        调用方：_run_prompting_phase 末尾的 asyncio.create_task
+        被调用方：self.hermes_service.executor（真实 LLM 调用）、
+                 self.git_manager.auto_commit（Git 自动提交）、
+                 self.advance_stage（推进到 reviewing）
+        运行步骤：
+          1. 加载 workflow 记录，从 error_message 的 __PROMPTS__ 段解析模块提示词
+          2. 确定工作区路径（git_manager.workspace_path / repo_path / 兜底目录）
+          3. 为每个模块构造代码生成 Prompt，调用 executor.execute 真实 LLM
+          4. 解析 LLM 输出中的 # FILE: 标记，按需写入文件
+          5. 通过 git_manager.auto_commit 自动提交（若可用）
+          6. 将 executing 阶段标记为 COMPLETED
+          7. 调用 self.advance_stage(workflow_id) 推进到 reviewing
+        参数：
+          - workflow_id: 工作流 ID
+        返回值：
+          - Dict：包含 success、modules_processed、files_written、phases 等字段
+        """
+        from sqlalchemy import select
+        from ..models import Workflow
+        import os
+        import re as _re
+        import json as _json
+
+        result: Dict[str, Any] = {
+            "success": False,
+            "workflow_id": workflow_id,
+            "modules_processed": 0,
+            "files_written": 0,
+            "phases": [],
+        }
+
+        try:
+            # Step 1: 加载 workflow + 解析 __PROMPTS__ 段
+            async with self.session_factory() as db:
+                wf_result = await db.execute(
+                    select(Workflow).where(Workflow.id == workflow_id)
+                )
+                workflow = wf_result.scalar_one_or_none()
+                if not workflow:
+                    logger.error(
+                        f"_run_executing_phase: workflow {workflow_id} not found"
+                    )
+                    return result
+                error_msg = workflow.error_message or ""
+
+            prompts: List[Dict[str, Any]] = []
+            if "__PROMPTS__:" in error_msg:
+                try:
+                    _, _, blob = error_msg.partition("__PROMPTS__:")
+                    prompts = _json.loads(blob.strip())
+                except Exception as parse_exc:
+                    logger.warning(
+                        f"_run_executing_phase: 解析 __PROMPTS__ 失败: {parse_exc}"
+                    )
+            if not prompts:
+                logger.warning(
+                    f"_run_executing_phase: 未找到模块提示词 "
+                    f"workflow={workflow_id[:8]}..."
+                )
+                return result
+            result["modules_processed"] = len(prompts)
+            logger.info(
+                f"_run_executing_phase: 解析到 {len(prompts)} 个模块的提示词 "
+                f"workflow={workflow_id[:8]}..."
+            )
+
+            # Step 2: 确定工作区路径
+            workspace: Optional[str] = None
+            if self.git_manager and hasattr(self.git_manager, "workspace_path"):
+                workspace = self.git_manager.workspace_path  # type: ignore[attr-defined]
+            if not workspace and self.git_manager and hasattr(self.git_manager, "repo_path"):
+                workspace = self.git_manager.repo_path
+            if not workspace:
+                workspace = os.path.join(os.getcwd(), "agent_workspace")
+            try:
+                os.makedirs(workspace, exist_ok=True)
+            except Exception as mkdir_exc:
+                logger.warning(
+                    f"_run_executing_phase: 创建工作区目录失败 {workspace}: {mkdir_exc}"
+                )
+
+            # Step 3: 调用 LLM 写代码
+            executor = getattr(
+                getattr(self, "hermes_service", None), "executor", None
+            )
+            if executor is None:
+                logger.error(
+                    "_run_executing_phase: executor 不可用，无法调用 LLM"
+                )
+                result["error"] = "executor unavailable"
+                return result
+
+            total_files = 0
+            file_pattern = _re.compile(
+                r'```(?:python|py|cpp|c|h|md|yaml|json|sh)?\s*\n'
+                r'#\s*FILE:\s*([^\n]+)\n'
+                r'(.*?)```',
+                _re.DOTALL,
+            )
+
+            for idx, prompt_entry in enumerate(prompts[:7]):
+                module_name = (
+                    prompt_entry.get("module")
+                    if isinstance(prompt_entry, dict)
+                    else f"Module_{idx + 1}"
+                ) or f"Module_{idx + 1}"
+                base_prompt = (
+                    prompt_entry.get("prompt", "")
+                    if isinstance(prompt_entry, dict)
+                    else str(prompt_entry or "")
+                )
+
+                # 构造代码生成 Prompt：明确要求 FILE: 标记格式
+                code_prompt = (
+                    f"{base_prompt}\n\n"
+                    f"请输出完整的代码文件，每个文件请严格按以下格式输出：\n\n"
+                    f"```python\n"
+                    f"# FILE: {module_name}/main.py\n"
+                    f"<在此写入该文件的完整代码>\n"
+                    f"```\n\n"
+                    f"至少输出 1 个完整可运行的文件。\n"
+                    f"要求：代码必须有完整的 docstring、错误处理、单元测试自检。\n"
+                    f"模块归属：{module_name}\n"
+                )
+
+                # Shell 转义
+                escaped = (
+                    code_prompt.replace("\\", "\\\\")
+                    .replace('"', '\\"')
+                    .replace("`", "\\`")
+                    .replace("$", "\\$")
+                )
+
+                try:
+                    logger.info(
+                        f"_run_executing_phase: 调用 LLM 写代码 {module_name} "
+                        f"({idx + 1}/{min(len(prompts), 7)})"
+                    )
+                    llm_result = await executor.execute(
+                        command=f'-p "{escaped}"',
+                        timeout=180,
+                    )
+
+                    if not getattr(llm_result, "success", False):
+                        logger.warning(
+                            f"_run_executing_phase: {module_name} LLM 调用失败: "
+                            f"{getattr(llm_result, 'error_message', '未知错误')}"
+                        )
+                        result["phases"].append({
+                            "module": module_name,
+                            "status": "llm_failed",
+                        })
+                        continue
+
+                    llm_output = (getattr(llm_result, "stdout", "") or "").strip()
+                    if not llm_output:
+                        result["phases"].append({
+                            "module": module_name,
+                            "status": "empty_response",
+                        })
+                        continue
+
+                    files_written = 0
+                    for match in file_pattern.finditer(llm_output):
+                        rel_path = (match.group(1) or "").strip()
+                        file_content = match.group(2) or ""
+                        if not rel_path or not file_content:
+                            continue
+                        # 路径安全：禁止 .. 与绝对路径前缀
+                        safe_path = rel_path.replace("..", "_").lstrip("/")
+                        if not safe_path:
+                            continue
+                        full_path = os.path.join(workspace, safe_path)
+                        try:
+                            os.makedirs(
+                                os.path.dirname(full_path), exist_ok=True
+                            )
+                            with open(
+                                full_path, "w", encoding="utf-8"
+                            ) as f:
+                                f.write(file_content)
+                            files_written += 1
+                            total_files += 1
+                            logger.info(
+                                f"_run_executing_phase: 写入文件 {safe_path} "
+                                f"({len(file_content)} chars)"
+                            )
+                        except Exception as write_exc:
+                            logger.warning(
+                                f"_run_executing_phase: 写入 {safe_path} 失败: "
+                                f"{write_exc}"
+                            )
+
+                    if files_written == 0:
+                        # LLM 输出但无 FILE: 标记 -> 整段保存为 .md 文档
+                        doc_path = os.path.join(
+                            workspace, f"{module_name}_output.md"
+                        )
+                        try:
+                            with open(doc_path, "w", encoding="utf-8") as f:
+                                f.write(
+                                    f"# {module_name} - LLM 生成的代码\n\n"
+                                    f"{llm_output}\n"
+                                )
+                            total_files += 1
+                            logger.info(
+                                f"_run_executing_phase: {module_name} 无 FILE 标记，"
+                                f"整段保存到 {os.path.basename(doc_path)}"
+                            )
+                        except Exception as doc_exc:
+                            logger.warning(
+                                f"_run_executing_phase: 写入兜底 .md 失败: "
+                                f"{doc_exc}"
+                            )
+
+                    result["phases"].append({
+                        "module": module_name,
+                        "status": "ok",
+                        "files": files_written,
+                        "llm_response_len": len(llm_output),
+                    })
+                except Exception as mod_exc:
+                    logger.exception(
+                        f"_run_executing_phase: {module_name} 处理失败: {mod_exc}"
+                    )
+                    result["phases"].append({
+                        "module": module_name,
+                        "status": "error",
+                        "error": str(mod_exc),
+                    })
+
+            result["files_written"] = total_files
+            result["workspace"] = workspace
+
+            # Step 4: 自动 Git 提交
+            if self.git_manager and total_files > 0:
+                try:
+                    if hasattr(self.git_manager, "auto_commit") and \
+                            asyncio.iscoroutinefunction(
+                                getattr(self.git_manager, "auto_commit", None)
+                            ):
+                        # 异步版 auto_commit
+                        try:
+                            commit_result = await self.git_manager.auto_commit(  # type: ignore[attr-defined]
+                                message=(
+                                    f"v5.6.0: 智能体生成的代码 - "
+                                    f"workflow {workflow_id[:8]}"
+                                ),
+                            )
+                            logger.info(
+                                f"_run_executing_phase: 异步 git auto_commit 完成: "
+                                f"{commit_result}"
+                            )
+                        except Exception as async_commit_exc:
+                            logger.warning(
+                                f"_run_executing_phase: 异步 auto_commit 失败，"
+                                f"降级为 subprocess: {async_commit_exc}"
+                            )
+                            import subprocess as _sp
+                            _sp.run(
+                                ["git", "add", "-A"],
+                                cwd=workspace, check=False,
+                                capture_output=True,
+                            )
+                            _sp.run(
+                                [
+                                    "git", "commit", "-m",
+                                    f"v5.6.0: 智能体生成的代码 {total_files} 个文件",
+                                ],
+                                cwd=workspace, check=False,
+                                capture_output=True,
+                            )
+                    else:
+                        # 同步版 auto_commit
+                        try:
+                            commit_result = self.git_manager.auto_commit(  # type: ignore[attr-defined]
+                                task_id=workflow_id[:8],
+                                task_name=(
+                                    f"v5.6.0 智能体生成 {total_files} 个文件"
+                                ),
+                            )
+                            logger.info(
+                                f"_run_executing_phase: 同步 git auto_commit 完成: "
+                                f"{commit_result}"
+                            )
+                        except Exception as sync_commit_exc:
+                            logger.warning(
+                                f"_run_executing_phase: 同步 auto_commit 失败，"
+                                f"降级为 subprocess: {sync_commit_exc}"
+                            )
+                            import subprocess as _sp
+                            _sp.run(
+                                ["git", "add", "-A"],
+                                cwd=workspace, check=False,
+                                capture_output=True,
+                            )
+                            _sp.run(
+                                [
+                                    "git", "commit", "-m",
+                                    f"v5.6.0: 智能体生成的代码 {total_files} 个文件",
+                                ],
+                                cwd=workspace, check=False,
+                                capture_output=True,
+                            )
+                except Exception as git_exc:
+                    logger.warning(
+                        f"_run_executing_phase: git commit 失败: {git_exc}"
+                    )
+
+            # Step 5: 标记 executing 阶段为 COMPLETED
+            try:
+                async with self.session_factory() as db:
+                    await self._complete_current_stage(
+                        db, workflow_id, "executing"
+                    )
+                    await db.commit()
+                    logger.info(
+                        f"_run_executing_phase: executing 阶段已标记 COMPLETED "
+                        f"workflow={workflow_id[:8]}..."
+                    )
+            except Exception as mark_exc:
+                logger.warning(
+                    f"_run_executing_phase: 标记 executing 阶段失败: {mark_exc}"
+                )
+
+            result["success"] = True
+            logger.info(
+                f"_run_executing_phase 完成: 写入 {total_files} 个文件 "
+                f"workflow={workflow_id[:8]}..."
+            )
+
+            # Step 6: 推进到 reviewing
+            try:
+                advance_result = await self.advance_stage(workflow_id)
+                result["advanced_to"] = (
+                    advance_result.stage_name if advance_result else None
+                )
+                logger.info(
+                    f"_run_executing_phase: 已推进到 "
+                    f"{advance_result.stage_name if advance_result else '未知'} "
+                    f"workflow={workflow_id[:8]}..."
+                )
+            except Exception as adv_exc:
+                logger.exception(
+                    f"_run_executing_phase: 推进到 reviewing 失败: {adv_exc}"
+                )
+                result["advance_error"] = str(adv_exc)
+        except Exception as exc:
+            logger.exception(f"_run_executing_phase 失败: {exc}")
             result["error"] = str(exc)
         return result
 
