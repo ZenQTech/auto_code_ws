@@ -35,6 +35,7 @@ from .config_endpoint import router as config_router
 from .workspace import router as workspace_router
 from .worktree import router as worktree_router
 from .dashboard import router as dashboard_router
+from .loop_v7 import router as loop_v7_router
 
 api_router = APIRouter()
 
@@ -56,3 +57,4 @@ api_router.include_router(config_router, prefix="/config", tags=["全局配置�
 api_router.include_router(workspace_router, prefix="/workspace", tags=["工作空间管理"])
 api_router.include_router(worktree_router, prefix="/worktree", tags=["Git Worktree"])
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["工作流监控"])
+api_router.include_router(loop_v7_router, prefix="/workflow", tags=["Loop Engineering v7"])
