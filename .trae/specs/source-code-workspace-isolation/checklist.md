@@ -1,0 +1,22 @@
+# Checklist
+
+- [ ] `/home/qizheng/auto_code_data/` 目录存在且可写
+- [ ] `_run_executing_phase` 不再向 `/home/qizheng/auto_code_ws/Module*/` 写入新文件
+- [ ] 智能体生成的代码路径遵循 `src/<pkg>/<pkg>/<node>.py`（参考 `/home/qizheng/auto_code_ws/3d_coverage_ws/src/coverage_navigation/coverage_navigation/`）
+- [ ] `package.xml` 包含 `ament_python` 构建类型和 `rclpy`、`std_msgs`、`geometry_msgs`、`sensor_msgs`、`nav_msgs` 依赖
+- [ ] `setup.py` 包含正确的 `entry_points.console_scripts` 指向主节点 main 函数
+- [ ] `launch/<pkg>.launch.py` 使用 `launch_ros.actions.Node` 启动主节点
+- [ ] `config/<pkg>.yaml` 存在且为有效 YAML
+- [ ] `resource/<pkg>` 文件存在（空文件）
+- [ ] `setup.cfg` 包含 `[develop] eggs = ...`
+- [ ] `<pkg>/__init__.py` 存在（空文件）
+- [ ] `README.md` 包含 `colcon build` 和 `ros2 launch` 命令
+- [ ] 整个项目可通过 `cd <project_root> && colcon build --packages-select <pkg>` 编译（ROS2 可用时）
+- [ ] `ros2 launch <pkg> <pkg>.launch.py` 启动后 `ros2 node list` 包含主节点名
+- [ ] reviewing 阶段状态正确反映编译运行结果（4 种状态之一）
+- [ ] git commit 路径在 `<project_root>/.git/`，分支名为 `feature/auto-code-<wf_short>`
+- [ ] commit message 包含 `[verified:ran_locally]` / `[compile_failed]` / `[compile_ok_run_failed]` / `[no_ros2_runtime]` 标签
+- [ ] e2e smoke test 脚本 `tests/test_source_project_structure.py` 可独立运行
+- [ ] `/home/qizheng/auto_code_ws/Module 1_output.md`、`Module 2/` 等历史文件未被删除或移动
+- [ ] 旧 `auto_code_ws/Module*/` 不出现在新 workflow 的 git commit 中
+- [ ] 全链路评审可在 reviewing 阶段看到"智能体编写的项目能真正编译并运行"

@@ -377,6 +377,11 @@ export default function App() {
     workflowIdRef.current = sessionDetail?.session?.workflow_id;
   }, [sessionDetail?.session?.workflow_id]);
 
+  // v5.6.0 修复（Bug：跳过不确定项按钮无防重入）：单次点击只发起一次请求，
+  //   防止快速双击/多次点击导致后端 confirming→designing 推进与 designing→prompting
+  //   校验失败的问题
+  const skipConfirmInFlightRef = useRef<boolean>(false);
+
   // v3.9.0 修复：澄清完成时强制弹窗（防御运行时状态竞争）
   // v3.10.0 修复：仅当工作流仍在 clarifying 阶段时才弹窗
   useEffect(() => {
@@ -1419,24 +1424,34 @@ export default function App() {
                       }}
                       onConfirm={async (wfId?: string) => {
                         // v2.0.4 修复：直接使用 ClarificationCard 传入的 workflowId，消除闭包问题
+                        // v5.6.0 修复（Bug：跳过按钮无防重入，导致重复请求 designing→prompting 校验失败）：
+                        //   添加 inFlightRef 守卫，单次点击只发起一次请求
+                        if (skipConfirmInFlightRef.current) {
+                          return;
+                        }
                         const id = wfId || workflowIdRef.current || workflowStatus?.workflow_id;
                         if (id) {
-                          const baseUrl = window.location.origin;
-                          const res = await fetch(`${baseUrl}/api/workflow/${id}/clarify/confirm`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ confirmed: true }),
-                          });
-                          const data = await res.json().catch(() => ({ success: false }));
-                          if (!data.success) {
-                            console.warn('确认需求文档失败:', data.message);
-                            return; // 保持弹窗打开
+                          skipConfirmInFlightRef.current = true;
+                          try {
+                            const baseUrl = window.location.origin;
+                            const res = await fetch(`${baseUrl}/api/workflow/${id}/clarify/confirm`, {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ confirmed: true }),
+                            });
+                            const data = await res.json().catch(() => ({ success: false }));
+                            if (!data.success) {
+                              console.warn('确认需求文档失败:', data.message);
+                              return; // 保持弹窗打开
+                            }
+                            // 刷新工作流状态
+                            setShowClarifyModal(false);
+                            refetchSessions();
+                            // v2.0.0 新增：启动架构设计阶段
+                            setTimeout(() => handleStartDesignPhase(), 500);
+                          } finally {
+                            skipConfirmInFlightRef.current = false;
                           }
-                          // 刷新工作流状态
-                          setShowClarifyModal(false);
-                          refetchSessions();
-                          // v2.0.0 新增：启动架构设计阶段
-                          setTimeout(() => handleStartDesignPhase(), 500);
                         }
                       }}
                       onContinueAdd={() => {
@@ -1688,23 +1703,33 @@ export default function App() {
                 }}
                 onConfirm={async (wfId?: string) => {
                   // v2.0.4 修复：直接使用 ClarificationCard 传入的 workflowId，消除闭包问题
+                  // v5.6.0 修复（Bug：跳过按钮无防重入）：与编程模式同源守卫，避免双击触发
+                  //   后端 designing→prompting 阶段边界校验失败
+                  if (skipConfirmInFlightRef.current) {
+                    return;
+                  }
                   const id = wfId || workflowIdRef.current || workflowStatus?.workflow_id;
                   if (id) {
-                    const baseUrl = window.location.origin;
-                    const res = await fetch(`${baseUrl}/api/workflow/${id}/clarify/confirm`, {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ confirmed: true }),
-                    });
-                    const data = await res.json().catch(() => ({ success: false }));
-                    if (!data.success) {
-                      console.warn('确认需求文档失败:', data.message);
-                      return; // 保持弹窗打开
+                    skipConfirmInFlightRef.current = true;
+                    try {
+                      const baseUrl = window.location.origin;
+                      const res = await fetch(`${baseUrl}/api/workflow/${id}/clarify/confirm`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ confirmed: true }),
+                      });
+                      const data = await res.json().catch(() => ({ success: false }));
+                      if (!data.success) {
+                        console.warn('确认需求文档失败:', data.message);
+                        return; // 保持弹窗打开
+                      }
+                      setShowClarifyModal(false);
+                      refetchSessions();
+                      // v2.0.0 新增：启动架构设计阶段
+                      setTimeout(() => handleStartDesignPhase(), 500);
+                    } finally {
+                      skipConfirmInFlightRef.current = false;
                     }
-                    setShowClarifyModal(false);
-                    refetchSessions();
-                    // v2.0.0 新增：启动架构设计阶段
-                    setTimeout(() => handleStartDesignPhase(), 500);
                   }
                 }}
                 onContinueAdd={() => {

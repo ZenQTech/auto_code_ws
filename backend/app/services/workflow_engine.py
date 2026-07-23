@@ -1953,16 +1953,34 @@ class WorkflowEngine:
                 workflow.human_confirmed_requirement = True
                 result["human_confirmed_requirement"] = True
                 logger.info(f"需求澄清阶段已人工确认: {workflow_id[:8]}...")
-                # v3.1.0 修复：确认后自动推进到架构设计阶段
-                await db.commit()
-                await db.refresh(workflow)
-                advance_result = await self.advance_stage(workflow_id)
-                result["advanced"] = True
-                result["next_stage"] = advance_result.stage_name if advance_result else None
-                logger.info(
-                    f"工作流自动推进: {workflow_id[:8]}... clarifying → "
-                    f"{advance_result.stage_name if advance_result else '未知'}"
-                )
+                # v5.6.0 修复（Bug：跳过不确定项后重复点击导致 designing→prompting 校验失败）：
+                #   若工作流已推进到 designing 及之后阶段，说明前端已成功点击过该按钮，
+                #   此时无需再调用 advance_stage 推进到下一阶段（会导致阶段边界校验失败）。
+                #   仅当仍在 clarifying 阶段时才推进到 designing。
+                if workflow.current_stage == "clarifying":
+                    # v3.1.0 修复：确认后自动推进到架构设计阶段
+                    await db.commit()
+                    await db.refresh(workflow)
+                    advance_result = await self.advance_stage(workflow_id)
+                    result["advanced"] = True
+                    result["next_stage"] = (
+                        advance_result.stage_name if advance_result else None
+                    )
+                    logger.info(
+                        f"工作流自动推进: {workflow_id[:8]}... clarifying → "
+                        f"{advance_result.stage_name if advance_result else '未知'}"
+                    )
+                else:
+                    # 工作流已越过 clarifying 阶段（已处于 designing/prompting/executing/reviewing），
+                    # 标记确认成功但不再推进，避免重复推进触发阶段边界校验失败
+                    await db.commit()
+                    result["advanced"] = False
+                    result["next_stage"] = workflow.current_stage
+                    result["already_advanced"] = True
+                    logger.info(
+                        f"工作流已处于 {workflow.current_stage} 阶段，跳过重复推进: "
+                        f"{workflow_id[:8]}..."
+                    )
                 return result
 
             elif stage_name == "designing":

@@ -291,3 +291,112 @@
 
 ### 状态
 ✅ 15 步工作流全部通过 + 5 大缺口全部补齐 + API 暴露
+
+---
+
+## 2026-07-23 | v7.2.0 | 路径净化 + Vite/plugin-react 版本配套
+
+### 修改文件
+- `backend/app/services/loop_engineering_v7.py`
+
+### 完成的任务
+
+#### 任务 1：路径净化（防 LLM 回填绝对路径）
+- LLM 偶发把项目根目录的绝对路径回填进 FILE 标记，例如
+  `# FILE: home/qizheng/auto_code_data/warehouse_v7/src/main.tsx`，
+  导致越界写入 `home/...` 子目录，污染项目
+- 新增 `ModuleCLIWorker._sanitize_rel_path()` 静态方法：
+  - 规则 1：去掉前导 `./`（同级）
+  - 规则 2：如果是绝对路径，用 `os.path.commonpath` 判定是否在 project_root 内，
+            在内则 `os.path.relpath` 剥成相对，不在则返回空字符串（拒绝）
+  - 规则 3：相对路径剥掉 LLM 误填的 `<root_parent 中间段>/<name>/` 形式前缀
+            （如 `home/qizheng/auto_code_data/<name>/`、`qizheng/auto_code_data/<name>/`）
+  - 规则 4：拒绝任何 `..` 越界段
+  - 规则 5：空路径或只有项目根 → 返回空字符串（让调用方跳过该文件）
+- `_parse_and_write` 在写盘前再次校验 `full_path.startswith(norm_root + os.sep)`，
+  二次防线防越界
+- LLM 提示词增加 ✅/❌ 路径范例显式约束（"必须是相对路径，禁止写成项目根目录的绝对路径"）
+
+#### 任务 2：Vite / @vitejs/plugin-react 版本配套
+- 修复 npm install 报 `ERESOLVE unable to resolve dependency tree` 错误
+- 根因：Vite 2.9.18（兼容 Node 12）与 `@vitejs/plugin-react@^2.1.0` 不兼容
+  （plugin v2 依赖 `vite@"^3.0.0"`，Vite 2 不满足）
+- 修复方案：在 `_ensure_frontend_entry_files` 与 `_run_frontend_validation` 双重
+  同步 `@vitejs/plugin-react` 版本到对应 Vite 主版本：
+
+  | Vite 主版本 | @vitejs/plugin-react | Node 要求 |
+  |------------|---------------------|----------|
+  | 2.9.x      | ^1.0.0              | 10+      |
+  | 3.x        | ^2.1.0              | 12.20+   |
+  | 4.x        | ^4.0.0              | 14+      |
+  | 5.x        | ^4.2.0+             | 18+      |
+
+### 端到端验证结果
+
+#### 项目 1: warehouse_v7（前端）
+- 状态: ✅ 15 步全部通过；Step 14 dev server HTTP 200（页面正常服务）
+- 总耗时: 约 280 秒
+- 文件数: 3846（含 node_modules 依赖；源代码 26 个）
+- Git 提交: 11 个
+- Bare remote commits: 11 个
+- Hook events: 26 个
+- Dev server: 真实启动，HTTP 抓取 `<!DOCTYPE html>...<title>Warehouse V7 ...</title>`
+  返回正常（标题为 LLM 生成）
+- 路径净化生效：仓库内无 `home/`、`qizheng/` 等越界子目录
+
+#### 项目 2: agv_fleet_v7（机器人）
+- 状态: ✅ 15 步全部通过；Step 14 status=passed
+- 总耗时: 约 250 秒
+- 文件数: 40 个
+- Git 提交: 4 个
+- Bare remote commits: 4 个
+- Hook events: 12 个
+- 全部 16 检查通过（python_syntax + package_xml_valid + setup_py_has_console_scripts 等）
+
+### 验证结果
+- [x] 路径净化单元测试 15 用例全过（含绝对路径、`/etc/passwd` 越权、`..` 越界、
+      项目根前缀重复等）
+- [x] 真实清理 `/home/qizheng/auto_code_data/warehouse_v7/home` 越界子目录
+- [x] `python3 -c "import ast; ast.parse(...)"` 语法检查通过
+- [x] warehouse_v7 端到端：HTTP 200 抓取正常 + 标题是 LLM 生成的 "Warehouse V7 ..."
+- [x] agv_fleet_v7 端到端：Step 14 status=passed
+- [x] 两个项目都成功 push 到本地 bare remote
+
+## v7.3.1 — 2026-07-23 — Vite 端口冲突 + tsconfig 注释 + Step 13 KeyError 修复
+
+### 修改文件
+- `backend/app/services/loop_engineering_v7.py`
+
+### 修复点
+1. **Vite dev server 端口冲突** (`TypeError: Received [5173, 5173, 5173]`)
+   - 根因: dev script 含 `--port 5173` + 启动时再追加 `--port 5173` + vite.config.ts
+     又写 `port: 5173`（或 LLM 写 `port: 3000, open: true`）三层叠加
+   - 修复:
+     - 自动清理 vite.config.ts 中的 `open: true/false` 整行（无头环境会卡）
+     - 自动清理 vite.config.ts 中 `server.port` 字段（保留 `host`）
+     - dev 脚本端口由 5173 改为 5174（避免与系统其他 5173 进程冲突）
+     - 启动代码先读 dev script，如已含 `--port`/`--host` 则**不再追加**
+     - HTTP 抓取先尝试 `/index.html`（Vite 2.x 默认行为），再回退到 `/`
+2. **tsconfig.json JS 注释解析失败**
+   - 根因: LLM 生成 tsconfig 时插入了 `/* ... */` 块注释（JSON5 风格）
+   - 修复: 解析前用 regex 剥离块注释和行注释（保留 url://）
+3. **Step 13 静态分析打回后 `KeyError: 'review'`**
+   - 根因: `_check_cross_module_imports` 命中硬错误时构造了 `final_review`
+     但没写入 `history[-1]`，循环结束后访问 `history[-1]["review"]` 崩溃
+   - 修复: 静态分析分支也执行 `history[-1]["review"] = final_review`
+4. **HTTP 抓取 race condition**
+   - 根因: TCP 端口就绪 ≠ HTTP server 就绪（Vite 2.x 中间件需 100-300ms 挂载）
+   - 修复: 8 次重试 × 0.5s 间隔，且先试 `/index.html` 再试 `/`
+5. **`is_ts4` 引用前未定义**
+   - 根因: 变量在 `if not os.path.exists(ts_path)` 内定义，但 `else` 分支也用到
+   - 修复: 把 `is_ts4` 提到 if-block 之前
+
+### 验证结果（隔离环境 /tmp/loop_v7_test）
+- [x] warehouse_v7_test（前端）：35/35 checks pass，Step 14 all_passed=True
+- [x] HTTP 抓取 `/index.html` 返回 `<!DOCTYPE html>...<title>智能仓储多机器人调度系统</title>`
+- [x] dev_server.log 显示 `vite v2.9.18 dev server running at: http://127.0.0.1:5174/`
+- [x] agv_fleet_v7_test（机器人）：16/16 checks pass，Step 14 all_passed=True
+- [x] 两个项目都通过 Step 13 跨模块 import 静态分析
+
+### 状态
+✅ Vite 端口冲突 + tsconfig 注释 + Step 13 KeyError 全部修复；前端 + 机器人两端到端均通过

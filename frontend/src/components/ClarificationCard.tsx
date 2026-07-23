@@ -33,6 +33,9 @@
 #   - 2026-07-02 | v3.3.0 | handleSubmit 检测选中项含"跳过不确定项"关键词时改走 onConfirm
 #     确认推进路径，修复选项路径提交后工作流停留在 clarifying 无法推进到架构设计的 Bug；
 #     跳过选项按钮单击即时触发 onConfirm，无需再点"提交回答"
+#   - 2026-07-23 | v3.4.0 | 修复跳过按钮无防重入的 Bug：新增 skipInFlight 状态与
+#     triggerSkipConfirm 包装函数，单次点击只触发一次 onConfirm，避免后端
+#     designing→prompting 阶段边界校验失败
 # ============================================================
  */
 
@@ -111,6 +114,10 @@ export default function ClarificationCard({
   const [otherInputs, setOtherInputs] = useState<Record<number, string>>({});
   // 是否已提交（提交后禁用，避免重复提交）
   const [submitted, setSubmitted] = useState(false);
+  // v3.4.0 修复（Bug：跳过按钮无防重入）：单次点击只触发一次 onConfirm，
+  //   防止快速连点/双击导致后端 confirming→designing 推进与 designing→prompting
+  //   校验失败的问题
+  const [skipInFlight, setSkipInFlight] = useState(false);
 
   // 轮次变化时重置提交状态和选择（防御性，配合 key={roundNumber} 重挂载）
   useEffect(() => {
@@ -127,6 +134,28 @@ export default function ClarificationCard({
     () => renderMarkdown(summary || ''),
     [summary]
   );
+
+  /**
+   * 触发跳过意图的 onConfirm 回调
+   * v3.4.0 修复（Bug：跳过按钮无防重入）：跳过选项按钮或跳过主按钮被连点时，
+   *   通过 skipInFlight 状态防止重复触发，避免后端 designing→prompting 校验失败
+   * 调用方：跳过选项按钮 onClick、跳过主按钮 onClick。
+   * 被调用方：父组件传入的 onConfirm 回调。
+   * 输入参数：无
+   * 输出返回值：无（副作用：触发 onConfirm）
+   */
+  const triggerSkipConfirm = () => {
+    if (skipInFlight || submitted) return;
+    if (!onConfirm) return;
+    setSkipInFlight(true);
+    try {
+      onConfirm(workflowId);
+    } finally {
+      // 异步回调可能在父组件弹窗关闭后还未完成，
+      // 用 setTimeout 在下一帧重置以保证本次点击不会重复触发
+      setTimeout(() => setSkipInFlight(false), 0);
+    }
+  };
 
   /**
    * 切换某个问题的某个选项的选中状态
@@ -194,7 +223,7 @@ export default function ClarificationCard({
     // 跳过意图：走确认推进路径（/clarify/confirm → advance_stage → 架构设计），
     // 不设 submitted、不调用 onSubmit，避免触发新一轮 chat/stream 澄清
     if (hasSkipIntent && onConfirm) {
-      onConfirm(workflowId);
+      triggerSkipConfirm();
       return;
     }
     const answersText = lines.join('\n\n');
@@ -266,10 +295,10 @@ export default function ClarificationCard({
                     return (
                       <button
                         key={oi}
-                        disabled={submitted}
+                        disabled={submitted || (isSkipOption && skipInFlight)}
                         onClick={() => {
                           if (isSkipOption && onConfirm) {
-                            onConfirm(workflowId);
+                            triggerSkipConfirm();
                           } else {
                             toggleOption(i, opt, allowMultiple);
                           }
@@ -332,8 +361,11 @@ export default function ClarificationCard({
               {/* v3.0.0 新增：6 轮后显示"跳过不确定项"按钮 */}
               {roundNumber >= 6 && onConfirm && (
                 <button
-                  onClick={() => onConfirm?.(workflowId)}
-                  className="mt-1 rounded-lg border border-yellow-500/50 px-4 py-2 text-sm text-yellow-300 hover:bg-yellow-500/10 transition-colors"
+                  disabled={skipInFlight}
+                  onClick={triggerSkipConfirm}
+                  className={`mt-1 rounded-lg border border-yellow-500/50 px-4 py-2 text-sm text-yellow-300 hover:bg-yellow-500/10 transition-colors ${
+                    skipInFlight ? 'opacity-60 cursor-not-allowed' : ''
+                  }`}
                 >
                   跳过不确定项，进入架构设计
                 </button>
@@ -351,8 +383,11 @@ export default function ClarificationCard({
             <div className="space-y-3">
               <p>AI 未能生成新的澄清问题，您可以跳过剩余不确定项直接进入架构设计。</p>
               <button
-                onClick={() => onConfirm?.(workflowId)}
-                className="rounded-lg border border-yellow-500/50 px-4 py-2 text-sm text-yellow-300 hover:bg-yellow-500/10 transition-colors"
+                disabled={skipInFlight}
+                onClick={triggerSkipConfirm}
+                className={`rounded-lg border border-yellow-500/50 px-4 py-2 text-sm text-yellow-300 hover:bg-yellow-500/10 transition-colors ${
+                  skipInFlight ? 'opacity-60 cursor-not-allowed' : ''
+                }`}
               >
                 跳过不确定项，进入架构设计
               </button>
