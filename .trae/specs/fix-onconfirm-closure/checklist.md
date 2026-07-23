@@ -1,0 +1,5 @@
+- [x] workflowIdRef 随 sessionDetail.session.workflow_id 实时更新
+- [x] onConfirm 使用 workflowIdRef.current 获取 workflow_id
+- [x] 首次渲染时（sessionDetail 未加载）ref 为 undefined，不崩溃
+- [x] sessionDetail 加载后 ref 有值，onConfirm 正常发起 API 调用
+- [x] 无 TypeScript 编译错误

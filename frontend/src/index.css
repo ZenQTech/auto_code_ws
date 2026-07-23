@@ -1,0 +1,646 @@
+/* ============================================================
+ * 全局样式文件 - Hermes 风格
+ * ============================================================
+ * 核心作用：定义全局基础样式、滚动条、字体、动画变量
+ * 配色方案：
+ *   - 深色背景: #0a0a0f
+ *   - 主色调:   #f0a030 (金橙色)
+ *   - 辅助色:   #2a2520 (暖灰)
+ * ============================================================
+ * 修改记录：
+ *   v1.0.0 - 2026-06-17：初始版本，Hermes 风格全局样式
+ *   v1.1.0 - 2026-06-17：Hermes 风格 UI 重构，添加动画、滚动条、字体优化
+ *   v1.2.0 - 2026-06-17：添加模态弹窗淡出动画（modal-out）
+ *   v1.3.0 - 2026-06-23：预留视觉深化相关样式
+ *   v1.4.0 - 2026-06-23：重写 body 背景为多层（径向高光 + 渐变 + SVG 噪点纹理）；添加 prefers-reduced-motion 支持
+ *   v1.5.0 - 2026-06-23：扩展 CSS 变量（阴影 / 缓动 / 圆角 / 字体阶梯）
+ *   v1.6.0 - 2026-06-23：新增交互公共类（btn-primary/btn-ghost/icon-btn/card-hoverable/input-glow）、过渡关键帧（lift-in/collapse-y/msg-enter）、玻璃拟态（glass/glass-strong/glow-hermes）、加载骨架屏（skeleton/empty-state）
+ *   v1.7.0 - 2026-06-24：字体排版规范（Inter + 5 级字号工具类 + 错误卡 + 微交互 + message-toolbar-in 动画）
+ *   v1.7.1 - 2026-06-24：修复 PostCSS 警告 — 将 @import url(Inter 字体) 移到文件首部，遵循 CSS 规范（@import 必须先于其他规则）
+ * ============================================================
+ */
+
+/* Inter 字体引入（Google Fonts CDN）— 英文主字体 + display=swap 避免阻塞首屏
+ * 注意：@import 必须在所有其他 CSS 规则（@charset 除外）之前声明，
+ *       否则 PostCSS / 浏览器都会报 "@import must precede all other statements" 警告。 */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+/* ============================================================
+ * 性能与可访问性：减少动效偏好支持
+ * 作用：当用户系统启用「减少动效」偏好时，将所有非必要动效与平滑滚动降级为瞬时切换，
+ *       避免长时间动画对前庭功能敏感用户造成不适，同时保留必要状态指示。
+ * 范围：通过通用选择器覆盖全局动画与过渡，确保所有新动效自动遵守。
+ * ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* 性能规范：backdrop-filter 仅用于模态框、Toast、浮动面板，禁止用于整页 body 背景 */
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================================
+ * 全局 CSS 设计变量（阴影 / 缓动 / 圆角 / 字体阶梯）
+ * 作用：在 :root 上统一暴露 Hermes 风格系统的核心设计变量，
+ *       供组件内联样式或第三方扩展按需引用，与 Tailwind theme 保持一一对应。
+ * 设计原则：变量名使用 kebab-case 与 CSS 规范一致；命名空间清晰（--shadow-* / --ease-* / --radius-* / --font-*）。
+ * ============================================================ */
+:root {
+  /* 分级阴影：4 级 + Hermes 主色调光晕 */
+  --shadow-level-1: 0 1px 2px 0 rgba(0,0,0,0.25), 0 1px 3px 0 rgba(0,0,0,0.15);
+  --shadow-level-2: 0 4px 6px -1px rgba(0,0,0,0.30), 0 2px 4px -1px rgba(0,0,0,0.20);
+  --shadow-level-3: 0 10px 15px -3px rgba(0,0,0,0.40), 0 4px 6px -2px rgba(0,0,0,0.20);
+  --shadow-level-4: 0 25px 50px -12px rgba(0,0,0,0.60);
+  --shadow-glow-hermes: 0 0 24px rgba(240,160,48,0.35);
+  --shadow-glow-hermes-lg: 0 0 48px rgba(240,160,48,0.45), 0 0 12px rgba(240,160,48,0.30);
+  --shadow-glow-hermes-sm: 0 0 8px rgba(240,160,48,0.25);
+  --shadow-inner-hairline: inset 0 0 0 1px rgba(255,255,255,0.06);
+
+  /* 过渡曲线：4 种 cubic-bezier */
+  --ease-material: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-expressive: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+
+  /* 圆角阶梯 */
+  --radius-xs: 4px;
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-2xl: 32px;
+
+  /* 字号阶梯 */
+  --font-size-xs: 12px;
+  --font-size-sm: 14px;
+  --font-size-base: 16px;
+  --font-size-lg: 18px;
+  --font-size-xl: 24px;
+  --font-size-2xl: 32px;
+
+  /* 字重阶梯 */
+  --font-weight-regular: 400;
+  --font-weight-medium: 500;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+}
+
+/* ============================================================
+ * 全局基础样式
+ * ============================================================ */
+/* body 全局基础样式
+ * 作用：定义页面根元素的字体栈、字体平滑、底色与文字色。
+ * 设计：position: relative + min-height: 100vh 确保多层背景覆盖全视口；
+ *       overflow-x: hidden 防止径向渐变在水平方向溢出导致滚动条抖动。
+ * 多层背景：
+ *   - ::before 提供径向高光 + 线性渐变底色（z-index: -2），负责"大气感"光晕；
+ *   - ::after 提供 SVG 噪点纹理（z-index: -1），mix-blend-mode: overlay 叠加，
+ *     配合 opacity: 0.5 与原始 0.04 alpha，使最终视觉噪点强度 ≤ 0.04，
+ *     避免强烈颗粒感。
+ * 两层伪元素均设置 pointer-events: none，确保不拦截鼠标点击事件。
+ */
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto,
+    'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #0a0a0f;
+  color: #e0ddd8;
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+  /* 字体排版规范（豆包式）：正文 15px / 行高 1.75 / 字间距 0 */
+  font-size: 15px;
+  line-height: 1.75;
+  letter-spacing: 0;
+}
+
+/* body::before - 径向高光 + 线性渐变底色
+ * 作用：在 body 之上叠加两层柔和的 Hermes 金橙径向高光与一道上下深、中间略亮的渐变，
+ *       让深色背景具备「光从上洒下」的大气感。
+ * 性能：仅使用 background（不触发 layout），fixed 定位跟随视口不重排。
+ */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(240, 160, 48, 0.18), transparent 60%),
+    radial-gradient(ellipse 800px 400px at 90% 10%, rgba(240, 160, 48, 0.08), transparent 50%),
+    linear-gradient(180deg, #0a0a0f 0%, #0d0d14 50%, #0a0a0f 100%);
+}
+
+/* body::after - SVG 噪点纹理层
+ * 作用：在径向高光之上叠加细密噪点纹理，通过 overlay 混合模式与 0.5 不透明度
+ *       将原始 0.04 alpha 噪点进一步压低为视觉强度 ≤ 0.04，避免强烈颗粒感。
+ * 实现：使用 inline SVG (feTurbulence) 生成 200x200 可平铺噪点，通过 data URI 嵌入。
+ * 性能：仅使用 background-image / opacity（GPU 合成），不触发 layout。
+ */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.04 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  opacity: 0.5;
+  mix-blend-mode: overlay;
+}
+
+/* .bg-noise 标记类：作为 body class 上的语义化标记，
+   实际噪点由 body::after 伪元素以 SVG data URI 实现；
+   该类可被组件或第三方扩展识别并叠加额外纹理（如局部区域噪点）。 */
+.bg-noise {
+  position: relative;
+}
+
+/* ============================================================
+ * 自定义滚动条 - Hermes 配色
+ * ============================================================ */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #12121a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #3a3530;
+  border-radius: 3px;
+  transition: background 0.3s ease;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4a4540;
+}
+
+/* Firefox 滚动条 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #3a3530 #12121a;
+}
+
+/* Toast 淡入淡出动画 */
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-toast-in {
+  animation: toast-in 0.3s ease-out;
+}
+
+/* 模态弹窗淡入动画 */
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-modal-in {
+  animation: modal-in 0.25s ease-out;
+}
+
+/* 模态弹窗淡出动画 */
+@keyframes modal-out {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+}
+
+.animate-modal-out {
+  animation: modal-out 0.25s ease-in forwards;
+}
+
+/* ============================================================
+ * 全局过渡动画变量
+ * ============================================================ */
+:root {
+  --transition-fast: 150ms ease;
+  --transition-default: 300ms ease;
+  --transition-slow: 500ms ease;
+}
+
+/* ============================================================
+ * 全局动画类
+ * ============================================================ */
+.animate-fade-in {
+  animation: fadeIn 0.3s ease-out forwards;
+}
+
+.animate-slide-down {
+  animation: slideDown 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out forwards;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* ============================================================
+ * 微交互效果
+ * ============================================================ */
+
+/* 按钮 hover 时轻微上浮 + 阴影增强 */
+.btn-hermes {
+  @apply transition-all duration-300;
+}
+.btn-hermes:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(240, 160, 48, 0.15);
+}
+
+/* 卡片 hover 时边框高亮 */
+.card-hermes {
+  @apply transition-all duration-300;
+}
+.card-hermes:hover {
+  border-color: rgba(240, 160, 48, 0.3);
+  box-shadow: 0 2px 8px rgba(240, 160, 48, 0.08);
+}
+
+/* 输入框 focus 时发光效果 */
+.input-hermes {
+  @apply transition-all duration-300;
+}
+.input-hermes:focus {
+  box-shadow: 0 0 0 2px rgba(240, 160, 48, 0.2);
+  border-color: #f0a030;
+}
+
+/* 加载状态脉冲动画 */
+.loading-pulse {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* ============================================================
+ * 选中文本颜色
+ * ============================================================ */
+::selection {
+  background-color: rgba(240, 160, 48, 0.3);
+  color: #e0ddd8;
+}
+
+/* ============================================================
+ * 统一交互公共类（Task 3）
+ * 作用：所有按钮/卡片/链接/输入框的 hover、active、focus 反馈统一收口，
+ *       避免组件层散落写法导致视觉碎片化。
+ * 设计：颜色过渡 + transform 抬升 + 阴影升级 + 1px Hermes 金橙高光描边。
+ * 性能：仅使用 transform / box-shadow / border-color / background-color（GPU 合成）。
+ * ========================================================== */
+
+/* 主按钮（实心金橙） */
+.btn-primary {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md
+         bg-hermes-500 text-surface-50 font-medium
+         border border-hermes-500
+         shadow-level-1
+         transition-all duration-default ease-material
+         hover:bg-hermes-400 hover:border-hermes-400 hover:-translate-y-0.5 hover:shadow-glow-hermes
+         active:translate-y-0 active:scale-[0.97] active:shadow-level-1
+         disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:hover:shadow-level-1
+         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-50;
+}
+
+/* 次按钮（透明边框） */
+.btn-ghost {
+  @apply inline-flex items-center justify-center gap-2 px-4 py-2 rounded-md
+         bg-transparent text-surface-700 font-medium
+         border border-surface-500
+         transition-all duration-default ease-material
+         hover:text-hermes-400 hover:border-hermes-500 hover:bg-hermes-500/5 hover:-translate-y-0.5
+         active:translate-y-0 active:scale-[0.97]
+         disabled:opacity-50 disabled:cursor-not-allowed
+         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400 focus-visible:ring-offset-2 focus-visible:ring-offset-surface-50;
+}
+
+/* 图标按钮（圆形，纯图标） */
+.icon-btn {
+  @apply inline-flex items-center justify-center w-9 h-9 rounded-md
+         bg-transparent text-surface-700
+         transition-all duration-fast ease-material
+         hover:text-hermes-400 hover:bg-hermes-500/10 hover:shadow-glow-hermes-sm
+         active:scale-[0.94]
+         focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400;
+}
+
+/* 可悬停卡片（hover 时描边 + 抬升 + 阴影升级） */
+.card-hoverable {
+  @apply transition-all duration-default ease-material
+         border border-transparent
+         hover:-translate-y-0.5 hover:border-hermes-500/30 hover:shadow-level-2 hover:bg-surface-100/60;
+}
+
+/* 输入框 focus 光晕 */
+.input-glow {
+  @apply transition-all duration-default ease-material
+         bg-surface-100 border border-surface-500 text-surface-900 rounded-md
+         placeholder:text-surface-700
+         hover:border-surface-600
+         focus:outline-none focus:border-hermes-500 focus:shadow-glow-hermes-sm;
+}
+
+/* ============================================================
+ * 统一过渡动画（Task 4）
+ * 作用：覆盖模态框、面板、Toast、消息气泡的入场/退场/状态切换，
+ *       全部走 transform + opacity（GPU 合成），曲线分级。
+ * 时长：面板 / 模态 280ms，Toast 220ms，消息 240ms，呼吸 1.2s。
+ * ========================================================== */
+
+/* 通用抬升入场（translateY + scale + opacity） */
+@keyframes lift-in {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.animate-lift-in {
+  animation: lift-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 面板展开/收起（max-height + opacity） */
+@keyframes collapse-y {
+  0%   { max-height: 0;    opacity: 0; transform: translateY(-4px); }
+  100% { max-height: 600px; opacity: 1; transform: translateY(0); }
+}
+.panel-collapse {
+  animation: collapse-y 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  overflow: hidden;
+}
+
+/* 升级版模态框入场：scale 0.92→1 + opacity，expressive 曲线 280ms */
+@keyframes modal-in {
+  0%   { opacity: 0; transform: scale(0.92); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.animate-modal-in {
+  animation: modal-in 280ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 升级版模态框退场：反向，180ms material */
+@keyframes modal-out {
+  0%   { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.96); }
+}
+.animate-modal-out {
+  animation: modal-out 180ms cubic-bezier(0.4, 0, 1, 1) both;
+}
+
+/* 升级版 Toast 入场：220ms material 曲线（覆盖原 0.3s ease-out） */
+@keyframes toast-in {
+  0%   { opacity: 0; transform: translateY(-16px) scale(0.98); }
+  100% { opacity: 1; transform: translateY(0)     scale(1); }
+}
+.animate-toast-in {
+  animation: toast-in 220ms cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+/* 消息气泡首次出现呼吸高光（已由 Tailwind 暴露 .animate-breathing-highlight，
+   这里提供独立 CSS 版本以便直接用 class） */
+@keyframes breathing-highlight {
+  0%   { box-shadow: 0 0 0 0   rgba(240, 160, 48, 0); }
+  30%  { box-shadow: 0 0 0 4px rgba(240, 160, 48, 0.35); }
+  100% { box-shadow: 0 0 0 0   rgba(240, 160, 48, 0); }
+}
+.msg-breath {
+  animation: breathing-highlight 1.2s ease-out 1 both;
+  border-radius: var(--radius-lg);
+}
+
+/* 消息入场（translateY 8px + opacity 0→1，240ms 缓出） */
+@keyframes msg-enter {
+  0%   { opacity: 0; transform: translateY(8px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-msg-enter {
+  animation: msg-enter 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* ============================================================
+ * 玻璃拟态 + 主色调光晕（Task 5）
+ * 作用：为模态框、Toast、浮动面板提供统一玻璃质感与品牌光晕。
+ * 性能：backdrop-filter 仅用于顶层浮层（模态框/Toast/浮动面板），
+ *       禁止用于整页 body 背景（已在文件顶部声明）。
+ * ========================================================== */
+
+/* 玻璃拟态 */
+.glass {
+  background-color: rgba(18, 18, 26, 0.65);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: var(--shadow-level-3);
+}
+
+/* 玻璃拟态（强）—— 用于模态框主面板 */
+.glass-strong {
+  background-color: rgba(18, 18, 26, 0.78);
+  -webkit-backdrop-filter: blur(20px) saturate(160%);
+  backdrop-filter: blur(20px) saturate(160%);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: var(--shadow-level-4);
+}
+
+/* Hermes 金橙主色调光晕 */
+.glow-hermes {
+  box-shadow: var(--shadow-glow-hermes);
+}
+.glow-hermes-sm {
+  box-shadow: var(--shadow-glow-hermes-sm);
+}
+.glow-hermes-lg {
+  box-shadow: var(--shadow-glow-hermes-lg);
+}
+
+/* 品牌 Logo / 主操作按钮 hover 时增强光晕 */
+.glow-hermes-hover {
+  transition: box-shadow 220ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glow-hermes-hover:hover {
+  box-shadow: var(--shadow-glow-hermes-lg);
+}
+
+/* ============================================================
+ * 加载与空状态统一（Task 7.4）
+ * 作用：使用金橙渐变 + 脉冲动画的骨架屏，避免视觉突兀。
+ * 实现：渐变背景 + background-size: 200% + shimmer 动画
+ * ========================================================== */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(240, 160, 48, 0.10) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  border-radius: var(--radius-md);
+  animation: shimmer 1.6s linear infinite;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 3rem 1.5rem;
+  color: rgb(122, 117, 112);
+  text-align: center;
+  gap: 0.75rem;
+}
+.empty-state .empty-icon {
+  width: 48px;
+  height: 48px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: rgba(240, 160, 48, 0.10);
+  color: var(--hermes-500, #f0a030);
+}
+
+/* ============================================================
+ * 字体排版规范（Task 1.4）— 5 级字号工具类
+ * 作用：统一中英文混排下的标题/正文/小字分级，配合 Inter 字体使用
+ * 设计：一级 2xl / 二级 xl / 三级 lg / 正文 15px / 辅助 xs + surface-500
+ * ========================================================== */
+@layer components {
+  .text-h1 {
+    @apply text-2xl font-semibold leading-tight tracking-tight;
+  }
+  .text-h2 {
+    @apply text-xl font-semibold leading-snug;
+  }
+  .text-h3 {
+    @apply text-lg font-medium leading-snug;
+  }
+  .text-body {
+    @apply text-[15px] font-normal leading-7 tracking-normal;
+  }
+  .text-caption {
+    @apply text-xs text-surface-500;
+  }
+
+  /* ============================================================
+   * 错误态卡片（Task 8.1）— 统一错误展示样式
+   * 作用：流式错误 / 网络失败 / 限流时使用，红色左竖条 + 浅红底 + 圆角 2xl
+   * 使用：<div class="error-card">网络似乎不给力，请稍后重试</div>
+   * ========================================================== */
+  .error-card {
+    @apply border-l-4 border-red-400 bg-red-50 text-red-700 rounded-2xl p-4;
+  }
+
+  /* ============================================================
+   * 微交互统一工具类（Task 9.1 / 9.2 / 9.3）
+   * 作用：补齐 hover / active / focus 三态反馈，遵循 150ms / 100ms / 200ms 时序
+   * 性能：仅使用 transform / box-shadow（GPU 合成）
+   * ========================================================== */
+
+  /* 按钮 hover 抬升 + 阴影增强（150ms） */
+  .btn-hover-lift {
+    transition: transform 150ms cubic-bezier(0.4, 0, 0.2, 1), box-shadow 150ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-hover-lift:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-level-2, 0 4px 12px rgba(0,0,0,0.08));
+  }
+
+  /* 按钮 active 按下反馈（100ms scale 0.97） */
+  .btn-active-press {
+    transition: transform 100ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .btn-active-press:active {
+    transform: scale(0.97);
+  }
+
+  /* focus 光环（200ms Hermes 金橙 3px ring） */
+  .focus-ring-hermes {
+    transition: box-shadow 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .focus-ring-hermes:focus {
+    box-shadow: 0 0 0 3px rgba(240, 160, 48, 0.2);
+    outline: none;
+  }
+}

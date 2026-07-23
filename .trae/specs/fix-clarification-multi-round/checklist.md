@@ -1,0 +1,11 @@
+- [x] `ClarifyResult` 包含 `round_number` 和 `max_rounds` 字段
+- [x] `ClarificationService.start_clarification()` 设置 `result.round_number=1, result.max_rounds=5`
+- [x] `ClarificationService.handle_user_response()` 设置 `result.round_number` 和 `result.max_rounds`
+- [x] `_format_clarify_result_for_sse()` 的 `clarify_questions` 事件包含 `round` 和 `maxRounds` 字段
+- [x] 首轮 `clarify_questions` SSE 事件同样包含 `round` 和 `maxRounds`
+- [x] `App.tsx` 的 `handleClarifyQuestions` 已正确消费 `data.round` 和 `data.maxRounds`
+- [x] `ClarificationCard` 在 `roundNumber` 变化时重置 `submitted` 为 `false`
+- [x] **v2.7.0 CRITICAL**: `hermes_service.py` clarifying 模式检查前置到开发需求检测之前
+- [x] **v2.7.0**: `useApi.ts` 修复 `event.max_rounds` → `event.maxRounds`
+- [x] **v2.0.0**: `ThinkingBlock.tsx` 视觉升级（左侧紫色边框 + 圆形图标背景 + 思考中自动展开）
+- [x] 后端 3 个文件 `ast.parse()` 语法检查通过

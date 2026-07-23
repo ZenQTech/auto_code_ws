@@ -1,0 +1,26 @@
+# Checklist
+
+- [x] App.tsx 中所有紫色/indigo 配色已替换为 Hermes 金橙色（hermes-*）
+- [x] App.tsx 中所有灰色背景已替换为 surface-* 色系
+- [x] Toast.tsx 配色为 Hermes 金橙色系，支持成功/错误/警告/信息类型
+- [x] PlanViewer.tsx 配色为 Hermes 金橙色系
+- [x] index.html body class 使用 Hermes 配色
+- [x] StatsBar.tsx 已删除
+- [x] PromptInput.tsx 已删除
+- [x] AgentManager.tsx 已删除
+- [x] UsagePanel.tsx（浮动版）已删除
+- [x] useApi.ts 中遗留 API 函数已清理
+- [x] 对话消息具有 fade-in + slide-up 入场动画
+- [x] 打字指示器使用金橙色跳动圆点
+- [x] 发送按钮 hover/active/disabled 状态样式正确
+- [x] 用量面板切换按钮有旋转动画，面板有滑入/滑出过渡
+- [x] API 调用次数有进度条展示（相对于配额 10000）
+- [x] Token 消耗使用格式化数字展示
+- [x] 用量面板整体视觉布局优化
+- [x] PlanViewer 模态框打开/关闭动画流畅
+- [x] Markdown 内容渲染样式清晰（标题层次、代码块、分隔线）
+- [x] 移动端（<640px）布局正常显示
+- [x] 平板（640-1024px）布局正常显示
+- [x] 用量面板在移动端为底部抽屉式
+- [x] 前端构建无编译错误
+- [x] 所有页面元素视觉一致性检查通过

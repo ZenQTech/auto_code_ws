@@ -1,0 +1,4 @@
+# 查询指定 AGV 状态
+string agv_id
+---
+agv_msgs/VehicleState state

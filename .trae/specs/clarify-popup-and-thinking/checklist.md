@@ -1,0 +1,11 @@
+- [x] `clarify_questions` SSE 事件首轮和第二轮均正确发送
+- [x] 澄清阶段有思考过程 `thinking` 事件输出（`result.summary` 作为 thinking 内容）
+- [x] `ClarificationModal` 组件渲染半透明遮罩 + 居中卡片
+- [x] 弹窗打开时聊天区不可交互（遮罩覆盖，`fixed inset-0 z-50`）
+- [x] 提交澄清回答后弹窗关闭（`setShowClarifyModal(false)`）
+- [x] 新一轮 `clarify_questions` 到达后弹窗重新打开
+- [x] 澄清完成时弹窗关闭
+- [x] 弹窗内选项可正常点击选择（ClarificationCard 功能不变）
+- [x] 弹窗内提交按钮正常提交
+- [x] 流式方法 `chat_with_hermes_streaming` 增加 `not is_clarifying_mode` 守卫
+- [x] 后端 `ast.parse()` 语法检查通过

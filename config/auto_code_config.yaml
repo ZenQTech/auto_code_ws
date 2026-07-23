@@ -1,0 +1,254 @@
+# ============================================================
+# 智能体调度平台 V4.1 - 全局配置中心
+# ============================================================
+# 核心作用：定义平台所有可配置参数，包括配额管控、Git 管理、
+#           人工节点、迭代次数、告警通知、本地拦截层等
+# 运行流程：系统启动时读取此文件，初始化各模块配置
+# 输入参数：无（静态配置文件）
+# 输出结果：各模块通过 Config 类读取对应配置项
+# 修改记录：
+#   - 2026-06-24 | v4.1.0 | 从 settings.yaml 升级为完整全局配置中心
+# ============================================================
+
+# ---- 服务配置 ----
+server:
+  host: "0.0.0.0"
+  port: 8080
+  cors_origins: ["*"]
+
+# ---- 数据库配置 ----
+database:
+  type: "sqlite"
+  path: "data/platform.db"
+
+# ---- CLI 集成配置 ----
+cli:
+  # Claude Code CLI 可执行文件名或绝对路径
+  # - 默认 "claude"：BaseCLIExecutor 会通过 shutil.which + 常见安装路径（nvm/npm 全局）
+  #   自动解析为绝对路径，无需手动配置
+  # - 也可显式设置为绝对路径绕过自动解析，例如：/home/user/.nvm/versions/node/v20.0.0/bin/claude
+  # - 2026-07-22 v5.2.0: 切换为 "curl" 启用 CurlLLMExecutor
+  #   原因: claude.exe 持续 *** stack smashing detected *** (exit -6)
+  #   兜底: curl 直接调用 volcengine OpenAI 格式 API (Bearer token)
+  executable: "curl"
+  default_timeout: 600
+  max_retries: 3
+  retry_base_delay: 2
+  max_concurrent: 5
+  env:
+    ANTHROPIC_AUTH_TOKEN: "${ANTHROPIC_AUTH_TOKEN}"
+    ANTHROPIC_BASE_URL: "https://ark.cn-beijing.volces.com/api/coding"
+    ANTHROPIC_MODEL: "deepseek-v4-flash"
+    ANTHROPIC_DEFAULT_OPUS_MODEL: "deepseek-v4-pro[1m]"
+    ANTHROPIC_DEFAULT_SONNET_MODEL: "deepseek-v4-pro[1m]"
+    ANTHROPIC_DEFAULT_HAIKU_MODEL: "deepseek-v4-flash"
+    CLAUDE_CODE_SUBAGENT_MODEL: "deepseek-v4-flash"
+    CLAUDE_CODE_EFFORT_LEVEL: "max"
+    API_TIMEOUT_MS: "3000000"
+    CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "1"
+
+# ---- 调度策略配置 ----
+scheduling:
+  strategy: "least_loaded"
+  max_iterations: 5
+  health_check_interval: 30
+
+# ---- Hermes 配置 ----
+hermes:
+  executable: "hermes"
+  default_timeout: 600
+  max_retries: 3
+  retry_base_delay: 2
+
+# ---- 日志配置 ----
+logging:
+  level: "INFO"
+  dir: "logs"
+  max_bytes: 10485760
+  backup_count: 5
+
+# ---- 存储配置 ----
+storage:
+  data_dir: "data"
+  workspace_dir: "workspace"
+
+# ============================================================
+# V4.1 新增：配额全流程管控配置
+# ============================================================
+quota:
+  # 配额基准（Coding Plan Pro）
+  per_5_hours: 6000       # 每 5 小时滚动窗口配额
+  per_week: 45000         # 每周配额（周一 00:00 重置）
+  per_month: 90000        # 每月配额（订阅日重置）
+
+  # 三级告警阈值（百分比）
+  alert_level_1: 50       # 一级告警：50% 消耗
+  alert_level_2: 80       # 二级告警：80% 消耗
+  alert_level_3: 100      # 三级告警：100% 消耗（熔断）
+
+  # 并行任务限流联动（按告警等级）
+  max_parallel_normal: 5       # 无告警时最大并行数
+  max_parallel_level_1: 3      # 一级告警时最大并行数
+  max_parallel_level_2: 2      # 二级告警时最大并行数
+  max_parallel_level_3: 1      # 三级告警时最大并行数
+
+  # 单分钟最大调用次数（按告警等级）
+  max_calls_per_minute_normal: 20
+  max_calls_per_minute_level_1: 15
+  max_calls_per_minute_level_2: 10
+  max_calls_per_minute_level_3: 5
+
+  # 熔断恢复规则
+  auto_restart_high_priority: true   # 5小时维度恢复后是否自动重启高优先级任务
+  auto_restart_wait_minutes: 60      # 等待用户确认的分钟数
+
+  # 低优先级任务防饿死
+  low_priority_starvation_hours: 24  # 低优先级任务等待超过此时长临时提权
+
+# ============================================================
+# V4.1 新增：上下文生命周期管理配置
+# ============================================================
+context:
+  compression_threshold: 70          # 上下文压缩触发阈值（百分比）
+  max_context_tokens: 200000         # 最大上下文 Token 数
+  reserved_constraint_tokens: 50000  # 全局约束保留 Token 数
+
+# ============================================================
+# V4.1 新增：架构设计批判迭代配置
+# ============================================================
+architecture:
+  max_critic_iterations: 3           # 架构批判最大迭代次数
+  max_human_rejections: 2            # 人工驳回最大次数
+
+# ============================================================
+# V4.1 新增：系统评测配置
+# ============================================================
+evaluation:
+  max_iterations: 2                  # 系统评测最大迭代次数
+
+# ============================================================
+# V4.1 新增：人工确认节点超时配置
+# ============================================================
+human_review:
+  default_timeout_hours: 24          # 默认超时时限（小时）
+  stall_days: 7                      # 超时超过此天数标记为暂停状态
+  # 各节点可单独配置
+  nodes:
+    architecture_confirm: 24
+    high_risk_security_review: 24
+    evaluation_confirm: 24
+    simulation_verify: 24
+
+# ============================================================
+# V4.1 新增：任务超时默认标准配置
+# ============================================================
+task_timeout:
+  # 任务类型 -> 默认超时(分钟) -> 超时上限(分钟)
+  global_interface: { default: 30, max: 60 }
+  lightweight_code: { default: 30, max: 60 }
+  lightweight_bugfix: { default: 30, max: 60 }
+  single_module_coding: { default: 60, max: 120 }
+  engineering_implementation: { default: 60, max: 120 }
+  simulation_engineering: { default: 60, max: 120 }
+  core_algorithm: { default: 90, max: 180 }
+  cpp_performance_optimization: { default: 90, max: 180 }
+  architecture_design: { default: 120, max: 240 }
+  architecture_critic: { default: 120, max: 240 }
+  system_evaluation: { default: 120, max: 240 }
+  integration_check: { default: 120, max: 240 }
+
+# ============================================================
+# V4.1 新增：API 调用异常处理配置
+# ============================================================
+api_error_handling:
+  network_error_max_retries: 1       # 网络错误最大重试次数
+  network_error_backoff_base: 1      # 退避基础间隔（秒）
+  network_error_backoff_multiplier: 2
+  timeout_consecutive_limit: 2       # 连续超时次数限制
+  platform_error_max_retries: 1      # 平台错误最大重试次数
+  format_error_max_rewrites: 1       # 格式错误最大重写次数
+
+# ============================================================
+# V4.1 新增：Git 版本管理配置
+# ============================================================
+git:
+  # 分支策略模式：default（main+dev）/ gitflow（master/develop/feature/release）/ custom
+  branch_strategy: "default"
+  # 默认双分支模式
+  default_branches:
+    stable: "main"
+    development: "dev"
+  # Gitflow 兼容模式
+  gitflow_branches:
+    stable: "master"
+    development: "develop"
+    feature_prefix: "feature/"
+    release_prefix: "release/"
+  # 保护分支（禁止自动提交/合并）
+  protected_branches: ["main", "master"]
+  # 自动提交模式：per_module（单模块完成）/ milestone（里程碑节点）/ disabled（关闭）
+  auto_commit_mode: "milestone"
+  # 自动提交内容范围
+  commit_extensions: [".py", ".cpp", ".h", ".hpp", ".yaml", ".yml", ".xml", ".launch", ".md", ".txt", ".cfg", ".cmake"]
+  # 忽略文件模式
+  ignore_patterns: ["*.pyc", "__pycache__", "*.o", "*.so", "build/", "devel/", "install/", "logs/", "*.log", ".data/"]
+
+# ============================================================
+# V4.1 新增：记忆库配置
+# ============================================================
+memory_store:
+  # 向量检索模型
+  embedding_model: "bge-small-zh-v1.5"
+  code_embedding_model: "bge-small-code-v1.5"
+  # 本地模型路径（离线部署）
+  local_model_path: "models/"
+  # 相似度匹配阈值
+  similarity_threshold: 0.75
+  # 最大检索结果数
+  max_search_results: 10
+
+# ============================================================
+# V4.1 新增：安全管控配置
+# ============================================================
+security:
+  # 高风险模块审核迭代上限
+  max_review_iterations: 3
+  # 安全校验工具配置
+  tools:
+    cppcheck_enabled: true
+    clang_tidy_enabled: true
+    pylint_enabled: true
+    roslint_enabled: true
+
+# ============================================================
+# V4.1 新增：告警通知配置
+# ============================================================
+notification:
+  # 通知渠道：webhook / log_only
+  channel: "log_only"
+  webhook_url: ""
+  # 告警等级过滤
+  min_alert_level: "warning"  # info / warning / error / critical
+
+# ============================================================
+# V4.1 新增：本地拦截层配置
+# ============================================================
+local_intercept:
+  enabled: true
+  cache_ttl_seconds: 300
+  knowledge_base_path: "data/knowledge_base/"
+
+# ============================================================
+# GitHub 自动推送配置
+# ============================================================
+github:
+  # GitHub Personal Access Token（通过环境变量 GITHUB_TOKEN 注入）
+  token: "${GITHUB_TOKEN}"
+  # 默认仓库可见性：private / public
+  default_visibility: "private"
+  # 是否启用自动推送
+  auto_push_enabled: true
+  # 推送重试次数
+  max_push_retries: 3
+  # 推送重试延迟（秒）
+  push_retry_delay: 5

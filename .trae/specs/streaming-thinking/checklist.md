@@ -1,0 +1,25 @@
+# Checklist
+
+- [x] CLIExecutor 支持 `execute_streaming()` 逐行流式读取 stdout
+- [x] 流式执行每行立即回调，进程结束回调 None
+- [x] 流式执行支持超时控制
+- [x] HermesExecutor 支持 `chat_streaming()` 方法
+- [x] 思考内容（` thinking` 标签内）正确识别为 thinking 类型
+- [x] 回答内容（标签外）正确识别为 text 类型
+- [x] 流式输出完成后回调 done 信号
+- [x] `POST /api/hermes/chat/stream` SSE 端点存在且可用
+- [x] SSE 端点推送正确格式的 `thinking`、`text`、`done`、`error` 事件
+- [x] 前端 `chatWithHermesStreaming()` 函数正确解析 SSE 事件
+- [x] ThinkingBlock 组件支持折叠/展开切换
+- [x] ThinkingBlock 折叠/展开有平滑过渡动画
+- [x] ThinkingBlock 思考中状态显示旋转动画图标
+- [x] ThinkingBlock 思考完成状态显示展开/收起按钮
+- [x] 发送消息后立即创建空 Hermes 消息占位
+- [x] thinking 内容实时追加到 ThinkingBlock
+- [x] text 内容实时追加到消息内容区域
+- [x] done 信号后消息状态更新为完成
+- [x] "思考中"状态标签显示金橙色旋转动画
+- [x] "回答中"状态标签显示脉冲动画 + 闪烁光标
+- [x] "回答完成"状态标签显示绿色勾选图标
+- [x] 前端构建无编译错误
+- [x] 后端语法检查无错误

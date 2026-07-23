@@ -1,0 +1,5 @@
+- [x] database.py 模块头使用 `#` 行注释格式（非 `"""...#..."""` 格式）
+- [x] 所有现有功能（引擎、会话工厂、get_db、init_db、_run_legacy_migration）保持不变
+- [x] workflows 表 v2.5.0 迁移逻辑（10 个缺失列）完整保留
+- [x] `ast.parse()` 语法检查通过
+- [x] `init_db()` 运行时验证通过

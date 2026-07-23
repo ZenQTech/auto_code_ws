@@ -1,0 +1,16 @@
+- [x] `hermes_executor.py` 的 `chat()` 方法转义反引号和 `$`
+- [x] `hermes_executor.py` 的 `chat_streaming()` 方法转义反引号和 `$`
+- [x] `hermes_executor.py` 的 `optimize_prompt()` 方法转义反引号和 `$`
+- [x] `hermes_service.py` 的 `_build_chat_command()` 转义反引号和 `$`
+- [x] `hermes_service.py` 的 `_build_optimize_command()` 转义反引号和 `$`
+- [x] `hermes_service.py` 的 `_build_plan_command()` 转义反引号和 `$`
+- [x] `prompt_optimizer.py` 的 `_build_optimize_command()` 转义反引号和 `$`
+- [x] `task_planner.py` 的 `_build_plan_command()` 转义反引号和 `$`
+- [x] `validator.py` 的 `_build_validation_command()` 转义反引号和 `$`
+- [x] `agent_roles/requirement_clarifier.py` 转义反引号和 `$`
+- [x] `agent_roles/critical_reviewer.py` 转义反引号和 `$`
+- [x] `agent_roles/chief_architect.py` 转义反引号和 `$`
+- [x] `agent_roles/quality_manager.py` 转义反引号和 `$`
+- [x] `agent_roles/prompt_engineer.py` 转义反引号和 `$`
+- [x] `agent_roles/test_reviewer.py` 转义反引号和 `$`
+- [x] 反引号/`$` 转义与双引号转义数量完全匹配（各 35 处），无遗漏

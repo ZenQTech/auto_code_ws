@@ -1,0 +1,7 @@
+# 申请路径区域预留
+string zone_id
+string agv_id
+builtin_interfaces/Duration estimated_occupancy
+---
+bool granted
+string message

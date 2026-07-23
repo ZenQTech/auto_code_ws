@@ -1,0 +1,9 @@
+# 更新安全参数
+string agv_id                     # 空表示所有 AGV
+float32 safety_distance_front     # 前方安全距离 (m)
+float32 safety_distance_side      # 侧方安全距离 (m)
+float32 deceleration_distance     # 减速距离 (m)
+float32 max_speed                 # 最大速度 (m/s)
+---
+bool success
+string message

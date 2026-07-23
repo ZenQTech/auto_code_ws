@@ -1,0 +1,28 @@
+# Checklist: 开源项目调研报告补充
+
+- [x] 互联网搜索完成，至少发现 3-5 个新项目（实际发现 6 个）
+- [x] 每个新项目的 GitHub README 已阅读并分析
+- [x] 每个新项目的官方文档/架构说明已阅读（如有）
+- [x] 新项目分析按现有报告框架编写（基础信息、定位、痛点、功能、差距、ROI）
+- [x] 现有 11 个项目的深度分析已补充（Composio AO、OpenCode、Aider 等）
+- [x] 核心差距矩阵（第四章）已更新，新增能力差距行（8 项）
+- [x] 建议优先级路线（第五章）已更新
+- [x] 关键洞察与差异化定位（第六章）已更新
+- [x] 报告版本号已更新为 v2.1.0
+- [x] 报告头部已添加变更记录（v2.0.0 + v2.1.0）
+- [x] 参考资料（第七章）已补充
+- [x] 附录 A 调研项目快速参考表已更新（17 个项目）
+- [x] 报告整体结构完整、格式一致、无遗漏章节
+- [x] OpenCode 仓库地址已修正（sst/opencode），仓库变迁历史已标注
+- [x] OpenCode Star 数已修正（161K）、MAU 已修正（750 万）
+- [x] OpenCode 技术栈描述已修正（删除错误的 "Go+TS"）、Desktop 框架已修正（Tauri）
+- [x] Anthropic 封锁日期已修正（2026-01-09）
+- [x] OpenClaw Star 数已修正（250K+）
+- [x] Ruflo Star 数已修正（58K+）
+- [x] Hermes Agent Star 数已修正（103K+），GEPA + ICLR 2026 Oral 已补充
+- [x] OpenAgents 许可证已修正（Apache 2.0），GitHub 地址已补充
+- [x] OpenHands 论文描述已修正，Star 数已补充（74.4K）
+- [x] oh-my-claudecode npm 包名/版本/安装方式已补充
+- [x] Microsoft Conductor 版本/发布时间/官方博客已补充
+- [x] 附录 A 所有 Star 数和许可证已同步更新
+- [x] 参考资料章节已同步更新

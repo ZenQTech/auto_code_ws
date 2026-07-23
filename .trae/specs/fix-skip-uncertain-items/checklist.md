@@ -1,0 +1,9 @@
+- [x] confirm_stage("clarifying") 在 clarification_complete=False 时不再返回错误
+- [x] confirm_stage("clarifying") 在 clarification_complete=False 时自动设为 True
+- [x] confirm_stage("clarifying") 仍保留 requirement_doc 非空检查
+- [x] 前端 onConfirm 回调检查 API 返回的 success 字段
+- [x] API 返回 success=false 时不关闭弹窗
+- [x] API 返回 success=false 时不调用 handleStartDesignPhase()
+- [x] API 返回 success=true 时正常关闭弹窗并调用 handleStartDesignPhase()
+- [x] 无 TypeScript 编译错误
+- [x] 无 Python 语法错误

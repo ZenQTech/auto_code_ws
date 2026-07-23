@@ -1,0 +1,11 @@
+- [x] renderMarkdown() 正确解析标准表格（`| A | B |` 语法）
+- [x] renderMarkdown() 正确解析含对齐符的表格（`|:---|:---:|` 语法）
+- [x] renderMarkdown() 表格输出包含 Tailwind 样式（边框、斑马纹、表头加粗）
+- [x] renderMarkdown() 正确解析独立 `---` 行为 `<hr>` 分隔线
+- [x] ArchitectureDesignModal 预览标签页使用 renderMarkdown 渲染需求文档
+- [x] ArchitectureDesignModal 空文档时显示「（暂无需求文档内容）」提示
+- [x] ArchitectureDesignModal 预览标签页中表格、标题、代码块格式正确
+- [x] ClarificationCard summary 区域使用 renderMarkdown 渲染
+- [x] ClarificationCard summary 的 Markdown 格式（列表、粗体）正确渲染
+- [x] 无 TypeScript 编译错误
+- [x] 无新增 ESLint 警告

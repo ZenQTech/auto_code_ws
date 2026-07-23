@@ -1,0 +1,9 @@
+# 外部系统下发异步任务（含跟踪反馈）
+agv_msgs/TaskSpec task
+---
+float32 progress                  # 进度 0.0-1.0
+string status_detail              # 状态详情
+---
+bool success
+string task_id
+string error_msg

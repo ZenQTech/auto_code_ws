@@ -1,0 +1,3 @@
+# 查询全车队状态
+---
+agv_msgs/FleetState fleet_state

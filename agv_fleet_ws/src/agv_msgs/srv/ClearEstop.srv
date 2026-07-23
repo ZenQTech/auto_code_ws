@@ -1,0 +1,5 @@
+# 解除急停
+string agv_id
+---
+bool success
+string message

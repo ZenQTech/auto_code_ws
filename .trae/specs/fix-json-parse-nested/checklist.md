@@ -1,0 +1,4 @@
+- [x] `_parse_clarify_response` 支持嵌套 JSON 对象解析（使用 `json.JSONDecoder.raw_decode()`）
+- [x] 含嵌套 questions 数组的 LLM 输出正确解析为 `ClarifyResult`（questions count=1, options 正确）
+- [x] `clarify_questions` SSE 事件将正确发送（`result.questions` 非空 → `_format_clarify_result_for_sse` 进入 questions 分支）
+- [ ] 前端 `ClarificationModal` 弹窗正常显示（需重启后端生效）

@@ -1,0 +1,5 @@
+# 人工触发急停
+string agv_id
+string reason
+---
+bool success

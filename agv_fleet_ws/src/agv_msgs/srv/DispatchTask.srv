@@ -1,0 +1,6 @@
+# 下发新任务
+agv_msgs/TaskSpec task           # 任务规格
+---
+bool success                     # 是否成功
+string task_id                   # 分配的任务 ID
+string message                   # 响应消息

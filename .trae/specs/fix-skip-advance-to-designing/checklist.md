@@ -1,0 +1,9 @@
+- [x] ClarificationCard.handleSubmit 检测选中项含"跳过不确定项"关键词
+- [x] 命中跳过意图时调用 onConfirm(workflowId)，不调用 onSubmit、不触发 chat/stream
+- [x] 未命中跳过意图时 onSubmit 原逻辑保持不变
+- [x] confirm_stage("clarifying") 在 requirement_doc 为空时先 finalize_requirement_doc 再推进
+- [x] finalize 后文档仍为空才返回 success=False
+- [x] 勾选"跳过不确定项"选项提交后，工作流 current_stage 推进到 designing
+- [x] 推进后触发架构设计批判迭代弹窗（start-design-phase）
+- [x] 前端 dist 重新构建，无 TypeScript 编译错误
+- [x] 无 Python 语法错误

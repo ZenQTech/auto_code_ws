@@ -1,0 +1,3 @@
+- [x] 截断 JSON 自动修复后解析成功（`questions=1, summary=需求分析`）
+- [x] 修复失败时重试 LLM 调用（`clarify_round` 中 `questions` 为空时重试）
+- [x] `questions` 为空时不会卡死前端（JSON 修复 + LLM 重试双重保障）

@@ -1,0 +1,27 @@
+# Checklist: 开源项目调研报告逐条事实核查
+
+- [x] Composio AO 所有数据已验证或标记为无法验证（Star 7.5K、7 个 Plugin Slot、v0.9.3、仓库转移 AgentWrapper）
+- [x] Claude Squad 所有数据已验证或标记为无法验证（Star 6.1k+、config.json、Go 为主）
+- [x] OpenCode 所有数据已验证或标记为无法验证（v1.16.0、TypeScript 57.6%）
+- [x] Anthropic Agent Teams 所有数据已验证或标记为无法验证
+- [x] Ruflo 所有数据已验证或标记为无法验证
+- [x] Codexia/Vibe Kanban 所有数据已验证或标记为无法验证
+- [x] Aider 所有数据已验证或标记为无法验证
+- [x] Hermes Agent 所有数据已验证或标记为无法验证
+- [x] OpenClaw 所有数据已验证或标记为无法验证（前身修正为 Clawdbot→Moltbot→OpenClaw、Star 247K+、创始人 Peter Steinberger）
+- [x] Cursor/Windsurf 所有数据已验证或标记为无法验证
+- [x] WorkMate 所有数据已验证或标记为无法验证
+- [x] OMC 所有数据已验证或标记为无法验证（19 个 Agent、6 种执行模式、Star 35.5k、v4.14.4、39 Skills）
+- [x] Microsoft Conductor 所有数据已验证或标记为无法验证（v0.1.16、MIT、2026-05-14）
+- [x] OpenHands 所有数据已验证或标记为无法验证（Star 77.1K）
+- [x] OpenAgents 所有数据已验证或标记为无法验证（Star 2.1k、Apache 2.0）
+- [x] LangChain Open SWE 所有数据已验证或标记为无法验证
+- [x] Claude Code Agentrooms 所有数据已验证或标记为无法验证
+- [x] Gartner 预测报告引用已验证
+- [x] Anthropic 政策变更日期和内容已验证
+- [x] 参考资料链接已验证
+- [x] 附录 A 所有 Star 数和许可证已验证并更新
+- [x] 所有不实信息已修正（9 大类 30+ 处）
+- [x] 无法验证的声明已标注来源
+- [x] 报告版本已更新为 v2.2.0
+- [x] 变更记录已添加

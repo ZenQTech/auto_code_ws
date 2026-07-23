@@ -1,0 +1,411 @@
+<?xml version="1.0"?>
+<!--
+  Warehouse World for AGV Simulation
+  Dimensions: 25m x 20m (500m²)
+  Layout: 4 rows x 10 shelf groups
+  2 main corridors (3m wide) + 4 secondary corridors (2m wide)
+  Charging area + Loading docks
+-->
+<sdf version="1.8">
+<world name="warehouse">
+
+  <!-- Physics configuration -->
+  <physics name="default_physics" default="true" type="ignored">
+    <max_step_size>0.001</max_step_size>
+    <real_time_factor>1.0</real_time_factor>
+    <real_time_update_rate>1000</real_time_update_rate>
+  </physics>
+
+  <!-- Global light -->
+  <light name="sun" type="directional">
+    <pose>0 0 15 0 0 0</pose>
+    <diffuse>0.8 0.8 0.8 1.0</diffuse>
+    <specular>0.2 0.2 0.2 1.0</specular>
+    <direction>-0.5 0.1 -0.9</direction>
+  </light>
+
+  <!-- Ground plane -->
+  <model name="ground_plane">
+    <static>true</static>
+    <link name="link">
+      <collision name="collision">
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>30 25</size>
+          </plane>
+        </geometry>
+      </collision>
+      <visual name="visual">
+        <geometry>
+          <plane>
+            <normal>0 0 1</normal>
+            <size>30 25</size>
+          </plane>
+        </geometry>
+        <material>
+          <ambient>0.3 0.3 0.3 1.0</ambient>
+          <diffuse>0.5 0.5 0.5 1.0</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- ============================================ -->
+  <!-- Walls                                        -->
+  <!-- ============================================ -->
+  <model name="wall_north">
+    <static>true</static>
+    <pose>0 10 0.5 0 0 0</pose>
+    <link name="link">
+      <collision name="collision">
+        <geometry><box><size>25 0.2 1</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>25 0.2 1</size></box></geometry>
+        <material>
+          <ambient>0.7 0.7 0.7 1.0</ambient>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="wall_south">
+    <static>true</static>
+    <pose>0 -10 0.5 0 0 0</pose>
+    <link name="link">
+      <collision name="collision">
+        <geometry><box><size>25 0.2 1</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>25 0.2 1</size></box></geometry>
+        <material>
+          <ambient>0.7 0.7 0.7 1.0</ambient>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="wall_east">
+    <static>true</static>
+    <pose>12.5 0 0.5 0 0 0</pose>
+    <link name="link">
+      <collision name="collision">
+        <geometry><box><size>0.2 20 1</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.2 20 1</size></box></geometry>
+        <material>
+          <ambient>0.7 0.7 0.7 1.0</ambient>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <model name="wall_west">
+    <static>true</static>
+    <pose>-12.5 0 0.5 0 0 0</pose>
+    <link name="link">
+      <collision name="collision">
+        <geometry><box><size>0.2 20 1</size></box></geometry>
+      </collision>
+      <visual name="visual">
+        <geometry><box><size>0.2 20 1</size></box></geometry>
+        <material>
+          <ambient>0.7 0.7 0.7 1.0</ambient>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- ============================================ -->
+  <!-- Shelf Rows (4 rows x 10 groups, 2m spacing)   -->
+  <!-- ============================================ -->
+  <!-- Row 1 (top) -->
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_1_1</name>
+    <pose>-9 7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_1_2</name>
+    <pose>-7 7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_1_3</name>
+    <pose>-5 7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_1_4</name>
+    <pose>-3 7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_1_5</name>
+    <pose>-1 7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_1_6</name>
+    <pose>1 7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_1_7</name>
+    <pose>3 7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_1_8</name>
+    <pose>5 7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_1_9</name>
+    <pose>7 7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_1_10</name>
+    <pose>9 7.5 0 0 0 0</pose>
+  </include>
+
+  <!-- Row 2 -->
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_2_1</name>
+    <pose>-9 2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_2_2</name>
+    <pose>-7 2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_2_3</name>
+    <pose>-5 2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_2_4</name>
+    <pose>-3 2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_2_5</name>
+    <pose>-1 2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_2_6</name>
+    <pose>1 2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_2_7</name>
+    <pose>3 2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_2_8</name>
+    <pose>5 2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_2_9</name>
+    <pose>7 2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_2_10</name>
+    <pose>9 2.5 0 0 0 0</pose>
+  </include>
+
+  <!-- Row 3 -->
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_3_1</name>
+    <pose>-9 -2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_3_2</name>
+    <pose>-7 -2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_3_3</name>
+    <pose>-5 -2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_3_4</name>
+    <pose>-3 -2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_3_5</name>
+    <pose>-1 -2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_3_6</name>
+    <pose>1 -2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_3_7</name>
+    <pose>3 -2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_3_8</name>
+    <pose>5 -2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_3_9</name>
+    <pose>7 -2.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_3_10</name>
+    <pose>9 -2.5 0 0 0 0</pose>
+  </include>
+
+  <!-- Row 4 (bottom) -->
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_4_1</name>
+    <pose>-9 -7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_4_2</name>
+    <pose>-7 -7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_4_3</name>
+    <pose>-5 -7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_4_4</name>
+    <pose>-3 -7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_4_5</name>
+    <pose>-1 -7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_4_6</name>
+    <pose>1 -7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_4_7</name>
+    <pose>3 -7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_4_8</name>
+    <pose>5 -7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_4_9</name>
+    <pose>7 -7.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://shelf</uri>
+    <name>shelf_4_10</name>
+    <pose>9 -7.5 0 0 0 0</pose>
+  </include>
+
+  <!-- ============================================ -->
+  <!-- Charging Stations (4 positions)               -->
+  <!-- ============================================ -->
+  <include>
+    <uri>model://charging_station</uri>
+    <name>charger_1</name>
+    <pose>-10 -8.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://charging_station</uri>
+    <name>charger_2</name>
+    <pose>-8 -8.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://charging_station</uri>
+    <name>charger_3</name>
+    <pose>-6 -8.5 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://charging_station</uri>
+    <name>charger_4</name>
+    <pose>-4 -8.5 0 0 0 0</pose>
+  </include>
+
+  <!-- ============================================ -->
+  <!-- Loading Docks (2 positions)                   -->
+  <!-- ============================================ -->
+  <include>
+    <uri>model://loading_dock</uri>
+    <name>dock_1</name>
+    <pose>10.5 -8 0 0 0 0</pose>
+  </include>
+  <include>
+    <uri>model://loading_dock</uri>
+    <name>dock_2</name>
+    <pose>10.5 -5 0 0 0 0</pose>
+  </include>
+
+  <!-- ============================================ -->
+  <!-- Corridor Floor Markings                      -->
+  <!-- ============================================ -->
+  <!-- Main corridor 1: between rows 1-2 (y=5) -->
+  <model name="corridor_marking_1">
+    <static>true</static>
+    <pose>0 5 0.001 0 0 0</pose>
+    <link name="link">
+      <visual name="visual">
+        <geometry><box><size>21 3.0 0.001</size></box></geometry>
+        <material>
+          <ambient>0.2 0.6 0.2 0.3</ambient>
+          <diffuse>0.2 0.6 0.2 0.3</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- Main corridor 2: between rows 3-4 (y=-5) -->
+  <model name="corridor_marking_2">
+    <static>true</static>
+    <pose>0 -5 0.001 0 0 0</pose>
+    <link name="link">
+      <visual name="visual">
+        <geometry><box><size>21 3.0 0.001</size></box></geometry>
+        <material>
+          <ambient>0.2 0.6 0.2 0.3</ambient>
+          <diffuse>0.2 0.6 0.2 0.3</diffuse>
+        </material>
+      </visual>
+    </link>
+  </model>
+
+  <!-- Secondary corridors: vertical gaps between shelf groups (x positions) -->
+  <!-- Corridors at x=-8, -6, -4, -2, 0, 2, 4, 6, 8 -->
+
+  <!-- ============================================ -->
+  <!-- AGV Spawn Points (will be spawned via launch) -->
+  <!-- ============================================ -->
+
+</world>
+</sdf>

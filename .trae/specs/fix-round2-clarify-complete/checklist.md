@@ -1,0 +1,4 @@
+- [x] `clarification_service.py` 中 `'completed'` → `'COMPLETED'`
+- [x] `get_workflow_status` 不再报 `LookupError`（枚举值匹配）
+- [x] 澄清完成时 `ClarificationModal` 弹窗正常显示（渲染条件 `isComplete` 时也通过）
+- [x] `handleClarifyQuestions` 中 `data.complete` 时不再关闭弹窗

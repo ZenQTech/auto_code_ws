@@ -1,0 +1,7 @@
+# 执行停靠任务
+string dock_point_id              # 停靠点 ID
+---
+float32 distance_to_dock          # 距停靠点距离 (m)
+---
+bool success
+string message

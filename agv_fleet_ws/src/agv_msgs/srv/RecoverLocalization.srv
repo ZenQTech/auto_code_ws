@@ -1,0 +1,5 @@
+# 定位恢复请求
+string agv_id
+---
+bool success
+string message

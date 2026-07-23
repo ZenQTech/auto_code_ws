@@ -1,0 +1,22 @@
+# Checklist
+
+- [ ] 批判反思智能体系统提示词已定义，覆盖架构批判、需求迭代、缺陷清单输出
+- [ ] 质量保障智能体系统提示词已定义，覆盖验收标准制定、代码质量检查
+- [ ] `critique_architecture` 方法正确调用 LLM 并输出结构化缺陷清单（缺陷ID、严重程度、位置描述、影响范围、修复方案）
+- [ ] `iterate_requirement` 方法基于批判结果生成需求文档 V2.0
+- [ ] `generate_acceptance_criteria` 方法生成可量化的验收标准文档
+- [ ] `workflow_engine._execute_designing_phase` 正确编排 7 个子步骤
+- [ ] designing 阶段各步骤通过 SSE `designing_progress` 事件向前端推送进度
+- [ ] `architecture_result` SSE 事件在需求文档 V2.0 生成后正确发送
+- [ ] `ArchitectureModal` 组件标题固定为"架构设计与批判迭代阶段"
+- [ ] `ArchitectureModal` 包含 Markdown 文档预览区
+- [ ] `ArchitectureModal` 包含"确认通过"和"返回修改"按钮
+- [ ] "确认通过"调用 `/api/workflow/{id}/designing/confirm` 并触发验收标准制定
+- [ ] "返回修改"调用 `/api/workflow/{id}/designing/revise` 并重新执行批判迭代
+- [ ] 验收标准文档覆盖所有功能点的验证方法与通过条件
+- [ ] 验收标准包含代码质量、性能指标、安全合规、兼容性量化指标
+- [ ] spec.md 包含系统架构设计、模块划分、全局接口规范、安全架构、技术选型
+- [ ] tasks.md 包含任务分解、责任分配、依赖关系
+- [ ] checklist.md 包含开发、测试、部署各阶段检查项
+- [ ] Git 仓库自动创建并初始化，文档提交至主分支
+- [ ] 用户确认不通过时系统正确返回步骤 2 重新执行架构批判

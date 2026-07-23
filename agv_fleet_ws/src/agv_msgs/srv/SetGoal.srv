@@ -1,0 +1,4 @@
+# 设定 AGV 目标点
+geometry_msgs/PoseStamped target_pose
+---
+bool success

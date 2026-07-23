@@ -1,0 +1,5 @@
+- [x] questions=0 && !isComplete && round>=3 时显示跳过按钮
+- [x] 点击跳过按钮调用 onConfirm 进入架构设计流程
+- [x] round>=6 且有问题的原有跳过按钮仍正常工作
+- [x] onConfirm 使用 sessionDetail.session.workflow_id 双重回退，不会静默失败
+- [x] 无 TypeScript 编译错误

@@ -1,0 +1,5 @@
+# 动态切换调度策略
+string strategy                   # shortest_path | least_load | auction
+---
+bool success
+string message

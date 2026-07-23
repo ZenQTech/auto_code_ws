@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+  Loading Dock Model
+  Dimensions: 2.0m x 2.0m x 0.2m
+-->
+<sdf version="1.8">
+<model name="loading_dock">
+  <static>true</static>
+  <link name="dock_platform">
+    <pose>0 0 0.1 0 0 0</pose>
+    <collision name="collision">
+      <geometry><box><size>2.0 2.0 0.2</size></box></geometry>
+    </collision>
+    <visual name="visual">
+      <geometry><box><size>2.0 2.0 0.2</size></box></geometry>
+      <material>
+        <ambient>0.7 0.7 0.2 1.0</ambient>
+        <diffuse>0.7 0.7 0.2 1.0</diffuse>
+      </material>
+    </visual>
+  </link>
+  <!-- Dock edge markers -->
+  <link name="edge_north">
+    <pose>0 0.95 0.15 0 0 0</pose>
+    <visual name="visual">
+      <geometry><box><size>2.0 0.1 0.1</size></box></geometry>
+      <material>
+        <ambient>1.0 0.8 0.0 1.0</ambient>
+      </material>
+    </visual>
+  </link>
+  <joint name="edge_north_joint" type="fixed">
+    <parent>dock_platform</parent>
+    <child>edge_north</child>
+  </joint>
+</model>
+</sdf>

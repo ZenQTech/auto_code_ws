@@ -1,0 +1,5 @@
+- [x] 需求文档有不确定项时 `clarification_complete` 强制为 False
+- [x] 6 轮后显示"是否继续澄清"提示（追加 ClarificationQuestion）
+- [x] 12 轮后（第 13 轮）强制进入架构设计
+- [x] 前端显示"跳过不确定项，进入架构设计"按钮（`roundNumber >= 6`）
+- [x] 不确定项检测验证通过（has=True, count=2）

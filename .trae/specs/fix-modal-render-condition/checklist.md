@@ -1,0 +1,5 @@
+- [x] round>=3 && questions=0 && !isComplete 时 ClarificationModal 正常显示
+- [x] round<3 && questions=0 && !isComplete 时行为不变（不弹窗）
+- [x] isComplete 时行为不变
+- [x] questions>0 时行为不变
+- [x] 无 TypeScript 编译错误

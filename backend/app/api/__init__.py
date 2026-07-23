@@ -1,0 +1,58 @@
+"""
+# ============================================================
+# API 路由聚合模块（V4.1 升级版）
+# ============================================================
+# 核心作用：聚合所有 API 子路由，统一注册到主应用
+# ============================================================
+# 修改记录：
+#   - 2026-06-17 | v1.1.0 | 新增 hermes 路由注册
+#   - 2026-06-23 | v1.2.0 | 新增 sessions 路由注册
+#   - 2026-06-24 | v4.1.0 | 新增 quota、architecture、evaluation、
+#     security、git、memory 路由注册
+#   - 2026-06-24 | v4.1.1 | 新增 architecture 路由注册（架构设计批判迭代 API）
+#   - 2026-06-24 | v4.1.2 | 新增 evaluation 路由注册（集成校验与系统评测 API）
+#   - 2026-06-24 | v4.1.3 | 新增 config 路由注册（全局配置中心 API）
+# ============================================================
+"""
+
+from fastapi import APIRouter
+
+from .agents import router as agents_router
+from .tasks import router as tasks_router
+from .conversations import router as conversations_router
+from .stats import router as stats_router
+from .workflow import router as workflow_router
+from .usage import router as usage_router
+from .hermes import router as hermes_router
+from .sessions import router as sessions_router
+from .quota import router as quota_router
+from .security import router as security_router
+from .git import router as git_router
+from .memory import router as memory_router
+from .architecture import router as architecture_router
+from .evaluation import router as evaluation_router
+from .config_endpoint import router as config_router
+from .workspace import router as workspace_router
+from .worktree import router as worktree_router
+from .dashboard import router as dashboard_router
+
+api_router = APIRouter()
+
+api_router.include_router(agents_router, prefix="/agents", tags=["智能体管理"])
+api_router.include_router(tasks_router, prefix="/tasks", tags=["任务管理"])
+api_router.include_router(conversations_router, prefix="/conversations", tags=["对话记录"])
+api_router.include_router(stats_router, prefix="/stats", tags=["统计信息"])
+api_router.include_router(workflow_router, prefix="/workflow", tags=["工作流"])
+api_router.include_router(usage_router, prefix="/usage", tags=["用量监控"])
+api_router.include_router(hermes_router, prefix="/hermes", tags=["Hermes 智能调度"])
+api_router.include_router(sessions_router, prefix="/sessions", tags=["会话管理"])
+api_router.include_router(quota_router, prefix="/quota", tags=["配额管控"])
+api_router.include_router(security_router, prefix="/security", tags=["安全管理"])
+api_router.include_router(git_router, prefix="/git", tags=["Git 版本管理"])
+api_router.include_router(memory_router, prefix="/memory", tags=["代码记忆库"])
+api_router.include_router(architecture_router, prefix="/architecture", tags=["架构设计批判迭代"])
+api_router.include_router(evaluation_router, prefix="/evaluation", tags=["集成校验与系统评测"])
+api_router.include_router(config_router, prefix="/config", tags=["全局配置中心"])
+api_router.include_router(workspace_router, prefix="/workspace", tags=["工作空间管理"])
+api_router.include_router(worktree_router, prefix="/worktree", tags=["Git Worktree"])
+api_router.include_router(dashboard_router, prefix="/dashboard", tags=["工作流监控"])

@@ -1,0 +1,8 @@
+# 请求全局路径规划
+geometry_msgs/PoseStamped start
+geometry_msgs/PoseStamped goal
+string map_frame
+---
+bool success
+nav_msgs/Path path
+string message
