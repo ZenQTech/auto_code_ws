@@ -1,5 +1,46 @@
 # 代码修改日志
 
+## 2026-07-24 | v6.0.1 | 修复"确认通过按钮无法选择"问题
+
+### 问题描述
+用户在 UI 端点击 ArchitectureDesignModal 中的"确认通过"按钮时，体感"无法选择"（点击无视觉反馈或无错误提示）。
+
+### 根因分析
+1. **App.tsx handleConfirmDesign 静默 return**（v5.7.0）：当 `workflowIdRef.current || sessionDetail?.session?.workflow_id || workflowStatus?.workflow_id` 都为 null 时，函数直接 `return`，用户在控制台只能看到 warn，UI 上无任何反馈
+2. **API 错误仅 console.error**（v5.7.0）：后端返回 `success=false` 或 `fetch` 抛出异常时，只在控制台打印错误，用户感知不到
+3. **按钮视觉过淡**（ArchitectureDesignModal v1.2.0）：`bg-purple-500/20` + `text-purple-300` 在深色背景下几乎不可见；缺少 `cursor-pointer`；没有 disabled 状态
+4. **handleConfirm 无防重入/错误捕获**（v1.2.0）：同步调用 `onConfirm()` 不 await，onConfirm 抛错时按钮可能永远卡住
+
+### 修改内容
+1. **frontend/src/App.tsx v5.8.0**：
+   - ① wfId 为 null 时从静默 return 改为 showToast 提示用户
+   - ② 点击后立即 setIsDesignLoading(true) 提供即时视觉反馈
+   - ③ 后端 success=false / API 异常时均通过 showToast 显示具体错误，不再仅 console.error
+   - ④ useCallback 依赖项追加 showToast，避免闭包过期
+2. **frontend/src/components/ArchitectureDesignModal.tsx v1.3.0**：
+   - ① 新增 isConfirming 本地状态实现按钮防重入 + 加载文字反馈（"确认中..."）
+   - ② 提升按钮视觉对比度：`bg-purple-500/40` + `text-white` + `shadow-md shadow-purple-500/20` + `✓` 图标
+   - ③ 加 `disabled={isConfirming}` + `cursor-pointer/cursor-wait` 让按钮交互状态可感知
+   - ④ handleConfirm 改为 async + try/catch/finally 防止 onConfirm 抛错时按钮永远卡住
+   - ⑤ isConfirming 的 useState 上移到所有 useState 之后、useMemo 之前，保持 v1.2.0 的 Hooks 顺序修复
+
+### 验证结果
+- ✅ TypeScript 编译通过（tsc --noEmit, exit 0）
+- ✅ Vite build 成功（66 modules, 319KB JS / 73KB CSS, 1.07s）
+- ✅ 后端 confirm-design API 测试：返回 success=true，含 spec/task/checklist/acceptance 文档
+- ✅ 按钮视觉对比度显著提升（白字 + 紫色背景 + 阴影）
+
+### 影响范围
+- 仅前端 UI 修复，不影响后端逻辑
+- 兼容 v1.2.0 修复（Hooks 顺序保持一致）
+- 向后兼容 handleConfirmDesign 调用方
+
+### 修改文件清单
+- frontend/src/App.tsx v5.7.0 → v5.8.0
+- frontend/src/components/ArchitectureDesignModal.tsx v1.2.0 → v1.3.0
+
+---
+
 ## 2026-07-24 | v6.0.0 | Loop v6 UI 端到端工作流验证（第二次执行）
 
 ### 验证任务
