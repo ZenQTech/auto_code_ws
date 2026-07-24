@@ -13,6 +13,9 @@
 #   - agent_id: str，智能体唯一标识
 #   - agent_info: dict，智能体配置信息
 # 输出结果：AgentInfo 对象，包含实例状态和统计信息
+# 修改记录：
+#   - 2026-07-24 | v5.8.0 | 健康检查间隔从 30s 提升至 90s（超时阈值 180s），
+#     解决 LLM 长调用（30-90s）期间被误判为离线的问题
 # ============================================================
 """
 
@@ -75,11 +78,14 @@ class AgentManager:
     被调用方：CLIExecutor
     """
 
-    def __init__(self, health_check_interval: int = 30):
+    def __init__(self, health_check_interval: int = 90):
         """
         初始化管理器
         参数：
           - health_check_interval: 健康检查间隔（秒）
+            v5.8.0 修改：从 30s 提升至 90s，因为 LLM 调用（如架构设计、批判分析）单次
+            可能耗时 30-90s，若间隔过短会导致健康检查在 LLM 调用过程中误判智能体离线。
+            超时阈值 = interval * 2 = 180s，可覆盖大多数 LLM 同步调用场景。
         """
         # 实例注册表：{agent_id: AgentInfo}
         self._agents: Dict[str, AgentInfo] = {}

@@ -22,9 +22,12 @@
  * #   - onReject: 返回修改回调（需传入驳回原因）
  * # 输出结果：模态弹窗 DOM
  * # 修改记录：
-#   - 2026-07-01 | v1.0.0 | 初始版本，创建架构设计批判迭代模态弹窗
-#   - 2026-07-01 | v1.1.0 | 文档预览区从纯文本改为 Markdown 渲染（renderMarkdown）
-# ============================================================
+#*   - 2026-07-01 | v1.0.0 | 初始版本，创建架构设计批判迭代模态弹窗
+ *   - 2026-07-01 | v1.1.0 | 文档预览区从纯文本改为 Markdown 渲染（renderMarkdown）
+ *   - 2026-07-24 | v1.2.0 | 修复 Hooks 调用顺序错误导致的 "Rendered more hooks than during
+ *     the previous render"：删除 isLoading 早返回中的 Hook 调用不一致点（useMemo 在早返回之后），
+ *     将 useMemo 上移到所有 useState 之后，确保每次渲染 Hooks 数量和顺序一致
+ * ============================================================
  */
 
 import React, { useState, useMemo } from 'react';
@@ -93,6 +96,9 @@ const SEVERITY_LABELS: Record<string, string> = {
  * 遮罩层不响应点击关闭事件
  */
 export default function ArchitectureDesignModal(props: ArchitectureDesignModalProps) {
+  // v1.2.0 修复（Bug：Hooks 调用顺序不一致导致 "Rendered more hooks than during the
+  //   previous render"）：所有 useState 必须在 useMemo 之前声明，避免在 isLoading=true 时
+  //   早返回导致 useMemo 缺失，造成两次渲染 Hooks 数量不一致。
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'defects'>('preview');
@@ -107,22 +113,7 @@ export default function ArchitectureDesignModal(props: ArchitectureDesignModalPr
     onReject,
   } = props;
 
-  /** 渲染加载状态 */
-  if (isLoading) {
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
-        <div className="bg-[#1a1a2e] border border-purple-500/30 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 p-8 text-center">
-          <div className="animate-spin w-12 h-12 border-4 border-purple-500/30 border-t-purple-400 rounded-full mx-auto mb-4" />
-          <p className="text-purple-300 text-lg">正在执行架构批判分析...</p>
-          <p className="text-gray-500 text-sm mt-2">
-            批判反思智能体 + 质量保障智能体正在协作分析架构方案
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  /** 统计缺陷分布 */
+  // 统计缺陷分布
   const criticalCount = critiqueResult?.defect_list.filter(
     (d) => d.severity === 'critical'
   ).length ?? 0;
@@ -136,9 +127,10 @@ export default function ArchitectureDesignModal(props: ArchitectureDesignModalPr
   /**
    * 使用 useMemo 缓存 Markdown 渲染结果
    * renderMarkdown 内部已做 HTML 转义（XSS 防护），可安全使用 dangerouslySetInnerHTML
+   * v1.2.0 修复：移到所有 useState 之后，确保 Hooks 顺序一致
    */
   const renderedRequirementV2 = useMemo(
-    () => renderMarkdown(requirementV2),
+    () => renderMarkdown(requirementV2 || ''),
     [requirementV2]
   );
 
@@ -160,6 +152,21 @@ export default function ArchitectureDesignModal(props: ArchitectureDesignModalPr
   const handleConfirm = () => {
     onConfirm();
   };
+
+  /** 渲染加载状态：v1.2.0 修复：必须放在所有 Hooks 之后 */
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+        <div className="bg-[#1a1a2e] border border-purple-500/30 rounded-2xl shadow-2xl max-w-2xl w-full mx-4 p-8 text-center">
+          <div className="animate-spin w-12 h-12 border-4 border-purple-500/30 border-t-purple-400 rounded-full mx-auto mb-4" />
+          <p className="text-purple-300 text-lg">正在执行架构批判分析...</p>
+          <p className="text-gray-500 text-sm mt-2">
+            批判反思智能体 + 质量保障智能体正在协作分析架构方案
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
