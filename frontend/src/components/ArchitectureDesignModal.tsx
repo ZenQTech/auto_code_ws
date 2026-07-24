@@ -27,6 +27,12 @@
  *   - 2026-07-24 | v1.2.0 | 修复 Hooks 调用顺序错误导致的 "Rendered more hooks than during
  *     the previous render"：删除 isLoading 早返回中的 Hook 调用不一致点（useMemo 在早返回之后），
  *     将 useMemo 上移到所有 useState 之后，确保每次渲染 Hooks 数量和顺序一致
+ *   - 2026-07-24 | v1.3.0 | 修复"确认通过按钮无法选择"问题：
+ *     ① 新增 isConfirming 本地状态实现按钮防重入 + 加载文字反馈（"确认中..."）；
+ *     ② 提升按钮视觉对比度（bg-purple-500/40 + text-white + shadow + ✓ 图标），原透明度
+ *        20% 在深色背景下几乎不可见；
+ *     ③ 加 disabled + cursor-pointer/cursor-wait 让按钮交互状态可感知；
+ *     ④ handleConfirm 改为 async + try/catch/finally 防止 onConfirm 抛错时按钮永远卡住
  * ============================================================
  */
 
@@ -99,9 +105,11 @@ export default function ArchitectureDesignModal(props: ArchitectureDesignModalPr
   // v1.2.0 修复（Bug：Hooks 调用顺序不一致导致 "Rendered more hooks than during the
   //   previous render"）：所有 useState 必须在 useMemo 之前声明，避免在 isLoading=true 时
   //   早返回导致 useMemo 缺失，造成两次渲染 Hooks 数量不一致。
+  // v1.3.0 增强：新增 isConfirming 状态支持按钮防重入 + 加载指示
   const [rejectReason, setRejectReason] = useState('');
   const [showRejectInput, setShowRejectInput] = useState(false);
   const [activeTab, setActiveTab] = useState<'preview' | 'defects'>('preview');
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const {
     requirementV2,
@@ -148,9 +156,17 @@ export default function ArchitectureDesignModal(props: ArchitectureDesignModalPr
     setShowRejectInput(false);
   };
 
-  /** 处理确认 */
-  const handleConfirm = () => {
-    onConfirm();
+  /** 处理确认 - v1.3.0 增强：增加加载状态 + 错误捕获 */
+  const handleConfirm = async () => {
+    if (isConfirming) return; // v1.3.0 防重入
+    setIsConfirming(true);
+    try {
+      await onConfirm();
+    } catch (e) {
+      console.error('ArchitectureDesignModal handleConfirm 异常:', e);
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   /** 渲染加载状态：v1.2.0 修复：必须放在所有 Hooks 之后 */
@@ -423,17 +439,19 @@ export default function ArchitectureDesignModal(props: ArchitectureDesignModalPr
               {showRejectInput ? '确认返回修改' : '返回修改'}
             </button>
 
-            {/* 确认按钮 */}
+            {/* 确认按钮 - v1.3.0 增强：提升视觉对比度 + 加 disabled 状态反映 isConfirming */}
             <button
               onClick={handleConfirm}
+              disabled={isConfirming}
               className={[
-                'px-6 py-2 rounded-lg text-sm font-medium transition-all',
-                'bg-purple-500/20 border border-purple-500/40 text-purple-300',
-                'hover:bg-purple-500/30 hover:border-purple-500/60',
+                'px-6 py-2 rounded-lg text-sm font-medium transition-all cursor-pointer',
+                'bg-purple-500/40 border border-purple-400/60 text-white shadow-md shadow-purple-500/20',
+                'hover:bg-purple-500/60 hover:border-purple-300 hover:shadow-purple-500/40',
                 'active:scale-95',
+                'disabled:opacity-60 disabled:cursor-wait',
               ].join(' ')}
             >
-              确认通过
+              {isConfirming ? '确认中...' : '✓ 确认通过'}
             </button>
           </div>
         </div>

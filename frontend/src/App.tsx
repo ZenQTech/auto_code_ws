@@ -68,6 +68,11 @@
 #     ② handleOpenLoopV7 回调调 setShowLoopV7Runner(true) 打开 Runner；
 #     ③ BrandHeader 透传 onOpenLoopV7，菜单点击触发 Runner 弹窗；
 #     ④ 主内容区域底部条件渲染 LoopV7Runner 组件
+#   - 2026-07-24 | v5.8.0 | 修复"确认通过按钮无法选择"问题（handleConfirmDesign）：
+#     ① wfId 为 null 时从静默 return 改为 showToast 提示用户；
+#     ② 点击后立即 setIsDesignLoading(true) 提供即时视觉反馈；
+#     ③ 后端 success=false / API 异常时均通过 showToast 显示具体错误，不再仅 console.error；
+#     ④ useCallback 依赖项追加 showToast，避免闭包过期
 # ============================================================
  */
 
@@ -910,22 +915,38 @@ export default function App() {
   const handleConfirmDesign = useCallback(async () => {
     // v5.6.0 修复：使用 workflowIdRef.current 避免闭包过期问题
     const wfId = workflowIdRef.current || sessionDetail?.session?.workflow_id || workflowStatus?.workflow_id;
-    if (!wfId) return;
+    if (!wfId) {
+      // v5.8.0 修复：wfId 为 null 时显示错误提示，避免静默 return 造成"按钮无反应"错觉
+      console.warn('handleConfirmDesign: 无 workflow_id，无法确认架构设计');
+      showToast('未找到工作流 ID，请刷新页面后重试', 'error');
+      return;
+    }
 
+    // v5.8.0 修复：点击后立即显示加载态 + 禁用按钮（防重入 + 即时视觉反馈）
+    setIsDesignLoading(true);
     try {
       const result = await confirmDesignPhase(wfId, true);
       if (result.success) {
         setShowDesignModal(false);
         setDesignModalData(null);
+        showToast('架构设计已确认，正在生成 spec/task/checklist 文档...', 'success');
         // 刷新工作流状态
         if (wfId) {
           fetchWorkflowStatus(wfId).then(setWorkflowStatus).catch(() => {});
         }
+      } else {
+        // v5.8.0 修复：后端返回 success=false 时显示具体错误
+        console.error('确认架构设计失败:', result);
+        showToast(`确认失败：${result.message || '未知错误'}`, 'error');
       }
     } catch (e) {
-      console.error('确认架构设计失败:', e);
+      // v5.8.0 修复：API 异常时显示错误提示，不再仅 console.error
+      console.error('确认架构设计异常:', e);
+      showToast(`确认失败：${e instanceof Error ? e.message : String(e)}`, 'error');
+    } finally {
+      setIsDesignLoading(false);
     }
-  }, [sessionDetail?.session?.workflow_id, workflowStatus?.workflow_id]);
+  }, [sessionDetail?.session?.workflow_id, workflowStatus?.workflow_id, showToast]);
 
   /**
    * 驳回架构设计（用户驳回 V2.0 需求，触发重新迭代）
