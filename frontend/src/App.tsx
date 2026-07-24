@@ -63,6 +63,11 @@
 #     ② handleStartDesignPhase / handleConfirmDesign / handleRejectDesign 改用
 #        workflowIdRef.current 读取最新 workflow_id，避免 sessionDetail 异步加载时闭包
 #        捕获 null 导致 "无 workflow_id" 警告 + 模态弹窗不弹出
+#   - 2026-07-24 | v5.7.0 | 集成 Loop v7 端到端工作流：
+#     ① 导入 LoopV7Runner 组件 + 新增 showLoopV7Runner state 控制弹窗显隐；
+#     ② handleOpenLoopV7 回调调 setShowLoopV7Runner(true) 打开 Runner；
+#     ③ BrandHeader 透传 onOpenLoopV7，菜单点击触发 Runner 弹窗；
+#     ④ 主内容区域底部条件渲染 LoopV7Runner 组件
 # ============================================================
  */
 
@@ -94,6 +99,7 @@ import ArchitectureDesignModal from './components/ArchitectureDesignModal';
 import ReviewReport from './components/ReviewReport';
 import PipelineProgress from './components/PipelineProgress';
 import GoalProgress from './components/GoalProgress';
+import LoopV7Runner from './components/LoopV7Runner';
 import type { Agent, Session, LoopWorkflowStatus, ReviewData, PipelineData, GoalData } from './types';
 
 /** localStorage 中保存当前激活会话 ID 的 key */
@@ -341,6 +347,9 @@ export default function App() {
 
   /** v3.6.0：控制 ClarificationModal 显示/隐藏 */
   const [showClarifyModal, setShowClarifyModal] = useState(false);
+
+  /** v5.7.0：控制 LoopV7Runner 弹窗显示/隐藏 */
+  const [showLoopV7Runner, setShowLoopV7Runner] = useState(false);
 
   // ============================================================
   // v1.9.0：Loop Engineering 工作流展示数据状态
@@ -712,6 +721,15 @@ export default function App() {
       showToast(`新建任务失败：${(e as Error).message}`, 'error');
     }
   }, [appMode, refetchSessions, showToast]);
+
+  /**
+   * v5.7.0：打开 Loop v7 端到端工作流弹窗
+   * 调用方：BrandHeader 三个点下拉菜单中的"🚀 Loop v7 工作流"项
+   * 行为：setShowLoopV7Runner(true) 弹出 LoopV7Runner 端到端运行器
+   */
+  const handleOpenLoopV7 = useCallback(() => {
+    setShowLoopV7Runner(true);
+  }, []);
 
   /**
    * 删除会话
@@ -1542,6 +1560,7 @@ export default function App() {
           onOpenUsage={() => setShowUsagePanel(prev => !prev)}
           onOpenFileExplorer={() => setFileExplorerOpen(prev => !prev)}
           fileExplorerOpen={fileExplorerOpen}
+          onOpenLoopV7={handleOpenLoopV7}
         />
 
         {/* ============================================================ */}
@@ -1989,6 +2008,14 @@ export default function App() {
       )}
         </>
         )}
+
+      {/* v5.7.0：Loop v7 端到端工作流弹窗
+       * 触发：BrandHeader 菜单"🚀 Loop v7 工作流"项 → handleOpenLoopV7
+       * 关闭：LoopV7Runner 内部 onClose 回调 setShowLoopV7Runner(false)
+       * 位置：根 fragment 末尾，z-index 由 LoopV7Runner 自身管理（z-50） */}
+      {showLoopV7Runner && (
+        <LoopV7Runner onClose={() => setShowLoopV7Runner(false)} />
+      )}
     </div>
       )}
     </>

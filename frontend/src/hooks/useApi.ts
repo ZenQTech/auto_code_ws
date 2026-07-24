@@ -1378,3 +1378,187 @@ export async function copyFile(project: string, sourcePath: string, targetPath: 
 export async function renameFile(project: string, path: string, newName: string): Promise<void> {
   await apiFetch(`/workspace/file/rename?project=${encodeURIComponent(project)}&path=${encodeURIComponent(path)}&new_name=${encodeURIComponent(newName)}`, { method: 'POST' });
 }
+
+// ============================================================
+// Loop Engineering v7 端到端工作流 API（v8.0.0 新增）
+// ============================================================
+
+/** Loop v7 工作流步骤信息 */
+export interface LoopV7Step {
+  step: number;
+  name: string;
+  success: boolean;
+  duration_s: number;
+  error: string | null;
+  output_keys: string[];
+}
+
+/** Loop v7 启动响应 */
+export interface LoopV7StartResponse {
+  workflow_id: string;
+  project_name: string;
+  project_type: string;
+  project_root: string;
+  success: boolean;
+  final_status: string;
+  duration_s: number;
+  steps: LoopV7Step[];
+  files_generated_count: number;
+  git_commits: number;
+  event_count: number;
+  files_generated_sample: string[];
+}
+
+/** Loop v7 Hook 事件 */
+export interface LoopV7HookEvent {
+  task_id: string;
+  module: string;
+  status: string;
+  message: string;
+  files_count: number;
+  timestamp: number;
+}
+
+/**
+ * 启动 Loop v7 端到端工作流（同步）
+ * 作用：调用 POST /api/workflow/loop-v7/start，等待完成后返回完整结果
+ * 调用方：LoopV7Runner 组件
+ * 参数：
+ *   - userInput: string，用户需求文本
+ *   - projectName: string，项目名
+ *   - projectType: 'frontend' | 'robot' | 'fullstack'
+ *   - userAnswers: 5 轮澄清答案（全部填"方案A"）
+ *   - realRun: bool，是否真实运行
+ *   - realPush: bool，是否真实 git push
+ * 返回值：LoopV7StartResponse，包含 15 步执行结果
+ */
+export async function startLoopV7(params: {
+  userInput: string;
+  projectName: string;
+  projectType: 'frontend' | 'robot' | 'fullstack';
+  userAnswers: string[];
+  realRun?: boolean;
+  realPush?: boolean;
+  qaMaxRounds?: number;
+}): Promise<LoopV7StartResponse> {
+  return apiFetch<LoopV7StartResponse>('/workflow/loop-v7/start', {
+    method: 'POST',
+    body: JSON.stringify({
+      user_input: params.userInput,
+      project_name: params.projectName,
+      project_type: params.projectType,
+      user_answers: params.userAnswers,
+      real_run: params.realRun ?? true,
+      real_push: params.realPush ?? true,
+      qa_max_rounds: params.qaMaxRounds ?? 2,
+    }),
+  });
+}
+
+/** Loop v7 健康检查 */
+export async function checkLoopV7Health(): Promise<{ status: string; version: string }> {
+  return apiFetch<{ status: string; version: string }>('/workflow/loop-v7/health');
+}
+
+/** Loop v7 进度回调 */
+export interface LoopV7ProgressCallbacks {
+  onHook?: (event: LoopV7HookEvent) => void;
+  onHeartbeat?: (data: { elapsed_steps: number; pending: boolean }) => void;
+  onCompleted?: (response: LoopV7StartResponse) => void;
+  onFailed?: (error: string) => void;
+}
+
+/**
+ * 启动 Loop v7 端到端工作流（SSE 流式）
+ * 作用：调用 POST /api/workflow/loop-v7/stream，实时推送每步进度
+ * 返回值：AbortController 用于停止
+ */
+export function startLoopV7Stream(
+  params: {
+    userInput: string;
+    projectName: string;
+    projectType: 'frontend' | 'robot' | 'fullstack';
+    userAnswers: string[];
+    realRun?: boolean;
+    realPush?: boolean;
+  },
+  callbacks: LoopV7ProgressCallbacks,
+): AbortController {
+  const controller = new AbortController();
+
+  (async () => {
+    try {
+      const response = await fetch('/api/workflow/loop-v7/stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_input: params.userInput,
+          project_name: params.projectName,
+          project_type: params.projectType,
+          user_answers: params.userAnswers,
+          real_run: params.realRun ?? true,
+          real_push: params.realPush ?? true,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        callbacks.onFailed?.(`HTTP ${response.status}: ${response.statusText}`);
+        return;
+      }
+
+      const reader = response.body?.getReader();
+      if (!reader) {
+        callbacks.onFailed?.('无法读取响应流');
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split('\n\n');
+        buffer = lines.pop() || '';
+
+        for (const block of lines) {
+          if (!block.trim()) continue;
+
+          // 解析 event 和 data
+          const eventMatch = block.match(/^event:\s*(.+)$/m);
+          const dataMatch = block.match(/^data:\s*(.+)$/m);
+          if (!eventMatch || !dataMatch) continue;
+
+          const eventName = eventMatch[1].trim();
+          try {
+            const data = JSON.parse(dataMatch[1]);
+            switch (eventName) {
+              case 'hook':
+                callbacks.onHook?.(data);
+                break;
+              case 'heartbeat':
+                callbacks.onHeartbeat?.(data);
+                break;
+              case 'workflow_completed':
+                callbacks.onCompleted?.(data);
+                break;
+              case 'workflow_failed':
+                callbacks.onFailed?.(data.error || '工作流失败');
+                break;
+            }
+          } catch (e) {
+            console.error('Failed to parse SSE data:', e);
+          }
+        }
+      }
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') return;
+      callbacks.onFailed?.(err instanceof Error ? err.message : '流式连接失败');
+    }
+  })();
+
+  return controller;
+}

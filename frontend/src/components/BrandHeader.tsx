@@ -27,6 +27,7 @@
  * #   - 2026-06-24 | v1.1.0 | 下拉菜单新增"文件浏览器"切换项（控制 fileExplorerOpen state）
  * #   - 2026-06-24 | v1.2.0 | 渲染模式切换 pill（解决 BrandHeader appMode prop 未渲染问题）
  * #   - 2026-06-24 | v1.3.0 | 删除模式切换 pill（信息密度过高；保留 Sidebar/ProjectSelector 入口）
+ * #   - 2026-07-24 | v1.4.0 | 新增 onOpenLoopV7 回调 + 菜单项"Loop v7 工作流"，提供端到端 15 步工作流启动入口
  * # ============================================================
  */
 
@@ -50,6 +51,8 @@ export interface BrandHeaderProps {
   onOpenFileExplorer?: () => void;
   /** v1.1.0 新增：当前文件浏览器显示状态（用于菜单项右侧状态指示） */
   fileExplorerOpen?: boolean;
+  /** v1.4.0 新增：打开 Loop v7 工作流弹窗回调（可选，提供则菜单显示"Loop v7 工作流"项） */
+  onOpenLoopV7?: () => void;
 }
 
 /**
@@ -59,7 +62,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -120,6 +123,16 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M3 7h18M9 12h6M9 16h6" />
         </svg>
       );
+    case 'rocket':
+      // v1.4.0 新增：火箭 - Loop v7 端到端工作流（菜单项图标）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z" />
+          <path d="M12 15l-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z" />
+          <path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0" />
+          <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -139,6 +152,7 @@ export default function BrandHeader({
   onOpenUsage,
   onOpenFileExplorer,
   fileExplorerOpen,
+  onOpenLoopV7,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -256,6 +270,23 @@ export default function BrandHeader({
                   ) : (
                     <span className="text-surface-400 text-xs">○</span>
                   )}
+                </button>
+              )}
+
+              {/* v1.4.0 新增：Loop v7 工作流（菜单项）
+               *  行为：点击调 onOpenLoopV7() 弹出 LoopV7Runner 端到端运行器
+               *  图标：火箭（rocket），强调端到端自动化全流程
+               *  父组件 App.tsx 透传回调以激活本项 */}
+              {onOpenLoopV7 && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenLoopV7)}
+                  className="w-full px-4 py-2 text-left text-sm text-hermes-700
+                             hover:bg-hermes-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <Icon name="rocket" className="w-4 h-4" />
+                  <span>🚀 Loop v7 工作流</span>
                 </button>
               )}
 
