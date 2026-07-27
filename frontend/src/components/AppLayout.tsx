@@ -37,6 +37,8 @@ import SubAgentWorkspacePanel from './SubAgentWorkspacePanel';
 import ChatView from './ChatView';
 import ModelSelector from './ModelSelector';
 import ReasoningIntensitySelector from './ReasoningIntensitySelector';
+/** v6.23.0 (Cycle 8 P0-12) 新增：Slash Commands 选择器 */
+import SlashCommandPicker from './SlashCommandPicker';
 import type { StreamingStatus } from './ChatMainArea';
 import type { ReasoningStage } from './ThinkingBlock';
 import type { Agent, ReviewData, PipelineData, GoalData } from '../types';
@@ -109,6 +111,12 @@ export interface AppLayoutProps {
   onOpenMultiAgentTree: () => void;
   /** v6.22.0 (Cycle 7 P0-11) 新增：打开 TRACE 规则管理面板 */
   onOpenTraceRule: () => void;
+  /** v6.23.0 (Cycle 8 P0-12) 新增：打开 Slash Commands 帮助面板 */
+  onOpenSlashCommand: () => void;
+  /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
+  onSlashCommandExecute: (command: string, args: string[]) => void;
+  /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
+  onSlashCommandClose: () => void;
 
   // 工具栏
   onModelChange: (id: string) => void;
@@ -207,6 +215,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenSessionRollout,  // v6.20.0 (Cycle 7 P0-9) 透传 BrandHeader
   onOpenMultiAgentTree,  // v6.21.0 (Cycle 7 P0-10) 透传 BrandHeader
   onOpenTraceRule,  // v6.22.0 (Cycle 7 P0-11) 透传 BrandHeader
+  onOpenSlashCommand,  // v6.23.0 (Cycle 8 P0-12) 透传 BrandHeader
+  onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
+  onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
   onReasoningIntensityChange,
   workflowStatusCurrentStage,
@@ -382,6 +393,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenSessionRollout={onOpenSessionRollout}
         onOpenMultiAgentTree={onOpenMultiAgentTree}
         onOpenTraceRule={onOpenTraceRule}
+        onOpenSlashCommand={onOpenSlashCommand}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}
@@ -483,7 +495,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
       )}
 
       {/* 固定底部输入区（玻璃拟态） */}
-      <div className="flex-shrink-0 px-4">
+      <div className="flex-shrink-0 px-4 relative">
         <div className="max-w-3xl mx-auto">
           <div className="bg-white/90 backdrop-blur-md border border-surface-200 rounded-3xl shadow-level-3 px-4 py-3 focus-within:shadow-glow-hermes focus-within:border-hermes-300 transition-all duration-default ease-material">
             <div className="flex items-end gap-3">
@@ -525,6 +537,14 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </div>
           </div>
         </div>
+        {/* v6.23.0 (Cycle 8 P0-12) 新增：Slash Commands 选择器
+         *  当 inputValue 以 / 开头时自动弹出，集成 18 个内置命令
+         *  提供键盘导航（↑↓ Enter Esc）和分类显示 */}
+        <SlashCommandPicker
+          inputValue={inputValue}
+          onExecute={onSlashCommandExecute}
+          onClose={onSlashCommandClose}
+        />
       </div>
     </div>
   );

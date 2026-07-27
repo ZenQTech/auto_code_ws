@@ -182,6 +182,8 @@ import SessionRolloutPanel from './components/SessionRolloutPanel';
 import MultiAgentTreePanel from './components/MultiAgentTreePanel';
 /** v5.6.0 (Cycle 7 P0-11) 新增：TRACE 规则管理面板 */
 import RulePanel from './components/RulePanel';
+/** v5.7.0 (Cycle 8 P0-12) 新增：Slash Commands 帮助面板 */
+import SlashCommandHelp from './components/SlashCommandHelp';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -318,6 +320,7 @@ export default function App() {
     sessionRollout: sessionRolloutModal,  // v1.8.0 (Cycle 7 P0-9) 新增
     multiAgentTree: multiAgentTreeModal,  // v1.9.0 (Cycle 7 P0-10) 新增
     traceRule: traceRuleModal,  // v2.0.0 (Cycle 7 P0-11) 新增
+    slashCommand: slashCommandModal,  // v2.1.0 (Cycle 8 P0-12) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -1522,6 +1525,41 @@ export default function App() {
   );
 
   /**
+   * v5.15.0 (Cycle 8 P0-12) 新增：Slash Command Picker 选中命令回调
+   * 作用：用户在 SlashCommandPicker 中选中命令后调用，将命令插入输入框
+   *      并立即执行（清空 input 触发 onSend）
+   * 参数：
+   *   - command: 命令名（不含 /）
+   *   - args: 参数列表
+   * 返回值：void
+   */
+  const handleSlashCommandExecute = useCallback(
+    (command: string, args: string[]) => {
+      // 构造完整命令字符串
+      const cmdStr = args.length > 0 ? `/${command} ${args.join(' ')}` : `/${command}`;
+      // 触发 handleSendMessage 的逻辑（通过设置 inputValue 然后模拟回车）
+      setInputValue(cmdStr);
+      // 立即异步发送
+      window.setTimeout(() => {
+        handleSendMessage();
+      }, 0);
+    },
+    [setInputValue]
+  );
+
+  /**
+   * v5.15.0 (Cycle 8 P0-12) 新增：关闭 Slash Command Picker
+   * 作用：清空 input 中以 / 开头的部分（不影响非命令输入）
+   * 返回值：void
+   */
+  const handleSlashCommandClose = useCallback(() => {
+    setInputValue((prev) => {
+      if (prev.startsWith('/')) return '';
+      return prev;
+    });
+  }, [setInputValue]);
+
+  /**
    * v3.6.0：提交澄清卡片的结构化回答，触发下一轮澄清
    * 作用：ClarificationCard 的 onSubmit 回调入口。将卡片汇总的结构化回答文本
    *       作为一条用户消息，通过 sendStreamingMessage 发送（带 sessionMode），
@@ -1790,6 +1828,9 @@ export default function App() {
           onOpenSessionRollout={() => sessionRolloutModal.onOpen()}
           onOpenMultiAgentTree={() => multiAgentTreeModal.onOpen()}
           onOpenTraceRule={() => traceRuleModal.onOpen()}
+          onOpenSlashCommand={() => slashCommandModal.onOpen()}
+          onSlashCommandExecute={handleSlashCommandExecute}
+          onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
           onReasoningIntensityChange={(i) => showToast(`推理强度已设为 ${i}`, 'info')}
           workflowStatusCurrentStage={workflowStatus?.current_stage ?? null}
@@ -2104,6 +2145,10 @@ export default function App() {
         <Cycle3Modal onClose={traceRuleModal.onClose} maxWidth="max-w-5xl">
           <RulePanel onClose={traceRuleModal.onClose} />
         </Cycle3Modal>
+      )}
+
+      {slashCommandModal.open && (
+        <SlashCommandHelp onClose={slashCommandModal.onClose} />
       )}
     </div>
       )}

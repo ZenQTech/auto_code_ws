@@ -100,6 +100,8 @@ export interface BrandHeaderProps {
   onOpenMultiAgentTree?: () => void;
   /** v2.9.0 (Cycle 7 P0-11) 新增：打开 TRACE 规则管理面板回调（可选） */
   onOpenTraceRule?: () => void;
+  /** v2.10.0 (Cycle 8 P0-12) 新增：打开 Slash Commands 帮助面板回调（可选） */
+  onOpenSlashCommand?: () => void;
 }
 
 /**
@@ -355,6 +357,8 @@ export default function BrandHeader({
   onOpenMultiAgentTree,
   /** v2.9.0 (Cycle 7 P0-11) 新增 */
   onOpenTraceRule,
+  /** v2.10.0 (Cycle 8 P0-12) 新增 */
+  onOpenSlashCommand,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -812,6 +816,23 @@ export default function BrandHeader({
                 >
                   <Icon name="shield-check" className="w-4 h-4 text-rose-500" />
                   <span>🛡️ TRACE 规则管理</span>
+                </button>
+              )}
+
+              {/* v2.10.0 (Cycle 8 P0-12) 新增：Slash Commands 帮助（菜单项）
+               *  行为：点击调 onOpenSlashCommand() 弹出 SlashCommandHelp 帮助面板
+               *       集成 18 个内置命令（/plan /spec /review /init /status /help 等）
+               *  图标：zap（闪电），表达命令输入 + 即时执行 */}
+              {onOpenSlashCommand && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSlashCommand)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-violet-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="zap" className="w-4 h-4 text-violet-500" />
+                  <span>⚡ Slash Commands 帮助</span>
                 </button>
               )}
 

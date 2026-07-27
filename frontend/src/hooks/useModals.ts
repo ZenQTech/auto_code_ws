@@ -10,7 +10,8 @@
  * 输入参数：无
  * 输出结果：{ settings, mcp, compaction, skills, agentsMd, cycle3,
  *           dualCompaction, rules, usage, fileExplorer, loopV7,
- *           planEditor, hooks, subagentMemory, hookChain, cacheStats, streamList, oauthConfig }
+ *           planEditor, hooks, subagentMemory, hookChain, cacheStats, streamList, oauthConfig,
+ *           sessionRollout, multiAgentTree, traceRule, slashCommand }
  *           每个含 { open, onOpen, onClose, onToggle }
  * 修改记录：
  *   - 2026-07-27 | v1.0.0 | P0-2 App.tsx 拆分第五阶段：从 App.tsx 抽离
@@ -25,6 +26,7 @@
  *   - 2026-07-27 | v1.8.0 | Cycle 7 P0-9 新增 sessionRollout JSONL 持久化面板
  *   - 2026-07-27 | v1.9.0 | Cycle 7 P0-10 新增 multiAgentTree Multi-Agent v2 Path Tree 面板
  *   - 2026-07-27 | v2.0.0 | Cycle 7 P0-11 新增 traceRule TRACE 规则管理面板
+ *   - 2026-07-27 | v2.1.0 | Cycle 8 P0-12 新增 slashCommand Slash Commands 帮助面板
  * ============================================================
  */
 
@@ -94,6 +96,8 @@ export interface UseModalsResult {
   multiAgentTree: PanelController;
   /** v2.0.0 (Cycle 7 P0-11) 新增：TRACE 规则管理面板 */
   traceRule: PanelController;
+  /** v2.1.0 (Cycle 8 P0-12) 新增：Slash Commands 帮助面板 */
+  slashCommand: PanelController;
 }
 
 /**
@@ -122,6 +126,7 @@ export function useModals(): UseModalsResult {
   const sessionRollout = usePanelController(false);  // v1.8.0 (Cycle 7 P0-9) 新增
   const multiAgentTree = usePanelController(false);  // v1.9.0 (Cycle 7 P0-10) 新增
   const traceRule = usePanelController(false);  // v2.0.0 (Cycle 7 P0-11) 新增
+  const slashCommand = usePanelController(false);  // v2.1.0 (Cycle 8 P0-12) 新增
 
   return {
     settings,
@@ -145,6 +150,7 @@ export function useModals(): UseModalsResult {
     sessionRollout,  // v1.8.0 (Cycle 7 P0-9) 新增
     multiAgentTree,  // v1.9.0 (Cycle 7 P0-10) 新增
     traceRule,  // v2.0.0 (Cycle 7 P0-11) 新增
+    slashCommand,  // v2.1.0 (Cycle 8 P0-12) 新增
   };
 }
 

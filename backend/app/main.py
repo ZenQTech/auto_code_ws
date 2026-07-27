@@ -815,6 +815,10 @@ app.include_router(multi_agents_router, prefix="/api", tags=["multi-agents-v2"])
 from .api.trace import router as trace_router
 app.include_router(trace_router, prefix="/api/trace", tags=["trace-enforcement"])
 
+# v1.0.0 Cycle 8 P0-12：Slash Commands 系统
+from .api.slash_commands import router as slash_commands_router
+app.include_router(slash_commands_router, prefix="/api/slash-commands", tags=["slash-commands"])
+
 # 注册全局异常处理器
 app.add_exception_handler(Exception, global_exception_handler)
 
