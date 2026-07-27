@@ -105,6 +105,9 @@
 #     ② 弹窗背景升级为 bg-black/40 + backdrop-blur-md（玻璃拟态）；
 #     ③ 弹窗布局改为 flex column + 固定高度（h-[85vh]）+ overflow-hidden，
 #        配合面板内部 overflow-y-auto 区域实现独立滚动
+#   - 2026-07-27 | v5.13.1 | P0-2 App.tsx 拆分第五阶段：从 App.tsx 抽离 11 个面板/弹窗显隐状态
+#     到 hooks/useModals.ts，通过 useModals() 调用 + 本地别名（settingsOpen ↔
+#     settings.open 等）保持所有现有引用不变，App.tsx 减少约 33 行重复 useState
 #   - 2026-07-27 | v5.13.0 | Cycle 3 UI/UX 进一步优化：
 #     ① 新增 Cycle3Modal 统一模态组件（带 Escape 键关闭 + 背景点击关闭）
 #     ② 三个面板均接受 onClose prop，在渐变标题栏右侧显示 ✕ 关闭按钮
@@ -139,6 +142,8 @@ import { LS_CURRENT_SESSION_ID, LS_APP_MODE, extractSummary, extractQuestions } 
 import type { ChatMessage } from './utils/messageFormatters';
 /** 从 hooks/useToast 抽离的 toast 状态管理 */
 import { useToast } from './hooks/useToast';
+/** v4.2.0 P0-2：从 App.tsx 抽离 11 个面板/弹窗显隐状态 */
+import { useModals } from './hooks/useModals';
 /** v6.9.0 P0-2：从 App.tsx 抽离的用量监控面板 */
 import { UsagePanel, type UsageStats } from './components/UsagePanel';
 /** v6.10.0 P0-2：从 App.tsx 抽离的主对话舞台布局 */
@@ -264,24 +269,70 @@ export default function App() {
   const [planVisible, setPlanVisible] = useState(false);
   /** PlanViewer：计划内容 */
   const [planContent, setPlanContent] = useState('');
-  /** 是否显示用量监控面板 */
-  const [showUsagePanel, setShowUsagePanel] = useState(false);
-  /** 是否显示全局设置面板（v2.8.0 新增 - Task 7） */
-  const [settingsOpen, setSettingsOpen] = useState(false);
-  /** v6.14.0 Cycle 2 新增：是否显示 MCP 工具面板 */
-  const [mcpPanelOpen, setMcpPanelOpen] = useState(false);
-  /** v6.14.0 Cycle 2 新增：是否显示会话压缩面板 */
-  const [compactionPanelOpen, setCompactionPanelOpen] = useState(false);
-  /** v6.14.0 Cycle 2 新增：是否显示技能管理面板 */
-  const [skillsPanelOpen, setSkillsPanelOpen] = useState(false);
-  /** v6.14.0 Cycle 2 新增：是否显示 AGENTS.md 记忆面板 */
-  const [agentsMdPanelOpen, setAgentsMdPanelOpen] = useState(false);
-  /** Cycle 3 v1.0.0 新增：MCP 高级功能面板（Cycle3Panel） */
-  const [cycle3PanelOpen, setCycle3PanelOpen] = useState(false);
-  /** Cycle 3 v1.0.0 新增：双触发压缩面板 */
-  const [dualCompactionOpen, setDualCompactionOpen] = useState(false);
-  /** Cycle 3 v1.0.0 新增：多类型规则扫描面板 */
-  const [rulesPanelOpen, setRulesPanelOpen] = useState(false);
+  /**
+   * v4.3.0 P0-2：从 App.tsx 抽离 11 个面板/弹窗显隐状态到 useModals Hook
+   * - 通过本地别名（settingsOpen ↔ settings.open 等）保持所有现有引用不变
+   * - 每个面板提供 { open, onOpen, onClose, onToggle } 统一 API
+   * - 11 个面板：settings / mcp / compaction / skills / agentsMd / cycle3 /
+   *             dualCompaction / rules / usage / fileExplorer / loopV7
+   */
+  const {
+    settings: settingsModal,
+    mcp: mcpModal,
+    compaction: compactionModal,
+    skills: skillsModal,
+    agentsMd: agentsMdModal,
+    cycle3: cycle3Modal,
+    dualCompaction: dualCompactionModal,
+    rules: rulesModal,
+    usage: usageModal,
+    fileExplorer: fileExplorerModal,
+    loopV7: loopV7Modal,
+  } = useModals();
+
+  /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
+  const settingsOpen = settingsModal.open;
+  const setSettingsOpen = settingsModal.onOpen;
+  const closeSettings = settingsModal.onClose;
+  /** v4.3.0 别名：MCP 工具面板 */
+  const mcpPanelOpen = mcpModal.open;
+  const setMcpPanelOpen = mcpModal.onOpen;
+  const closeMcpPanel = mcpModal.onClose;
+  /** v4.3.0 别名：会话压缩面板 */
+  const compactionPanelOpen = compactionModal.open;
+  const setCompactionPanelOpen = compactionModal.onOpen;
+  const closeCompactionPanel = compactionModal.onClose;
+  /** v4.3.0 别名：技能管理面板 */
+  const skillsPanelOpen = skillsModal.open;
+  const setSkillsPanelOpen = skillsModal.onOpen;
+  const closeSkillsPanel = skillsModal.onClose;
+  /** v4.3.0 别名：AGENTS.md 记忆面板 */
+  const agentsMdPanelOpen = agentsMdModal.open;
+  const setAgentsMdPanelOpen = agentsMdModal.onOpen;
+  const closeAgentsMdPanel = agentsMdModal.onClose;
+  /** v4.3.0 别名：Cycle 3 MCP 高级功能面板 */
+  const cycle3PanelOpen = cycle3Modal.open;
+  const setCycle3PanelOpen = cycle3Modal.onOpen;
+  const closeCycle3Panel = cycle3Modal.onClose;
+  /** v4.3.0 别名：双触发压缩面板 */
+  const dualCompactionOpen = dualCompactionModal.open;
+  const setDualCompactionOpen = dualCompactionModal.onOpen;
+  const closeDualCompactionPanel = dualCompactionModal.onClose;
+  /** v4.3.0 别名：多类型规则扫描面板 */
+  const rulesPanelOpen = rulesModal.open;
+  const setRulesPanelOpen = rulesModal.onOpen;
+  const closeRulesPanel = rulesModal.onClose;
+  /** v4.3.0 别名：用量监控面板（保持 setShowUsagePanel 切换语义） */
+  const showUsagePanel = usageModal.open;
+  const setShowUsagePanel = usageModal.onToggle;
+  /** v4.3.0 别名：文件浏览器面板（默认 true，由 useModals 初始化） */
+  const fileExplorerOpen = fileExplorerModal.open;
+  const setFileExplorerOpen = fileExplorerModal.onToggle;
+  /** v4.3.0 别名：Loop V7 Runner 弹窗 */
+  const showLoopV7Runner = loopV7Modal.open;
+  const setShowLoopV7Runner = loopV7Modal.onOpen;
+  const closeLoopV7Runner = loopV7Modal.onClose;
+
   /** 消息列表容器引用，用于自动滚动到底部 */
   const messagesEndRef = useRef<HTMLDivElement>(null);
   /** 输入框 ref（v2.9.0 新增 - Task 5：贴底浮动输入区，需要 focus 控制） */
@@ -305,8 +356,8 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState<string | null>(null);
   /** v2.10.0：当前打开的文件路径（编程模式下使用） */
   const [openedFile, setOpenedFile] = useState<string | null>(null);
-  /** v2.10.1：文件浏览器显示/隐藏状态（默认 true，编程模式下生效） */
-  const [fileExplorerOpen, setFileExplorerOpen] = useState(true);
+  // v4.3.0：fileExplorerOpen 已迁移至 useModals.fileExplorer
+  // const [fileExplorerOpen, setFileExplorerOpen] = useState(true); // 由 useModals 默认 true
 
   /**
    * v3.1.0：需求澄清数据（由 clarify_questions SSE 事件返回并解析）
@@ -320,11 +371,13 @@ export default function App() {
     summary: string;
   } | null>(null);
 
+  // v4.3.0：showClarifyModal 保留为 useState（不属于 useModals 管理的 11 个标准面板，
+  //   是业务专属的澄清阶段弹窗控制）
   /** v3.6.0：控制 ClarificationModal 显示/隐藏 */
   const [showClarifyModal, setShowClarifyModal] = useState(false);
 
-  /** v5.7.0：控制 LoopV7Runner 弹窗显示/隐藏 */
-  const [showLoopV7Runner, setShowLoopV7Runner] = useState(false);
+  // v4.3.0：showLoopV7Runner 已迁移至 useModals.loopV7
+  // const [showLoopV7Runner, setShowLoopV7Runner] = useState(false); // 由 useModals 管理
 
   /**
    * v5.9.0 新增（Task A2 - 按钮反馈）：API 触发按钮加载态
@@ -732,11 +785,11 @@ export default function App() {
   /**
    * v5.7.0：打开 Loop v7 端到端工作流弹窗
    * 调用方：BrandHeader 三个点下拉菜单中的"🚀 Loop v7 工作流"项
-   * 行为：setShowLoopV7Runner(true) 弹出 LoopV7Runner 端到端运行器
+   * 行为：通过 useModals.loopV7.onOpen() 弹出 LoopV7Runner 端到端运行器
    */
   const handleOpenLoopV7 = useCallback(() => {
-    setShowLoopV7Runner(true);
-  }, []);
+    setShowLoopV7Runner();
+  }, [setShowLoopV7Runner]);
 
   /**
    * 删除会话
@@ -1586,7 +1639,7 @@ export default function App() {
         onDeleteSession={handleDeleteSession}
         onBatchDelete={handleBatchDelete}
         loading={sessionsLoading}
-        onOpenSettings={() => setSettingsOpen(true)}
+        onOpenSettings={setSettingsOpen}
         onNewTask={handleNewTask}
         appMode={appMode!}
         onModeSwitch={handleModeSwitch}
@@ -1598,7 +1651,7 @@ export default function App() {
       {/* ============================================================ */}
       {settingsOpen ? (
         <SettingsPanel
-          onClose={() => setSettingsOpen(false)}
+          onClose={closeSettings}
           showToast={showToast}
         />
       ) : (
@@ -1610,18 +1663,18 @@ export default function App() {
           currentSessionTitle={currentSession?.title || '新对话'}
           onNewChat={handleNewTask}
           newChatLoading={isNewTaskLoading}
-          onOpenSettings={() => setSettingsOpen(true)}
-          onOpenUsage={() => setShowUsagePanel(prev => !prev)}
-          onOpenFileExplorer={() => setFileExplorerOpen(prev => !prev)}
+          onOpenSettings={setSettingsOpen}
+          onOpenUsage={setShowUsagePanel}
+          onOpenFileExplorer={setFileExplorerOpen}
           fileExplorerOpen={fileExplorerOpen}
           onOpenLoopV7={handleOpenLoopV7}
-          onOpenMCP={() => setMcpPanelOpen(true)}
-          onOpenCompaction={() => setCompactionPanelOpen(true)}
-          onOpenSkills={() => setSkillsPanelOpen(true)}
-          onOpenAgentsMd={() => setAgentsMdPanelOpen(true)}
-          onOpenCycle3={() => setCycle3PanelOpen(true)}
-          onOpenDualCompaction={() => setDualCompactionOpen(true)}
-          onOpenRules={() => setRulesPanelOpen(true)}
+          onOpenMCP={setMcpPanelOpen}
+          onOpenCompaction={setCompactionPanelOpen}
+          onOpenSkills={setSkillsPanelOpen}
+          onOpenAgentsMd={setAgentsMdPanelOpen}
+          onOpenCycle3={setCycle3PanelOpen}
+          onOpenDualCompaction={setDualCompactionOpen}
+          onOpenRules={setRulesPanelOpen}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
           onReasoningIntensityChange={(i) => showToast(`推理强度已设为 ${i}`, 'info')}
           workflowStatusCurrentStage={workflowStatus?.current_stage ?? null}
@@ -1695,7 +1748,7 @@ export default function App() {
               project={selectedProject}
               onFileSelect={(path) => setOpenedFile(path)}
               selectedFile={openedFile}
-              onClose={() => setFileExplorerOpen(false)}
+              onClose={() => fileExplorerModal.onClose()}
             />
           )}
         </div>
@@ -1712,7 +1765,7 @@ export default function App() {
         >
           <UsagePanel
             stats={stats as UsageStats | null}
-            onClose={() => setShowUsagePanel(false)}
+            onClose={usageModal.onClose}
           />
         </div>
       )}
@@ -1721,10 +1774,10 @@ export default function App() {
 
       {/* v5.7.0：Loop v7 端到端工作流弹窗
        * 触发：BrandHeader 菜单"🚀 Loop v7 工作流"项 → handleOpenLoopV7
-       * 关闭：LoopV7Runner 内部 onClose 回调 setShowLoopV7Runner(false)
+       * 关闭：LoopV7Runner 内部 onClose 回调
        * 位置：根 fragment 末尾，z-index 由 LoopV7Runner 自身管理（z-50） */}
       {showLoopV7Runner && (
-        <LoopV7Runner onClose={() => setShowLoopV7Runner(false)} />
+        <LoopV7Runner onClose={closeLoopV7Runner} />
       )}
 
       {/* v6.14.0 Cycle 2 新增：MCP 工具调用面板弹窗
@@ -1732,11 +1785,11 @@ export default function App() {
        * 关闭：McpPanel 内部 onClose 回调
        * 功能：查看 MCP 服务器/工具列表、调用工具（list_directory、read_file 等） */}
       {mcpPanelOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setMcpPanelOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closeMcpPanel}>
           <div className="w-full max-w-4xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
             <McpPanel />
             <button
-              onClick={() => setMcpPanelOpen(false)}
+              onClick={closeMcpPanel}
               className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center text-surface-700"
               aria-label="关闭"
             >
@@ -1752,7 +1805,7 @@ export default function App() {
        * 功能：显示当前会话 token 使用情况，触发手动压缩
        * 注意：需要 currentSessionId 才显示，否则提示选择会话 */}
       {compactionPanelOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setCompactionPanelOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closeCompactionPanel}>
           <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 m-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -1760,7 +1813,7 @@ export default function App() {
                 <span>会话压缩</span>
               </h2>
               <button
-                onClick={() => setCompactionPanelOpen(false)}
+                onClick={closeCompactionPanel}
                 className="w-8 h-8 rounded-full hover:bg-surface-100 flex items-center justify-center text-surface-700"
                 aria-label="关闭"
               >
@@ -1788,7 +1841,7 @@ export default function App() {
        * 关闭：按钮回调
        * 功能：查看/启用/禁用 Skills 插件（内置 3 个 + 用户自定义） */}
       {skillsPanelOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setSkillsPanelOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closeSkillsPanel}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl p-6 m-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -1796,7 +1849,7 @@ export default function App() {
                 <span>技能管理 (Skills)</span>
               </h2>
               <button
-                onClick={() => setSkillsPanelOpen(false)}
+                onClick={closeSkillsPanel}
                 className="w-8 h-8 rounded-full hover:bg-surface-100 flex items-center justify-center text-surface-700"
                 aria-label="关闭"
               >
@@ -1819,7 +1872,7 @@ export default function App() {
        * 关闭：按钮回调
        * 功能：扫描项目中的 AGENTS.md 文件，注入项目级规则到 LLM */}
       {agentsMdPanelOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setAgentsMdPanelOpen(false)}>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closeAgentsMdPanel}>
           <div className="w-full max-w-2xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl p-6 m-4" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -1827,7 +1880,7 @@ export default function App() {
                 <span>AGENTS.md 记忆</span>
               </h2>
               <button
-                onClick={() => setAgentsMdPanelOpen(false)}
+                onClick={closeAgentsMdPanel}
                 className="w-8 h-8 rounded-full hover:bg-surface-100 flex items-center justify-center text-surface-700"
                 aria-label="关闭"
               >
@@ -1845,30 +1898,30 @@ export default function App() {
       {/* Cycle 3 v1.1.1 UI/UX 升级：MCP 高级功能面板（权限/外部服务器/审批/审计） */}
       {cycle3PanelOpen && (
         <Cycle3Modal
-          onClose={() => setCycle3PanelOpen(false)}
+          onClose={closeCycle3Panel}
         >
-          <Cycle3Panel onClose={() => setCycle3PanelOpen(false)} />
+          <Cycle3Panel onClose={closeCycle3Panel} />
         </Cycle3Modal>
       )}
 
       {/* Cycle 3 v1.1.1 UI/UX 升级：双触发压缩面板 */}
       {dualCompactionOpen && (
         <Cycle3Modal
-          onClose={() => setDualCompactionOpen(false)}
+          onClose={closeDualCompactionPanel}
           maxWidth="max-w-3xl"
           height="h-[80vh]"
         >
-          <DualCompactionPanel onClose={() => setDualCompactionOpen(false)} />
+          <DualCompactionPanel onClose={closeDualCompactionPanel} />
         </Cycle3Modal>
       )}
 
       {/* Cycle 3 v1.1.1 UI/UX 升级：多类型规则扫描面板 */}
       {rulesPanelOpen && (
         <Cycle3Modal
-          onClose={() => setRulesPanelOpen(false)}
+          onClose={closeRulesPanel}
           maxWidth="max-w-3xl"
         >
-          <RulesPanel onClose={() => setRulesPanelOpen(false)} />
+          <RulesPanel onClose={closeRulesPanel} />
         </Cycle3Modal>
       )}
     </div>
