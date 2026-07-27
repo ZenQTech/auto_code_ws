@@ -119,6 +119,7 @@
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
+import { useLocation, useParams, useNavigate } from 'react-router-dom';
 import {
   useAgents, useStats, useSessions, useSessionDetail,
   confirmPlan, chatWithHermesStreaming,
@@ -594,6 +595,69 @@ export default function App() {
         });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [appMode]);
+
+  /**
+   * v5.7.0 (Cycle 7 P1-2)：URL 状态同步 - 从 URL 推断 appMode / currentSessionId / selectedProject
+   * 运行步骤：
+   *   1. 读取 useLocation() 路径 + useParams() 参数
+   *   2. 根据路径前缀 /chat/* 或 /coding/* 推断 appMode
+   *   3. 根据 :sessionId 或 :projectId 参数同步 currentSessionId / selectedProject
+   *   4. 仅当 state 实际需要变化时才 setState，避免不必要的重渲染
+   * 触发时机：URL 变化时（包括浏览器前进/后退）
+   * 设计目的：让路由系统与 App.tsx 状态完全双向同步，支持深链与分享
+   */
+  const location = useLocation();
+  const params = useParams();
+  const navigate = useNavigate();
+  useEffect(() => {
+    const path = location.pathname;
+    // 推断 appMode
+    let urlMode: 'chat' | 'coding' | null = null;
+    if (path.startsWith('/chat')) urlMode = 'chat';
+    else if (path.startsWith('/coding')) urlMode = 'coding';
+
+    // 同步 appMode（仅当 URL 明确指示模式时）
+    if (urlMode && urlMode !== appMode) {
+      setAppMode(urlMode);
+      try { localStorage.setItem(LS_APP_MODE, urlMode); } catch { /* ignore */ }
+    }
+
+    // 同步 currentSessionId
+    const urlSessionId = (params as { sessionId?: string }).sessionId;
+    if (urlSessionId && urlSessionId !== currentSessionId) {
+      setCurrentSessionId(urlSessionId);
+      try { localStorage.setItem(LS_CURRENT_SESSION_ID, urlSessionId); } catch { /* ignore */ }
+    }
+
+    // 同步 selectedProject
+    const urlProjectId = (params as { projectId?: string }).projectId;
+    if (urlProjectId && urlProjectId !== selectedProject) {
+      setSelectedProject(urlProjectId);
+    }
+  }, [location.pathname, params]);
+
+  /**
+   * v5.7.0 (Cycle 7 P1-2)：State → URL 同步（仅首次启动 + mode 切换时）
+   * 运行步骤：
+   *   1. 当 appMode 从 null → 'chat'/'coding' 时，自动 navigate 到对应路径
+   *   2. 当 URL 是 / 时，根据 appMode 重定向到 /chat 或 /coding
+   *   3. 不在每次 currentSessionId 变化时都同步（避免覆盖 /chat/new 路径）
+   * 触发时机：appMode 变化
+   * 设计目的：让首次选择模式后 URL 自动反映当前视图
+   */
+  useEffect(() => {
+    // 跳过路径不以 / 开头的场景（如 Modal 渲染等）
+    if (!location.pathname.startsWith('/')) return;
+
+    // 当前在根路径或 /select-mode，根据 appMode 跳转
+    if ((location.pathname === '/' || location.pathname === '/select-mode') && appMode) {
+      if (appMode === 'chat') {
+        navigate('/chat/new', { replace: true });
+      } else if (appMode === 'coding') {
+        navigate('/coding/new', { replace: true });
+      }
+    }
   }, [appMode]);
 
   /**
