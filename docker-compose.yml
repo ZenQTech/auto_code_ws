@@ -1,0 +1,112 @@
+# ============================================================
+# Docker Compose 编排文件 - Claude Code 调度平台
+# ============================================================
+# 核心作用：编排 backend + postgres 容器，支持一键启动
+# 运行流程：
+#   1. backend 容器构建自 Dockerfile，挂载 ./config 提供 auto_code_config.yaml
+#   2. postgres 容器提供数据库，postgres:15-alpine 镜像带健康检查
+#   3. depends_on 健康检查确保 backend 在 postgres 就绪后才启动
+#   4. 命名卷 postgres_data 持久化数据库
+#   5. 通过 .env 文件注入敏感环境变量（DATABASE_URL / ANTHROPIC_AUTH_TOKEN）
+# 输入参数：通过 .env 文件或命令行注入环境变量
+# 输出结果：运行中的后端服务与 PostgreSQL 实例
+# 修改记录：
+#   - 2026-07-24 | v1.0.0 | Module F2 - 基础设施升级：编排 backend + postgres 服务
+# ============================================================
+version: "3.9"
+
+services:
+  # ============================================================
+  # 后端服务
+  # ============================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: claude_code_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # Module F1：PostgreSQL 异步驱动连接串
+      DATABASE_URL: "postgresql+asyncpg://postgres:postgres@postgres:5432/claude_code"
+      # Claude Code CLI 相关环境变量
+      ANTHROPIC_AUTH_TOKEN: "${ANTHROPIC_AUTH_TOKEN:-}"
+      ANTHROPIC_BASE_URL: "${ANTHROPIC_BASE_URL:-https://ark.cn-beijing.volces.com/api/coding}"
+      ANTHROPIC_MODEL: "${ANTHROPIC_MODEL:-deepseek-v4-flash}"
+      ANTHROPIC_DEFAULT_OPUS_MODEL: "${ANTHROPIC_DEFAULT_OPUS_MODEL:-deepseek-v4-pro[1m]}"
+      ANTHROPIC_DEFAULT_SONNET_MODEL: "${ANTHROPIC_DEFAULT_SONNET_MODEL:-deepseek-v4-pro[1m]}"
+      ANTHROPIC_DEFAULT_HAIKU_MODEL: "${ANTHROPIC_DEFAULT_HAIKU_MODEL:-deepseek-v4-flash}"
+      CLAUDE_CODE_SUBAGENT_MODEL: "${CLAUDE_CODE_SUBAGENT_MODEL:-deepseek-v4-flash}"
+      CLAUDE_CODE_EFFORT_LEVEL: "${CLAUDE_CODE_EFFORT_LEVEL:-max}"
+      API_TIMEOUT_MS: "${API_TIMEOUT_MS:-3000000}"
+      CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC: "${CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC:-1}"
+      # GitHub 推送（可选）
+      GITHUB_TOKEN: "${GITHUB_TOKEN:-}"
+      # Python 输出无缓冲
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      # 挂载配置文件（容器内 config.py 期望 config/auto_code_config.yaml）
+      - ./config:/app/config:ro
+      # 挂载 data 目录用于工作区/会话持久化
+      - ./data:/app/data
+      # 挂载 logs 目录用于日志持久化
+      - ./logs:/app/logs
+      # 挂载 workspace 目录
+      - ./workspace:/app/workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - claude_code_net
+    healthcheck:
+      # 容器内健康检查：探测 /health 端点
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s
+
+  # ============================================================
+  # PostgreSQL 数据库服务
+  # ============================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: claude_code_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: claude_code
+      # 防止 locale 警告
+      LANG: en_US.UTF-8
+    ports:
+      # 暴露到宿主机便于本地开发客户端直连
+      - "5432:5432"
+    volumes:
+      # 命名卷持久化数据库
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - claude_code_net
+    healthcheck:
+      # pg_isready 探测数据库就绪状态
+      test: ["CMD-SHELL", "pg_isready -U postgres -d claude_code"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+# ============================================================
+# 命名卷：PostgreSQL 数据持久化
+# ============================================================
+volumes:
+  postgres_data:
+    name: claude_code_postgres_data
+
+# ============================================================
+# 自定义网络
+# ============================================================
+networks:
+  claude_code_net:
+    name: claude_code_net
+    driver: bridge

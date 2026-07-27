@@ -6,10 +6,30 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      '/api': 'http://localhost:8080',
+      '/api': 'http://localhost:8000',
       '/ws': {
-        target: 'ws://localhost:8080',
+        target: 'ws://localhost:8000',
         ws: true,
+      },
+    },
+  },
+  build: {
+    // ============================================================
+    // 2026-07-24 | v1.0.0 | Module A 前端 UI 优化 - Task A3
+    // 启用 Rollup manualChunks 切分：
+    //   - vendor-react: React / ReactDOM 等核心库（高频更新 / 全局共享）
+    //   - vendor-monaco: Monaco Editor（按需懒加载，仅编程模式打开文件时引入）
+    // 收益：
+    //   1. 减小主包体积，加快首屏加载
+    //   2. 充分利用浏览器缓存（vendor chunk 长期不变，business chunk 频繁更新）
+    //   3. Monaco 单独切分，可走动态 import 实现按需加载
+    // ============================================================
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          'vendor-react': ['react', 'react-dom'],
+          'vendor-monaco': ['monaco-editor', '@monaco-editor/react'],
+        },
       },
     },
   },

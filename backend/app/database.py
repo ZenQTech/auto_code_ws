@@ -8,8 +8,9 @@
 #   2. 创建异步 SQLAlchemy 引擎
 #   3. 提供依赖注入式的数据库会话获取
 #   4. 应用启动时自动创建所有表
-#   5. 检测旧表缺字段时执行 ALTER TABLE 迁移
-#   6. 将 session_id IS NULL 的记录归入 legacy-default Session
+#   5. 启用 SQLite WAL 模式（提升并发读写性能）
+#   6. 检测旧表缺字段时执行 ALTER TABLE 迁移
+#   7. 将 session_id IS NULL 的记录归入 legacy-default Session
 # 输入参数：无（通过 Settings 读取配置）
 # 输出结果：异步数据库会话对象
 # 修改记录：
@@ -24,6 +25,15 @@
 #   - 2026-06-30 | v2.7.0 | 流式方法增加 clarifying 模式前置检查 + not is_clarifying_mode 守卫
 #   - 2026-07-22 | v2.8.0 | 新增 workflows 表 goal_id 和 goals 列迁移（Goal-oriented task loop）
 #   - 2026-07-22 | v2.9.0 | 新增 workflows 表 iteration_context 和 iteration_history 列迁移（智能迭代闭环）
+#   - 2026-07-24 | v2.10.0 | Module B：init_db() 中启用 SQLite WAL 模式（PRAGMA journal_mode=WAL），
+#             提升并发读写性能；同步设置 PRAGMA synchronous=NORMAL 平衡性能与安全
+#   - 2026-07-24 | v2.11.0 | Module F1：新增 PostgreSQL 数据库支持。
+#             1) 新增 _get_database_url() 辅助函数：优先读取 DATABASE_URL 环境变量，
+#                以 postgresql:// 或 postgresql+asyncpg:// 开头时启用 PostgreSQL
+#             2) get_engine() 根据数据库类型返回不同驱动：postgresql → asyncpg，sqlite → aiosqlite
+#             3) is_postgres() 暴露当前数据库类型，供上层（如 migration）按需分支
+#             4) WAL 模式设置仅在 SQLite 路径下执行（PostgreSQL 不需要）
+#             5) 保留向后兼容：未设置 DATABASE_URL 时，行为与 v2.10.0 一致
 # ============================================================
 
 import os
@@ -77,20 +87,70 @@ def _get_db_path() -> str:
     return str(db_path)
 
 
+def _get_database_url() -> str:
+    """
+    获取数据库连接 URL（v2.11.0 Module F1 新增）
+    作用：按优先级决定使用的数据库类型
+    优先级：
+      1. 读取环境变量 DATABASE_URL
+      2. 若以 "postgresql" 开头，使用 PostgreSQL
+      3. 否则使用 SQLite 默认路径
+    返回值：SQLAlchemy 异步引擎可识别的 URL
+      - postgresql+asyncpg://... 用于 PostgreSQL
+      - sqlite+aiosqlite:///<path> 用于 SQLite
+    """
+    db_url = os.environ.get("DATABASE_URL", "").strip()
+    if db_url.startswith("postgresql"):
+        # 统一转换为 asyncpg 驱动
+        if db_url.startswith("postgresql+asyncpg://"):
+            return db_url
+        # postgresql:// → postgresql+asyncpg://
+        # 注意：postgresql+psycopg2 / postgresql+psycopg / postgresql+pg8000 暂不支持
+        if db_url.startswith("postgresql://"):
+            return "postgresql+asyncpg://" + db_url[len("postgresql://"):]
+        # 其他 postgresql+xxx:// 直接返回（要求用户使用支持的驱动）
+        return db_url
+    # 兜底：SQLite 默认路径
+    db_path = _get_db_path()
+    return f"sqlite+aiosqlite:///{db_path}"
+
+
+def is_postgres() -> bool:
+    """
+    判断当前是否使用 PostgreSQL（v2.11.0 Module F1 新增）
+    作用：供上层（如 migration 逻辑、JSON 字段处理）按需分支
+    返回值：True 使用 PostgreSQL，False 使用 SQLite
+    """
+    db_url = _get_database_url()
+    return db_url.startswith("postgresql")
+
+
 def get_engine():
     """
     获取或创建数据库引擎（懒加载单例）
+    v2.11.0 Module F1：根据 DATABASE_URL 自动选择驱动
+      - postgresql+asyncpg://...  → asyncpg
+      - sqlite+aiosqlite:///<path> → aiosqlite（保留 WAL 模式）
     返回值：SQLAlchemy 异步引擎实例
     """
     global _engine
     if _engine is None:
-        db_path = _get_db_path()
-        # SQLite 使用 aiosqlite 异步驱动
-        _engine = create_async_engine(
-            f"sqlite+aiosqlite:///{db_path}",
-            echo=False,  # 不打印 SQL 日志
-            connect_args={"check_same_thread": False},  # SQLite 多线程支持
-        )
+        db_url = _get_database_url()
+        if db_url.startswith("postgresql"):
+            # PostgreSQL 路径：使用 asyncpg 驱动
+            logger.info("检测到 DATABASE_URL 指向 PostgreSQL，使用 asyncpg 驱动")
+            _engine = create_async_engine(
+                db_url,
+                echo=False,
+                pool_pre_ping=True,  # 自动检测断连
+            )
+        else:
+            # SQLite 路径：使用 aiosqlite 驱动（保留 v2.10.0 行为）
+            _engine = create_async_engine(
+                db_url,
+                echo=False,
+                connect_args={"check_same_thread": False},
+            )
     return _engine
 
 
@@ -130,9 +190,11 @@ async def init_db():
     运行步骤：
       1. 获取数据库引擎
       2. 创建所有继承自 Base 的 ORM 模型对应的表
-      3. 检查旧表是否缺 session_id 列，缺失则 ALTER TABLE ADD COLUMN
-      4. 创建 legacy-default Session 记录
-      5. UPDATE 所有 session_id IS NULL 的记录，把 session_id 设为 legacy-default
+      3. v2.10.0 新增：启用 SQLite WAL 模式（PRAGMA journal_mode=WAL），
+         并设置 synchronous=NORMAL 平衡性能与安全
+      4. 检查旧表是否缺 session_id 列，缺失则 ALTER TABLE ADD COLUMN
+      5. 创建 legacy-default Session 记录
+      6. UPDATE 所有 session_id IS NULL 的记录，把 session_id 设为 legacy-default
     异常处理：迁移失败不能阻塞应用启动（仅记录日志）
     注意：仅在应用启动时调用一次
     """
@@ -142,6 +204,24 @@ async def init_db():
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)
+
+    # v2.10.0 Module B 新增：启用 SQLite WAL 模式
+    # WAL 模式优势：读写并发不互锁，提升多线程/多连接场景性能
+    # synchronous=NORMAL 与 WAL 配套使用，比 FULL 性能更好且仍能保证崩溃一致性
+    # v2.11.0 Module F1：仅在 SQLite 路径下执行（PostgreSQL 不需要 PRAGMA）
+    if not is_postgres():
+        try:
+            async with engine.begin() as conn:
+                await conn.execute(text("PRAGMA journal_mode=WAL"))
+                await conn.execute(text("PRAGMA synchronous=NORMAL"))
+                # 验证：SELECT 当前 journal_mode
+                result = await conn.execute(text("PRAGMA journal_mode"))
+                current_mode = result.scalar()
+                logger.info(f"SQLite journal_mode 已设置为: {current_mode}")
+        except Exception as e:
+            logger.error(f"启用 SQLite WAL 模式失败（非阻塞，继续启动）: {e}")
+    else:
+        logger.info("当前使用 PostgreSQL，跳过 SQLite WAL 模式设置")
 
     # 启动时数据迁移（不阻塞启动）
     try:
@@ -324,6 +404,77 @@ async def _run_legacy_migration(engine):
             async with engine.begin() as conn:
                 await conn.execute(text("ALTER TABLE workflows ADD COLUMN iteration_history TEXT DEFAULT ''"))
             logger.info("workflows.iteration_history 列迁移完成")
+
+        # v6.3.0 (P0-4) 新增：plan_confirmed 列（BOOLEAN, Plan 模式确认标记）
+        if "plan_confirmed" not in _workflow_cols:
+            logger.info("检测到 workflows 表缺 plan_confirmed 列，执行 ALTER TABLE ADD COLUMN")
+            async with engine.begin() as conn:
+                await conn.execute(text("ALTER TABLE workflows ADD COLUMN plan_confirmed BOOLEAN DEFAULT 0"))
+            logger.info("workflows.plan_confirmed 列迁移完成")
+
+        # v6.3.0 (P0-4) 新增：plan_data 列（TEXT, Plan 模式 JSON 数据）
+        if "plan_data" not in _workflow_cols:
+            logger.info("检测到 workflows 表缺 plan_data 列，执行 ALTER TABLE ADD COLUMN")
+            async with engine.begin() as conn:
+                await conn.execute(text("ALTER TABLE workflows ADD COLUMN plan_data TEXT DEFAULT ''"))
+            logger.info("workflows.plan_data 列迁移完成")
+
+    # v6.13.0 Cycle 2 新增：conversations 表压缩追踪字段
+    if "conversations" in columns_by_table:
+        _conv_cols = columns_by_table["conversations"]
+        # is_compacted 列（BOOLEAN）
+        if "is_compacted" not in _conv_cols:
+            logger.info("检测到 conversations 表缺 is_compacted 列，执行 ALTER TABLE ADD COLUMN")
+            async with engine.begin() as conn:
+                await conn.execute(text("ALTER TABLE conversations ADD COLUMN is_compacted BOOLEAN DEFAULT 0"))
+            logger.info("conversations.is_compacted 列迁移完成")
+        # compacted_at 列（DATETIME）
+        if "compacted_at" not in _conv_cols:
+            logger.info("检测到 conversations 表缺 compacted_at 列，执行 ALTER TABLE ADD COLUMN")
+            async with engine.begin() as conn:
+                await conn.execute(text("ALTER TABLE conversations ADD COLUMN compacted_at DATETIME"))
+            logger.info("conversations.compacted_at 列迁移完成")
+        # compacted_into 列（VARCHAR(36)）
+        if "compacted_into" not in _conv_cols:
+            logger.info("检测到 conversations 表缺 compacted_into 列，执行 ALTER TABLE ADD COLUMN")
+            async with engine.begin() as conn:
+                await conn.execute(text("ALTER TABLE conversations ADD COLUMN compacted_into VARCHAR(36)"))
+            logger.info("conversations.compacted_into 列迁移完成")
+
+    # v6.13.0 Cycle 2 T3 新增：sessions 表 fork/resume 字段
+    if "sessions" in columns_by_table:
+        _session_cols = columns_by_table["sessions"]
+        # parent_session_id 列（VARCHAR(36)）
+        if "parent_session_id" not in _session_cols:
+            logger.info("检测到 sessions 表缺 parent_session_id 列，执行 ALTER TABLE ADD COLUMN")
+            async with engine.begin() as conn:
+                await conn.execute(text("ALTER TABLE sessions ADD COLUMN parent_session_id VARCHAR(36)"))
+                await conn.execute(text("CREATE INDEX IF NOT EXISTS ix_sessions_parent_session_id ON sessions(parent_session_id)"))
+            logger.info("sessions.parent_session_id 列迁移完成")
+        # forked_at 列（DATETIME）
+        if "forked_at" not in _session_cols:
+            logger.info("检测到 sessions 表缺 forked_at 列，执行 ALTER TABLE ADD COLUMN")
+            async with engine.begin() as conn:
+                await conn.execute(text("ALTER TABLE sessions ADD COLUMN forked_at DATETIME"))
+            logger.info("sessions.forked_at 列迁移完成")
+        # fork_point_message_id 列（VARCHAR(36)）
+        if "fork_point_message_id" not in _session_cols:
+            logger.info("检测到 sessions 表缺 fork_point_message_id 列，执行 ALTER TABLE ADD COLUMN")
+            async with engine.begin() as conn:
+                await conn.execute(text("ALTER TABLE sessions ADD COLUMN fork_point_message_id VARCHAR(36)"))
+            logger.info("sessions.fork_point_message_id 列迁移完成")
+        # is_archived 列（BOOLEAN）
+        if "is_archived" not in _session_cols:
+            logger.info("检测到 sessions 表缺 is_archived 列，执行 ALTER TABLE ADD COLUMN")
+            async with engine.begin() as conn:
+                await conn.execute(text("ALTER TABLE sessions ADD COLUMN is_archived BOOLEAN DEFAULT 0"))
+            logger.info("sessions.is_archived 列迁移完成")
+        # device_id 列（VARCHAR(128)）
+        if "device_id" not in _session_cols:
+            logger.info("检测到 sessions 表缺 device_id 列，执行 ALTER TABLE ADD COLUMN")
+            async with engine.begin() as conn:
+                await conn.execute(text("ALTER TABLE sessions ADD COLUMN device_id VARCHAR(128)"))
+            logger.info("sessions.device_id 列迁移完成")
 
     # 步骤 3: 创建 legacy-default Session 记录
     try:

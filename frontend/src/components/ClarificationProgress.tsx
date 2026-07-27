@@ -19,10 +19,10 @@
  * # ============================================================
  */
 
-import React from 'react';
+// 移除未使用的 React 导入（jsx: react-jsx 模式下无需手动 import React）
 
 /**
- * ClarificationProgress 组件 Props
+ * 组件 Props
  * - roundNumber: 当前轮次编号
  * - maxRounds: 最大澄清轮次
  * - isComplete: 澄清是否已完成

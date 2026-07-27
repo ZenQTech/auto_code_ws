@@ -83,6 +83,8 @@ export interface BrandHeaderProps {
   onOpenHooks?: () => void;
   /** v2.2.0 (Cycle 4 P0-4) 新增：打开 SubAgent 记忆查看器回调（可选） */
   onOpenSubagentMemory?: () => void;
+  /** v2.3.0 (Cycle 5 P0-6) 新增：打开 Hook 触发链路查看器回调（可选） */
+  onOpenHookChain?: () => void;
 }
 
 /**
@@ -92,7 +94,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -230,6 +232,14 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <circle cx="15" cy="6" r="2" />
         </svg>
       );
+    case 'chain':
+      // v2.3.0 (Cycle 5 P0-6) 新增：Chain - 触发链路（链条节点）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -264,6 +274,8 @@ export default function BrandHeader({
   onOpenHooks,
   /** v2.2.0 (Cycle 4 P0-4) 新增 */
   onOpenSubagentMemory,
+  /** v2.3.0 (Cycle 5 P0-6) 新增 */
+  onOpenHookChain,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -611,6 +623,20 @@ export default function BrandHeader({
                 >
                   <Icon name="brain" className="w-4 h-4 text-pink-500" />
                   <span>🧠 SubAgent 记忆</span>
+                </button>
+              )}
+
+              {/* v2.3.0 (Cycle 5 P0-6) 新增：Hook 触发链路 */}
+              {onOpenHookChain && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenHookChain)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="chain" className="w-4 h-4 text-cyan-500" />
+                  <span>🔗 Hook 触发链路</span>
                 </button>
               )}
 

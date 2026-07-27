@@ -18,7 +18,6 @@
  * # ============================================================
  */
 
-import React from 'react';
 import type { PipelineData } from '../types';
 
 /** 步骤名称中文映射 */

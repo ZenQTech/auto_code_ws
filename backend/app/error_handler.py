@@ -11,6 +11,8 @@
 #   4. 提供崩溃检测和恢复逻辑
 # 输入参数：异常对象、日志消息
 # 输出结果：日志文件、异常响应
+# 修改记录：
+#   - 2026-07-24 | v2.0.0 | 日志格式新增 request_id 字段（结构化日志，Module B）
 # ============================================================
 """
 
@@ -56,8 +58,9 @@ def setup_logging():
     # 控制台处理器
     console_handler = logging.StreamHandler()
     console_handler.setLevel(log_level)
+    # v2.0.0 Module B：日志格式新增 request_id 字段（由 RequestIdFilter 注入）
     console_format = logging.Formatter(
-        "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        "%(asctime)s [%(levelname)s] [req=%(request_id)s] %(name)s: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
     console_handler.setFormatter(console_format)

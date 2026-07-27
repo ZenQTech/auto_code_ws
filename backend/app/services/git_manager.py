@@ -212,6 +212,26 @@ class CommitLogEntry:
     is_auto_commit: bool = False
 
 
+@dataclass
+class FileDiffEntry:
+    """
+    文件级 diff 数据类（v4.5.0 新增 - Module D DiffView 增强）
+    字段说明：
+      - path: 文件路径
+      - status: 变更类型（modified / added / deleted / renamed / untracked）
+      - additions: 新增行数
+      - deletions: 删除行数
+      - patch: 完整 diff patch 文本（已加行/已减行/上下文）
+      - is_staged: 是否已暂存
+    """
+    path: str = ""
+    status: str = "modified"
+    additions: int = 0
+    deletions: int = 0
+    patch: str = ""
+    is_staged: bool = False
+
+
 # ============================================================
 # 默认 .gitignore 模板
 # ============================================================
@@ -2472,6 +2492,198 @@ class GitManager:
             desc = f"更新 {file_count} 个文件"
 
         return f"{prefix}({scope}): {desc}"
+
+    # ============================================================
+    # v4.5.0 新增 - Module D DiffView 增强
+    # 作用：提供文件级 diff 与单文件回退能力，
+    #       供前端 DiffView 组件（保留/回退）使用
+    # ============================================================
+
+    def get_diff_files(self, staged: bool = False) -> List[FileDiffEntry]:
+        """
+        获取工作区中所有变更文件的 diff 列表（v4.5.0 新增）
+        作用：返回每个变更文件的 path / status / additions / deletions / patch，
+                     前端 DiffView 据此渲染文件列表与单文件 diff 视图
+        运行步骤：
+          1. 检查仓库有效性，无效返回空列表
+          2. 根据 staged 参数选择 diff 目标（None=未暂存；HEAD=已暂存；UntrackedFiles=未跟踪）
+          3. 对每个变更项调用 _build_file_diff 构建 FileDiffEntry
+          4. 未跟踪文件附加处理（status=untracked, patch=全文件内容）
+          5. 异常隔离：单文件 diff 构建失败不影响其他文件
+        参数：
+          - staged: 是否仅返回已暂存变更（默认 False=未暂存）
+        返回值：FileDiffEntry 列表
+        """
+        if self._repo is None:
+            return []
+
+        entries: List[FileDiffEntry] = []
+        try:
+            # 选择 diff 目标：None 表示未暂存（vs working tree），"HEAD" 表示已暂存（vs HEAD）
+            diff_target = "HEAD" if staged else None
+            changed_items = list(self._repo.index.diff(diff_target))
+        except Exception as e:
+            logger.error(f"读取 diff 列表失败: {e}")
+            return []
+
+        for item in changed_items:
+            try:
+                entry = self._build_file_diff(item, staged=staged)
+                if entry is not None:
+                    entries.append(entry)
+            except Exception as e:
+                # 单文件 diff 构建失败不影响其他文件
+                logger.warning(
+                    f"构建 diff 失败: a_path={item.a_path}, error={e}"
+                )
+
+        # 附加未跟踪文件
+        try:
+            for untracked_path in self._repo.untracked_files:
+                try:
+                    abs_path = os.path.join(self.repo_path, untracked_path)
+                    content = ""
+                    if os.path.isfile(abs_path):
+                        with open(abs_path, "r", encoding="utf-8", errors="replace") as f:
+                            content = f.read()
+                    patch_lines = [
+                        f"+++ b/{untracked_path}",
+                        f"@@ -0,0 +1,{content.count(chr(10)) + 1} @@",
+                    ]
+                    for line in content.splitlines():
+                        patch_lines.append(f"+{line}")
+                    entries.append(FileDiffEntry(
+                        path=untracked_path,
+                        status="untracked",
+                        additions=content.count(chr(10)) + (0 if not content else 1),
+                        deletions=0,
+                        patch="\n".join(patch_lines),
+                        is_staged=False,
+                    ))
+                except Exception as e:
+                    logger.warning(f"构建未跟踪文件 diff 失败: {untracked_path}, {e}")
+        except Exception:
+            pass
+
+        return entries
+
+    def _build_file_diff(
+        self, item, staged: bool = False
+    ) -> Optional[FileDiffEntry]:
+        """
+        根据 GitPython 的 DiffEntry 构建单文件 FileDiffEntry（v4.5.0 新增）
+        运行步骤：
+          1. 推断文件状态：新增(A)/修改(M)/删除(D)/重命名(R)
+          2. 解析 diff blob 得到 patch 文本
+          3. 统计 additions / deletions 行数
+          4. 区分 staged 标记
+        参数：
+          - item: git.DiffEntry 对象
+          - staged: 是否已暂存
+        返回值：FileDiffEntry 或 None（无效输入）
+        """
+        path = item.a_path or item.b_path or ""
+        if not path:
+            return None
+
+        # 推断状态
+        if item.new_file:
+            status = "added"
+        elif item.deleted_file:
+            status = "deleted"
+        elif item.renamed_file:
+            status = "renamed"
+        else:
+            status = "modified"
+
+        # 获取 patch 文本
+        try:
+            patch = item.diff.decode("utf-8", errors="replace") if item.diff else ""
+        except Exception:
+            patch = ""
+
+        # 统计 +/- 行数
+        additions = 0
+        deletions = 0
+        for line in patch.splitlines():
+            if line.startswith("+") and not line.startswith("+++"):
+                additions += 1
+            elif line.startswith("-") and not line.startswith("---"):
+                deletions += 1
+
+        return FileDiffEntry(
+            path=path,
+            status=status,
+            additions=additions,
+            deletions=deletions,
+            patch=patch,
+            is_staged=staged,
+        )
+
+    def checkout_file(self, file_path: str) -> Dict[str, Any]:
+        """
+        回退（撤销）指定文件的工作区修改（v4.5.0 新增）
+        作用：前端 DiffView 点击"回退"按钮时调用，
+              撤销该文件的所有未提交修改（恢复为 HEAD 状态）。
+        运行步骤：
+          1. 校验仓库有效性与文件路径
+          2. 调用 git.checkout 恢复文件
+          3. 未跟踪文件直接删除
+          4. 返回执行结果
+        参数：
+          - file_path: 文件相对仓库路径
+        返回值：执行结果字典
+            - success: bool，是否成功
+            - message: str，描述信息
+            - file_path: str，回退的文件路径
+        """
+        if self._repo is None:
+            return {
+                "success": False,
+                "message": "Git 仓库不可用",
+                "file_path": file_path,
+            }
+
+        if not file_path or not isinstance(file_path, str):
+            return {
+                "success": False,
+                "message": "文件路径无效",
+                "file_path": str(file_path),
+            }
+
+        try:
+            # 未跟踪文件：直接删除
+            if file_path in self._repo.untracked_files:
+                abs_path = os.path.join(self.repo_path, file_path)
+                if os.path.isfile(abs_path):
+                    os.remove(abs_path)
+                return {
+                    "success": True,
+                    "message": f"已删除未跟踪文件: {file_path}",
+                    "file_path": file_path,
+                }
+
+            # 已跟踪文件：执行 git checkout 恢复为 HEAD 状态
+            self._repo.git.checkout("HEAD", "--", file_path)
+            return {
+                "success": True,
+                "message": f"已回退文件: {file_path}",
+                "file_path": file_path,
+            }
+        except GitCommandError as e:
+            logger.error(f"回退文件失败: {file_path}, {e}")
+            return {
+                "success": False,
+                "message": f"回退失败: {e}",
+                "file_path": file_path,
+            }
+        except Exception as e:
+            logger.error(f"回退文件异常: {file_path}, {e}")
+            return {
+                "success": False,
+                "message": f"回退异常: {e}",
+                "file_path": file_path,
+            }
 
 
 # 全局 Git 管理器单例

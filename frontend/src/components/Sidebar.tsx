@@ -27,14 +27,16 @@
  * # 输出结果：纯 UI 组件，无返回值
  * # ============================================================
  * # 修改记录：
- * #   - 2026-06-23 | v1.0.0 | 初始版本：折叠 / 展开双形态；搜索过滤；Logo 切换；用户区占位
- * #   - 2026-06-24 | v1.1.0 | 新增批量删除工具栏（batchMode / selectedIds）；新增回收站视图（trashView / trashSessions）；对接回收站 API
- * #   - 2026-06-24 | v1.2.0 | 折叠态图标渐变背景 + Tooltip 提示（新增新建对话入口 / 回收站入口，应用统一 from-hermes-50 to-hermes-100 渐变 + hover:scale-110 + Tooltip）
- * #   - 2026-06-24 | v1.3.0 | 新增 appMode / onModeSwitch props；模式切换 pill 按钮（顶部搜索框上方）；sessions 按 session.mode 过滤
- * # ============================================================
+#   - 2026-06-23 | v1.0.0 | 初始版本：折叠 / 展开双形态；搜索过滤；Logo 切换；用户区占位
+#   - 2026-06-24 | v1.1.0 | 新增批量删除工具栏（batchMode / selectedIds）；新增回收站视图（trashView / trashSessions）；对接回收站 API
+#   - 2026-06-24 | v1.2.0 | 折叠态图标渐变背景 + Tooltip 提示（新增新建对话入口 / 回收站入口，应用统一 from-hermes-50 to-hermes-100 渐变 + hover:scale-110 + Tooltip）
+#   - 2026-06-24 | v1.3.0 | 新增 appMode / onModeSwitch props；模式切换 pill 按钮（顶部搜索框上方）；sessions 按 session.mode 过滤
+#   - 2026-07-24 | v1.4.0 | 搜索框增加 300ms 输入防抖（debouncedQuery + useRef + setTimeout），
+#     避免每次按键立即重算 filteredSessions 触发 Sidebar 重渲染
+# ============================================================
  */
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import type { Session } from '../types';
 import {
   fetchTrashSessions,
@@ -63,6 +65,8 @@ interface Props {
   onModeSwitch: (mode: 'chat' | 'coding') => void;
   /** v1.4.0 新增：回收站操作后通知父组件刷新会话列表 */
   onSessionsChanged?: () => void;
+  /** v1.4.0 新增：删除/批量删除进行中标记（true 时禁用相关按钮 + 显示加载） */
+  deletingSession?: boolean;
 }
 
 export default function Sidebar({
@@ -79,9 +83,49 @@ export default function Sidebar({
   appMode,
   onModeSwitch,
   onSessionsChanged,
+  deletingSession = false,
 }: Props) {
-  /** 搜索关键词 */
+  /** 搜索关键词（输入框原始值，每次按键立即更新） */
   const [searchQuery, setSearchQuery] = useState('');
+  /**
+   * v1.4.0 新增：搜索关键词防抖值（debouncedQuery）
+   * 作用：searchQuery 变化后 300ms 内没有新输入时，才更新 debouncedQuery；
+   *       filteredSessions 依赖 debouncedQuery 计算，避免频繁重渲染
+   */
+  const [debouncedQuery, setDebouncedQuery] = useState('');
+  /**
+   * v1.4.0 新增：防抖定时器 ref
+   * 作用：保存 setTimeout 返回值，组件卸载或新输入时清理，避免状态污染
+   */
+  const debounceTimerRef = useRef<number | null>(null);
+
+  /**
+   * v1.4.0 新增：搜索框 onChange 处理函数
+   * 行为：立即更新 searchQuery（保证输入框响应即时），同时启动/重置 300ms 防抖定时器；
+   *       定时器触发后更新 debouncedQuery，触发 filteredSessions 重算。
+   */
+  const handleSearchChange = useCallback((value: string) => {
+    setSearchQuery(value);
+    if (debounceTimerRef.current !== null) {
+      window.clearTimeout(debounceTimerRef.current);
+    }
+    debounceTimerRef.current = window.setTimeout(() => {
+      setDebouncedQuery(value);
+      debounceTimerRef.current = null;
+    }, 300);
+  }, []);
+
+  /**
+   * v1.4.0 新增：组件卸载时清理未触发的防抖定时器，避免内存泄漏 / 状态污染
+   */
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current !== null) {
+        window.clearTimeout(debounceTimerRef.current);
+        debounceTimerRef.current = null;
+      }
+    };
+  }, []);
   /** 批量删除模式标志（v1.1.0 新增） */
   const [batchMode, setBatchMode] = useState(false);
   /** 批量删除选中 ID 集合（v1.1.0 新增） */
@@ -98,18 +142,20 @@ export default function Sidebar({
    * 匹配规则：
    *   1. session.mode === appMode（仅显示当前模式下的会话）
    *   2. title 或 user_first_message 包含关键词（不区分大小写）
+   * v1.4.0：依赖 debouncedQuery（防抖后）而非 searchQuery（输入即变），
+   *         避免每次按键立即重算 + 触发会话列表重渲染
    */
   const filteredSessions = useMemo(() => {
     // 第一步：按 appMode 过滤
     const modeFiltered = sessions.filter(s => s.mode === appMode);
-    // 第二步：按搜索关键词过滤
-    if (!searchQuery.trim()) return modeFiltered;
-    const q = searchQuery.trim().toLowerCase();
+    // 第二步：按防抖后的搜索关键词过滤
+    if (!debouncedQuery.trim()) return modeFiltered;
+    const q = debouncedQuery.trim().toLowerCase();
     return modeFiltered.filter(s =>
       (s.title || '').toLowerCase().includes(q) ||
       (s.user_first_message || '').toLowerCase().includes(q)
     );
-  }, [sessions, searchQuery, appMode]);
+  }, [sessions, debouncedQuery, appMode]);
 
   // ============================================================
   // 批量删除相关操作（v1.1.0 新增）
@@ -433,16 +479,17 @@ export default function Sidebar({
             取消
           </button>
           {/* 删除所选按钮 */}
+          {/* v1.4.0：deletingSession=true 时禁用按钮 + 灰化样式 + 显示加载文案 */}
           <button
             onClick={handleBatchDelete}
-            disabled={selectedIds.size === 0}
+            disabled={selectedIds.size === 0 || deletingSession}
             className={`text-xs font-medium px-3 py-1 rounded transition-colors
-                        ${selectedIds.size > 0
+                        ${selectedIds.size > 0 && !deletingSession
                           ? 'bg-red-500 text-white hover:bg-red-600'
                           : 'bg-surface-300 text-surface-500 cursor-not-allowed opacity-50'
                         }`}
           >
-            删除所选({selectedIds.size})
+            {deletingSession ? '删除中...' : `删除所选(${selectedIds.size})`}
           </button>
         </div>
       )}
@@ -489,7 +536,7 @@ export default function Sidebar({
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => handleSearchChange(e.target.value)}
               placeholder="搜索会话..."
               className="input-glow w-full pl-9 pr-3 py-2 text-sm rounded-md"
             />
@@ -626,6 +673,7 @@ export default function Sidebar({
                   isActive={session.id === currentSessionId}
                   onClick={() => onSelectSession(session.id)}
                   onDelete={() => onDeleteSession(session.id)}
+                  disabled={deletingSession}
                   batchMode={batchMode}
                   checked={selectedIds.has(session.id)}
                   onCheck={() => toggleSelect(session.id)}

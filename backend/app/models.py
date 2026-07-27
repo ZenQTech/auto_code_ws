@@ -171,6 +171,12 @@ class Session(Base):
     mode = Column(String(16), default="chat", nullable=False, comment="会话模式：chat（闲聊）/ coding（编程）")
     workflow_id = Column(String(36), nullable=True, comment="关联的工作流 ID")
     workflow_stage = Column(String(32), nullable=True, comment="当前工作流阶段")
+    # v6.13.0 (Cycle 2 T3) 新增：fork/resume 高级管理字段
+    parent_session_id = Column(String(36), nullable=True, index=True, comment="父会话 ID（fork 来源）")
+    forked_at = Column(DateTime, nullable=True, comment="fork 时间")
+    fork_point_message_id = Column(String(36), nullable=True, comment="fork 时的消息 ID")
+    is_archived = Column(Boolean, default=False, comment="是否已归档")
+    device_id = Column(String(128), nullable=True, comment="最后操作的设备 ID")
 
     # 关系：该会话下的所有智能体、任务、对话记录
     # 注意：session_id 字段为非外键 String(36)，必须用 foreign() 标注
@@ -314,6 +320,9 @@ class Conversation(Base):
       - role: 角色（user / assistant / system）
       - content: 对话内容
       - extra_data: 附加元数据（JSON 格式，列名为 metadata）
+      - is_compacted: 是否已被压缩（v6.13.0 Cycle 2 新增）
+      - compacted_at: 压缩时间（v6.13.0 Cycle 2 新增）
+      - compacted_into: 压缩后指向的 summary 消息 ID（v6.13.0 Cycle 2 新增）
       - created_at: 创建时间
     """
     __tablename__ = "conversations"
@@ -325,6 +334,10 @@ class Conversation(Base):
     role = Column(String(32), nullable=False, comment="角色：user/assistant/system")
     content = Column(Text, default="", comment="对话内容")
     extra_data = Column("metadata", JSON, default=dict, comment="附加元数据")
+    # v6.13.0 Cycle 2 新增：压缩追踪字段
+    is_compacted = Column(Boolean, default=False, comment="是否已被压缩")
+    compacted_at = Column(DateTime, nullable=True, comment="压缩时间")
+    compacted_into = Column(String(36), nullable=True, comment="压缩后指向的 summary 消息 ID")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
 
     # 关系
@@ -431,6 +444,10 @@ class Workflow(Base):
     # v2.7.0 新增：目标导向任务循环字段
     goal_id = Column(String(36), nullable=True, default=None, comment="目标 ID（Goal-oriented task loop）")
     goals = Column(JSON, nullable=True, default=None, comment="子目标列表 JSON（Goal-oriented task loop）")
+    # v6.3.0 (P0-4) 新增：Plan 模式确认标记（PlanModeService 写入）
+    plan_confirmed = Column(Boolean, default=False, comment="Plan 已确认标记")
+    # v6.3.0 (P0-4) 新增：Plan 模式 JSON 数据
+    plan_data = Column(Text, default="", comment="Plan JSON 数据（序列化 PlanDocument）")
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), comment="创建时间")
     updated_at = Column(DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), comment="更新时间")
 

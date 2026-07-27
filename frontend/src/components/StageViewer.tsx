@@ -49,13 +49,6 @@ export default function StageViewer({ stage, loading, onRetry, onSkip, onClose }
     );
   }
 
-  const statusColors: Record<string, string> = {
-    pending: 'text-surface-500',
-    in_progress: 'text-hermes-400',
-    completed: 'text-emerald-400',
-    failed: 'text-red-400',
-  };
-
   const statusLabels: Record<string, string> = {
     pending: '等待中',
     in_progress: '进行中',

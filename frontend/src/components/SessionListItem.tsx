@@ -27,7 +27,9 @@
  * #   - 2026-06-24 | v1.2.0 | 行内 hover 操作图标（重命名 / 归档 / 删除）+ 重命名 inline input 交互（内部 useState 方案，不破坏 props 签名）
  * #   - 2026-06-25 | v1.3.0 | formatRelativeTime 提取到 ../utils/time.ts 共享
  * #   - 2026-06-25 | v1.3.1 | Task 4b: handleArchive 从 console.log 占位改为调用 updateSession(session.id, { status: 'archived' })
- * # ============================================================
+#   - 2026-07-24 | v1.4.0 | 新增 disabled 可选 prop：删除按钮支持加载态禁用
+#     防止快速重复点击触发多次 deleteSession API 请求
+# ============================================================
  */
 
 import { useState, useRef, useEffect, useCallback } from 'react';
@@ -40,6 +42,8 @@ interface Props {
   isActive: boolean;
   onClick: () => void;
   onDelete: () => void;
+  /** v1.5.0 新增：删除按钮是否禁用（true 时禁用删除按钮 + 灰化样式） */
+  disabled?: boolean;
   /** 是否处于批量删除模式（v1.2.0 新增） */
   batchMode?: boolean;
   /** 当前项是否被选中（v1.2.0 新增） */
@@ -110,7 +114,7 @@ function deriveDisplayTitle(session: Session): string {
  *   - 点击图标 stopPropagation，避免触发外层 onClick
  *   - 重命名保存：调 updateSession(id, { title: newTitle })，失败 console.warn
  */
-export default function SessionListItem({ session, isActive, onClick, onDelete, batchMode, checked, onCheck }: Props) {
+export default function SessionListItem({ session, isActive, onClick, onDelete, disabled = false, batchMode, checked, onCheck }: Props) {
   const relTime = formatRelativeTime(session.last_active_at);
   // v1.1.0：派生计算 displayTitle，渲染时使用 displayTitle（单行省略号由 CSS truncate 处理）
   const displayTitle = deriveDisplayTitle(session);
@@ -338,19 +342,25 @@ export default function SessionListItem({ session, isActive, onClick, onDelete, 
                   <ArchiveIcon />
                 </button>
                 {/* 删除按钮（保留原有逻辑） */}
+                {/* v1.5.0：disabled=true 时禁用按钮 + 灰化样式 */}
                 <button
                   onClick={(e) => {
                     // 阻止冒泡，避免触发外层 onClick
                     e.stopPropagation();
+                    if (disabled) return;
                     onDelete();
                   }}
+                  disabled={disabled}
                   aria-label="删除会话"
                   title="删除"
-                  className="w-6 h-6 rounded hover:bg-surface-100
+                  className={`w-6 h-6 rounded hover:bg-surface-100
                              flex items-center justify-center
-                             text-surface-500 hover:text-red-400 hover:scale-110
-                             transition-all duration-fast ease-material
-                             focus:outline-none focus-visible:ring-1 focus-visible:ring-red-400"
+                             text-surface-500 transition-all duration-fast ease-material
+                             focus:outline-none focus-visible:ring-1 focus-visible:ring-red-400
+                             ${disabled
+                               ? 'opacity-40 cursor-not-allowed'
+                               : 'hover:text-red-400 hover:scale-110'
+                             }`}
                 >
                   <TrashIcon />
                 </button>

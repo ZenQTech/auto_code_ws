@@ -16,11 +16,13 @@
  * #   - onClose: () => void，关闭组件的回调
  * # 输出结果：无返回值，纯 UI 组件
  * # 修改记录：
- * #   - 2026-06-17 | v1.0.0 | 初始创建，实现计划文档 Markdown 渲染
- * #   - 2026-06-17 | v1.1.0 | 优化模态弹窗体验：添加关闭动画、内容区渐变淡出效果、确认按钮过渡动画
- * #   - 2026-06-23 | v1.2.0 | 模态框主面板升级为 .glass-strong；背景遮罩使用 .glass；按钮替换为 .btn-primary/.btn-ghost
- * #   - 2026-06-25 | v1.3.0 | renderMarkdown 提取到 ../utils/markdown.ts 共享
- * # ============================================================
+#   - 2026-06-17 | v1.0.0 | 初始创建，实现计划文档 Markdown 渲染
+#   - 2026-06-17 | v1.1.0 | 优化模态弹窗体验：添加关闭动画、内容区渐变淡出效果、确认按钮过渡动画
+#   - 2026-06-23 | v1.2.0 | 模态框主面板升级为 .glass-strong；背景遮罩使用 .glass；按钮替换为 .btn-primary/.btn-ghost
+#   - 2026-06-25 | v1.3.0 | renderMarkdown 提取到 ../utils/markdown.ts 共享
+#   - 2026-07-24 | v1.4.0 | 新增 confirmLoading 可选 prop：确认按钮显示加载态
+#     防止快速重复点击触发多次 confirmPlan API 请求
+# ============================================================
  */
 
 import { useMemo, useState, useEffect } from 'react';
@@ -35,9 +37,11 @@ interface Props {
   onConfirm: () => void;
   /** 关闭组件的回调 */
   onClose: () => void;
+  /** v1.1.0 新增：确认按钮是否处于加载态（true 时禁用按钮 + 显示加载文案） */
+  confirmLoading?: boolean;
 }
 
-export default function PlanViewer({ content, visible, onConfirm, onClose }: Props) {
+export default function PlanViewer({ content, visible, onConfirm, onClose, confirmLoading = false }: Props) {
   /**
    * 关闭动画状态：true 时播放淡出动画，动画结束后触发实际 onClose
    */
@@ -131,9 +135,24 @@ export default function PlanViewer({ content, visible, onConfirm, onClose }: Pro
           </button>
           <button
             onClick={onConfirm}
-            className="btn-primary"
+            disabled={confirmLoading}
+            className={`btn-primary ${confirmLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
           >
-            确认执行
+            {confirmLoading ? (
+              <span className="inline-flex items-center gap-2">
+                <svg
+                  className="w-4 h-4 animate-spin"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                </svg>
+                执行中...
+              </span>
+            ) : (
+              '确认执行'
+            )}
           </button>
         </div>
       </div>

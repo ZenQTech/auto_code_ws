@@ -36,7 +36,7 @@
  * ============================================================
  */
 
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { renderMarkdown } from '../utils/markdown';
 
 /** 缺陷项类型 */

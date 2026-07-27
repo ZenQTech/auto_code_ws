@@ -95,6 +95,7 @@ const statusLabelMap: Record<string, string> = {
   done: '已完成',
   failed: '失败',
 };
+void statusLabelMap; // 标记为有意保留（防止 TS6133 noUnusedLocals 报警；后续重构可能引用）
 
 /** 优先级中文标签 */
 const priorityLabelMap: Record<string, string> = {

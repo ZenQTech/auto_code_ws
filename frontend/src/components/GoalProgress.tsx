@@ -18,7 +18,6 @@
  * # ============================================================
  */
 
-import React from 'react';
 import type { GoalData } from '../types';
 
 /**

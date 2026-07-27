@@ -168,6 +168,8 @@ import PlanEditorModal from './components/PlanEditorModal';
 import HooksPanel from './components/HooksPanel';
 /** v6.15.0 (Cycle 4 P0-4) 新增：SubAgent 记忆查看器 */
 import SubAgentMemoryViewer from './components/SubAgentMemoryViewer';
+/** v1.4.0 (Cycle 5 P0-6) 新增：Hook 触发链路查看器 */
+import HookChainViewer from './components/HookChainViewer';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -297,6 +299,7 @@ export default function App() {
     planEditor: planEditorModal,
     hooks: hooksModal,
     subagentMemory: subagentMemoryModal,
+    hookChain: hookChainModal,  // v1.4.0 (Cycle 5 P0-6) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -1699,6 +1702,7 @@ export default function App() {
           onOpenPlanEditor={setPlanEditorOpen}
           onOpenHooks={setHooksPanelOpen}
           onOpenSubagentMemory={setSubagentMemoryPanelOpen}
+          onOpenHookChain={() => hookChainModal.onOpen()}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
           onReasoningIntensityChange={(i) => showToast(`推理强度已设为 ${i}`, 'info')}
           workflowStatusCurrentStage={workflowStatus?.current_stage ?? null}
@@ -1973,6 +1977,13 @@ export default function App() {
       {subagentMemoryPanelOpen && (
         <Cycle3Modal onClose={closeSubagentMemoryPanel} maxWidth="max-w-5xl">
           <SubAgentMemoryViewer onClose={closeSubagentMemoryPanel} />
+        </Cycle3Modal>
+      )}
+
+      {/* v1.4.0 (Cycle 5 P0-6) 新增：Hook 触发链路查看器 */}
+      {hookChainModal.open && (
+        <Cycle3Modal onClose={hookChainModal.onClose} maxWidth="max-w-5xl">
+          <HookChainViewer onClose={hookChainModal.onClose} />
         </Cycle3Modal>
       )}
     </div>

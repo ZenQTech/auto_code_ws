@@ -22,7 +22,7 @@
  * # ============================================================
  */
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { fetchProjects, createProject } from '../hooks/useApi';
 import type { Project } from '../types';
 

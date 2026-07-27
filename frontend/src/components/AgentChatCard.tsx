@@ -16,9 +16,9 @@
  * # ============================================================
  */
 
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 import { useTasks, useConversations } from '../hooks/useApi';
-import type { Agent, Task } from '../types';
+import type { Agent } from '../types';
 
 interface Props {
   agent: Agent;

@@ -26,7 +26,6 @@
 # ============================================================
  */
 
-import React from 'react';
 import ClarificationCard, { ClarificationQuestion } from './ClarificationCard';
 
 /**

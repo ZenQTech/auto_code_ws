@@ -733,6 +733,10 @@ app.include_router(skills_router, prefix="/api", tags=["skills"])
 from .api.agents_md import router as agents_md_router
 app.include_router(agents_md_router, prefix="/api", tags=["agents-md"])
 
+# v4.5.0 (Cycle 4 P0-4) 新增：注册 Hooks API 路由（10 类事件）
+from .api.hooks import router as hooks_router
+app.include_router(hooks_router, prefix="/api/hooks", tags=["hooks"])
+
 # 注册全局异常处理器
 app.add_exception_handler(Exception, global_exception_handler)
 

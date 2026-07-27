@@ -72,6 +72,8 @@ export interface UseModalsResult {
   hooks: PanelController;
   /** v1.3.0 P0-4 新增：SubAgent 记忆查看器 */
   subagentMemory: PanelController;
+  /** v1.4.0 (Cycle 5 P0-6) 新增：Hook 触发链路查看器 */
+  hookChain: PanelController;
 }
 
 /**
@@ -93,6 +95,7 @@ export function useModals(): UseModalsResult {
   const planEditor = usePanelController(false);  // v1.1.0 P0-3 新增
   const hooks = usePanelController(false);  // v1.2.0 P0-4 新增
   const subagentMemory = usePanelController(false);  // v1.3.0 P0-4 新增
+  const hookChain = usePanelController(false);  // v1.4.0 (Cycle 5 P0-6) 新增
 
   return {
     settings,
@@ -109,6 +112,7 @@ export function useModals(): UseModalsResult {
     planEditor,
     hooks,
     subagentMemory,
+    hookChain,  // v1.4.0 (Cycle 5 P0-6) 新增
   };
 }
 

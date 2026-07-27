@@ -10,11 +10,14 @@
 #   - POST /api/git/tag: 创建语义化版本标签
 #   - GET /api/git/branches: 获取分支列表
 #   - GET /api/git/log: 获取提交历史
+#   - POST /api/git/diff-files: 获取工作区文件级 diff 列表（v4.5.0 新增）
+#   - POST /api/git/checkout-file: 回退指定文件的工作区修改（v4.5.0 新增）
 # 输入参数：通过请求体和查询参数传递
 # 输出结果：JSON 格式的 Git 操作结果
 # 修改记录：
 #   - 2026-06-24 | v4.1.0 | 初始版本，实现 Git 版本管理 API
 #   - 2026-06-26 | v4.1.1 | 修复 GitManager 双实例问题，改用 request.app.state.git_manager
+#   - 2026-07-24 | v4.5.0 | 新增 diff-files / checkout-file 端点，支撑 Module D DiffView
 # ============================================================
 """
 
@@ -34,6 +37,7 @@ from ..services.git_manager import (
     TagResult,
     BranchInfo,
     CommitLogEntry,
+    FileDiffEntry,
 )
 
 logger = logging.getLogger(__name__)
@@ -118,6 +122,15 @@ class SwitchBranchRequest(BaseModel):
       - branch_name: 目标分支名
     """
     branch_name: str = Field(..., min_length=1, description="目标分支名")
+
+
+class CheckoutFileRequest(BaseModel):
+    """
+    回退（撤销）文件请求（v4.5.0 新增）
+    字段说明：
+      - file_path: 待回退的文件相对路径
+    """
+    file_path: str = Field(..., min_length=1, max_length=1024, description="待回退的文件路径")
 
 
 # ============================================================
@@ -452,3 +465,83 @@ async def get_git_config(request: Request):
     """
     gm = request.app.state.git_manager
     return gm.get_config_summary()
+
+
+# ============================================================
+# v4.5.0 新增 - Module D DiffView API
+# ============================================================
+
+@router.post("/diff-files")
+async def get_diff_files(
+    request: Request,
+    staged: bool = Query(default=False, description="是否仅返回已暂存变更"),
+):
+    """
+    获取工作区文件级 diff 列表（v4.5.0 新增）
+    作用：前端 DiffView 组件调用，列出所有变更文件及每文件的
+          path / status / additions / deletions / patch
+    运行步骤：
+      1. 从 request.app.state.git_manager 获取 GitManager 实例
+      2. 调用 gm.get_diff_files(staged=staged) 获取 diff 列表
+      3. 将结果转换为 JSON 可序列化的字典列表
+      4. 同时返回汇总统计（文件数、新增行数、删除行数）
+    调用方：前端 DiffView.tsx
+    被调用方：GitManager.get_diff_files
+    参数：
+      - staged: 是否仅返回已暂存变更
+    返回值：{
+        files: [{ path, status, additions, deletions, patch, is_staged }],
+        total_files: int,
+        total_additions: int,
+        total_deletions: int,
+      }
+    """
+    gm = request.app.state.git_manager
+    entries: List[FileDiffEntry] = gm.get_diff_files(staged=staged)
+
+    files = [
+        {
+            "path": e.path,
+            "status": e.status,
+            "additions": e.additions,
+            "deletions": e.deletions,
+            "patch": e.patch,
+            "is_staged": e.is_staged,
+        }
+        for e in entries
+    ]
+
+    return {
+        "files": files,
+        "total_files": len(files),
+        "total_additions": sum(e.additions for e in entries),
+        "total_deletions": sum(e.deletions for e in entries),
+        "staged_only": staged,
+    }
+
+
+@router.post("/checkout-file")
+async def checkout_file(request: Request, body: CheckoutFileRequest):
+    """
+    回退（撤销）指定文件的工作区修改（v4.5.0 新增）
+    作用：前端 DiffView"回退"按钮调用，撤销该文件的未提交修改
+    运行步骤：
+      1. 校验 file_path 字段已由 pydantic 强制非空
+      2. 调用 gm.checkout_file 执行回退
+      3. 失败时返回 400 错误，成功时返回结果字典
+    调用方：前端 DiffView.tsx
+    被调用方：GitManager.checkout_file
+    参数：
+      - body: CheckoutFileRequest
+    返回值：操作结果字典 { success, message, file_path }
+    """
+    gm = request.app.state.git_manager
+    result = gm.checkout_file(file_path=body.file_path)
+
+    if not result.get("success"):
+        raise HTTPException(
+            status_code=400,
+            detail=result.get("message", "回退文件失败"),
+        )
+
+    return result

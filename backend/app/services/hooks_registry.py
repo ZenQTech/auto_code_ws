@@ -1,6 +1,6 @@
 """
 # ============================================================
-# Hooks 配置管理 (v1.0.0) - Cycle 4 P0-4 Hook 事件完整化
+# Hooks 配置管理 (v1.1.0) - Cycle 5 P0-6 Hook 事件深度集成
 # ============================================================
 # 核心作用：定义和管理 10 类 Hook 事件配置，支持 TOML/JSON 加载
 #           仿照 Codex v0.150+ Hooks 规范设计
@@ -8,10 +8,14 @@
 #   1. 定义 10 种 HookEventType 事件类型
 #   2. HookConfig 描述单个 hook（matcher + hooks 列表）
 #   3. HooksRegistry 管理多个 hook 配置 + 事件分发
+#   4. v1.1.0 新增：Codex 风格 hookSpecificOutput 解析
+#      - additionalContext 注入到 LLM context
+#      - permissionDecision 覆盖默认权限决策
 # 输入参数：见各 dataclass
 # 输出结果：HooksRegistry 实例
 # 修改记录：
 #   - 2026-07-27 | v1.0.0 | Cycle 4 P0-4 新建 - 仿照 Codex Hooks 设计
+#   - 2026-07-27 | v1.1.0 | Cycle 5 P0-6 新增 hookSpecificOutput 解析 + hook_name 字段
 # ============================================================
 """
 
@@ -71,6 +75,10 @@ class HookAction:
       - stdout: 标准输出
       - stderr: 标准错误
       - json_output: 结构化输出（如果 hook 输出 JSON）
+      - hook_specific_output: Codex 风格 hookSpecificOutput JSON
+          (例: {"hookEventName": "PreToolUse", "additionalContext": "...", "permissionDecision": "allow"})
+      - additional_context: 从 hook_specific_output 提取的额外上下文
+      - permission_decision: 从 hook_specific_output 提取的权限决策 (allow/deny/ask)
       - duration_ms: 执行耗时（毫秒）
       - error: 错误信息（异常时填充）
     """
@@ -78,8 +86,14 @@ class HookAction:
     stdout: str = ""
     stderr: str = ""
     json_output: Optional[Dict[str, Any]] = None
+    # v1.1.0 Cycle 5 P0-6 新增：Codex 风格 hookSpecificOutput 支持
+    hook_specific_output: Optional[Dict[str, Any]] = None
+    additional_context: Optional[str] = None
+    permission_decision: Optional[str] = None
     duration_ms: float = 0.0
     error: Optional[str] = None
+    # v1.1.0 Cycle 5 P0-6 新增：触发该 action 的 hook 名称（dispatch 时填充）
+    hook_name: Optional[str] = None
 
     @property
     def is_blocking(self) -> bool:
@@ -102,10 +116,14 @@ class HookAction:
             "stdout": self.stdout[:500] if self.stdout else "",
             "stderr": self.stderr[:500] if self.stderr else "",
             "json_output": self.json_output,
+            "hook_specific_output": self.hook_specific_output,
+            "additional_context": self.additional_context,
+            "permission_decision": self.permission_decision,
             "duration_ms": self.duration_ms,
             "error": self.error,
             "is_blocking": self.is_blocking,
             "is_success": self.is_success,
+            "hook_name": self.hook_name,
         }
 
 
@@ -363,6 +381,8 @@ class HooksRegistry:
 
             for hook_def in config.hooks:
                 action = await self._execute_hook(hook_def, event, payload)
+                # v1.1.0 Cycle 5 P0-6 新增：在 action 上记录 hook_name 供链路追溯
+                action.hook_name = hook_def.name or hook_def.command[:30]
                 results.append(action)
 
                 # 记录到历史
@@ -452,9 +472,19 @@ class HooksRegistry:
 
             # 尝试解析 JSON 输出
             json_output = None
+            hook_specific_output = None
+            additional_context = None
+            permission_decision = None
             if stdout and stdout.startswith("{"):
                 try:
                     json_output = json.loads(stdout)
+                    # v1.1.0 Cycle 5 P0-6 新增：解析 Codex 风格 hookSpecificOutput
+                    if isinstance(json_output, dict):
+                        hso = json_output.get("hookSpecificOutput")
+                        if isinstance(hso, dict):
+                            hook_specific_output = hso
+                            additional_context = hso.get("additionalContext")
+                            permission_decision = hso.get("permissionDecision")
                 except json.JSONDecodeError:
                     pass
 
@@ -463,6 +493,9 @@ class HooksRegistry:
                 stdout=stdout,
                 stderr=stderr,
                 json_output=json_output,
+                hook_specific_output=hook_specific_output,
+                additional_context=additional_context,
+                permission_decision=permission_decision,
                 duration_ms=duration,
             )
 

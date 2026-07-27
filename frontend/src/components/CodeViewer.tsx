@@ -12,12 +12,18 @@
  * #   - project: string，项目名称
  * #   - filePath: string，文件路径
  * #   - onClose: () => void，关闭回调
+ * #   - streamContent?: string，外部传入的流式内容（v2.11.3 新增 - Module D D7）
+ * #   - isStreaming?: boolean，是否正在接收流式数据（v2.11.3 新增 - Module D D7）
+ * #   - onStreamFileChange?: (path: string) => void，文件切换回调（v2.11.3 新增 - Module D D7）
  * # 输出结果：纯 UI 组件，无返回值
  * # 修改记录：
  * #   - 2026-06-24 | v2.10.0 | 初始版本：正则语法高亮
  * #   - 2026-06-25 | v2.11.0 | 升级为 Monaco Editor
  * #   - 2026-06-25 | v2.11.1 | getFileIcon / FILE_ICONS 提取到 ../utils/fileIcon.ts 共享
- * # ============================================================
+ * #   - 2026-07-24 | v2.11.3 | Module D - D7 扩展：新增 streamContent / isStreaming
+ * #     / onStreamFileChange 三个可选 Props，支撑 WebSocket code_stream 事件
+ * #     的实时流式代码生成展示；通过 props 接收流式内容（保持组件解耦）
+ * ============================================================
  */
 
 import { useState, useEffect, useMemo, lazy, Suspense } from 'react';
@@ -30,6 +36,22 @@ interface Props {
   project: string;
   filePath: string;
   onClose: () => void;
+  /**
+   * 外部传入的流式内容（v2.11.3 新增 - Module D D7）
+   * 当提供此 prop 时，组件使用此内容而非 fetchFileContent 拉取
+   * 主要用于：AI 实时生成代码时通过 WebSocket code_stream 事件增量推送
+   */
+  streamContent?: string;
+  /**
+   * 是否正在接收流式数据（v2.11.3 新增 - Module D D7）
+   * 为 true 时显示流式指示器，禁用编辑能力
+   */
+  isStreaming?: boolean;
+  /**
+   * 流式文件路径变化回调（v2.11.3 新增 - Module D D7）
+   * 当 filePath 变化（AI 切到新文件继续生成）时通知父组件
+   */
+  onStreamFileChange?: (path: string) => void;
 }
 
 /** 文件扩展名 → Monaco 语言标识 */
@@ -84,14 +106,32 @@ function MonacoLoading() {
   );
 }
 
-export default function CodeViewer({ project, filePath, onClose }: Props) {
+export default function CodeViewer({
+  project,
+  filePath,
+  onClose,
+  streamContent,
+  isStreaming = false,
+  onStreamFileChange,
+}: Props) {
   const [content, setContent] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lineCount, setLineCount] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
 
+  // v2.11.3 新增 - Module D D7: 是否处于流式模式
+  // 当父组件传入 streamContent 时，跳过 fetchFileContent
+  const isStreamMode = streamContent !== undefined;
+
   useEffect(() => {
+    // v2.11.3：流式模式下不执行 fetch，直接使用外部传入的 streamContent
+    if (isStreamMode) {
+      setLoading(false);
+      setError(null);
+      return;
+    }
+
     let cancelled = false;
     setLoading(true);
     setError(null);
@@ -110,7 +150,24 @@ export default function CodeViewer({ project, filePath, onClose }: Props) {
       });
 
     return () => { cancelled = true; };
-  }, [project, filePath]);
+  }, [project, filePath, isStreamMode]);
+
+  // v2.11.3 新增 - Module D D7: 监听 streamContent 变化更新内部状态
+  useEffect(() => {
+    if (isStreamMode && streamContent !== undefined) {
+      setContent(streamContent);
+      setLineCount(streamContent.split('\n').length);
+      // 流式内容不视为脏
+      setIsDirty(false);
+    }
+  }, [streamContent, isStreamMode]);
+
+  // v2.11.3 新增 - Module D D7: 文件路径变化通知
+  useEffect(() => {
+    if (isStreamMode && onStreamFileChange) {
+      onStreamFileChange(filePath);
+    }
+  }, [filePath, isStreamMode, onStreamFileChange]);
 
   const language = useMemo(() => detectLanguage(filePath), [filePath]);
   const fileName = useMemo(() => getFileName(filePath), [filePath]);
@@ -173,10 +230,20 @@ export default function CodeViewer({ project, filePath, onClose }: Props) {
           {isDirty && (
             <span className="text-xs text-hermes-400">● 已修改</span>
           )}
+          {/* v2.11.3 新增 - Module D D7: 流式生成指示器 */}
+          {isStreaming && (
+            <span className="flex items-center gap-1.5 text-xs text-emerald-400">
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
+              </span>
+              <span>实时生成中</span>
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          {/* v2.11.2：isDirty 时显示保存按钮 */}
-          {isDirty && (
+          {/* v2.11.2：isDirty 时显示保存按钮（流式模式下隐藏） */}
+          {isDirty && !isStreamMode && (
             <button
               onClick={() => {
                 setIsDirty(false);
@@ -213,12 +280,15 @@ export default function CodeViewer({ project, filePath, onClose }: Props) {
             value={content}
             theme="vs-dark"
             onChange={(value) => {
+              // v2.11.3 流式模式下不触发脏标记
+              if (isStreamMode) return;
               if (value !== undefined && value !== content) {
                 setIsDirty(true);
               }
             }}
             options={{
-              readOnly: false,
+              // v2.11.3 流式模式下只读
+              readOnly: isStreamMode,
               minimap: { enabled: true },
               fontSize: 13,
               lineNumbers: 'on',

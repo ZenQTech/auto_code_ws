@@ -32,6 +32,12 @@ from backend.app.services.hooks_registry import (
     HookEventType,
     get_hooks_registry,
 )
+# v1.1.0 Cycle 5 P0-6 新增：HookBridge 业务集成
+from backend.app.services.hook_bridge import (
+    HookBridgeService,
+    get_hook_bridge,
+    reset_hook_bridge,
+)
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -171,6 +177,46 @@ async def add_hook_config(request: HookConfigRequest):
         }
     except Exception as e:
         logger.error(f"添加 hook 配置失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# v1.1.0 Cycle 5 P0-6 新增：简化的 add-hook 端点（接受单 hook）
+@router.post("/configs/add")
+async def add_simple_hook(request: AddHookRequest):
+    """
+    添加单个 hook（自动构造 HookConfig）
+
+    参数：
+      - request: AddHookRequest { event, matcher, type, command, timeout, name }
+    返回值：添加结果
+    """
+    if request.event not in HookEventType.all_events():
+        raise HTTPException(
+            status_code=400,
+            detail=f"未知事件类型: {request.event}，"
+                   f"有效类型: {HookEventType.all_events()}",
+        )
+    try:
+        hook_def = HookDefinition(
+            type=request.type,
+            command=request.command,
+            timeout=request.timeout,
+            name=request.name or f"hook_{request.event}",
+        )
+        config = HookConfig(
+            event=request.event,
+            matcher=request.matcher,
+            hooks=[hook_def],
+        )
+        get_hooks_registry().add(config)
+        return {
+            "success": True,
+            "index": len(get_hooks_registry().configs) - 1,
+            "config": config.to_dict(),
+            "message": f"Hook 已添加: {hook_def.name}",
+        }
+    except Exception as e:
+        logger.error(f"添加 hook 失败: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -335,4 +381,167 @@ async def test_single_hook(request: AddHookRequest):
         }
     except Exception as e:
         logger.error(f"Hook 测试失败: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# v1.1.0 Cycle 5 P0-6 新增：Hook 触发链路端点
+# ============================================================
+@router.get("/chain")
+async def get_hook_chain(limit: int = 50, event: Optional[str] = None):
+    """
+    获取最近 hook 触发链路
+
+    参数：
+      - limit: 返回最近 N 条（默认 50）
+      - event: 按事件类型过滤（可选）
+
+    返回值：链路条目列表 + 摘要
+    """
+    bridge = get_hook_bridge()
+    items = await bridge.chain_store.get_recent(limit=limit, event=event)
+    summary = await bridge.chain_store.get_summary()
+    return {
+        "items": items,
+        "summary": summary,
+        "limit": limit,
+    }
+
+
+@router.get("/chain/summary")
+async def get_hook_chain_summary():
+    """
+    获取 hook 触发链路摘要统计
+
+    返回值：{total, events_count, blocking_count, ...}
+    """
+    bridge = get_hook_bridge()
+    summary = await bridge.chain_store.get_summary()
+    return summary
+
+
+@router.post("/chain/clear")
+async def clear_hook_chain():
+    """
+    清空 hook 触发链路
+
+    返回值：清空结果
+    """
+    bridge = get_hook_bridge()
+    bridge.chain_store.clear()
+    return {
+        "success": True,
+        "message": "已清空 hook 触发链路",
+    }
+
+
+class FireEventRequest(BaseModel):
+    """触发业务事件请求"""
+    event: str = Field(..., description="事件类型")
+    session_id: Optional[str] = Field(default=None, description="session ID")
+    agent_id: Optional[str] = Field(default=None, description="agent ID")
+    user_input: Optional[str] = Field(default=None, description="用户输入")
+    tool_name: Optional[str] = Field(default=None, description="工具名")
+    arguments: Dict[str, Any] = Field(default_factory=dict, description="工具参数")
+    result: Optional[str] = Field(default=None, description="工具结果")
+    duration_ms: float = Field(default=0.0, description="耗时")
+    task: Optional[str] = Field(default=None, description="subagent 任务")
+    subagent_id: Optional[str] = Field(default=None, description="subagent ID")
+    trigger: Optional[str] = Field(default=None, description="compact 触发器")
+    context_size: int = Field(default=0, description="context 大小")
+    original_size: int = Field(default=0, description="压缩前大小")
+    new_size: int = Field(default=0, description="压缩后大小")
+
+
+@router.post("/fire")
+async def fire_business_event(request: FireEventRequest):
+    """
+    触发业务 hook 事件（v1.1.0 P0-6 新增）
+
+    用于测试 HookBridgeService 与 10 种事件的集成。
+    各事件的 payload 字段见 HookBridgeService 文档。
+    """
+    bridge = get_hook_bridge()
+
+    try:
+        if request.event == "SessionStart":
+            actions = await bridge.fire_session_start(request.session_id or "test-session")
+            return {"event": request.event, "actions": [a.to_dict() for a in actions]}
+
+        elif request.event == "UserPromptSubmit":
+            actions, ctx = await bridge.fire_user_prompt_submit(
+                request.user_input or "", request.session_id
+            )
+            return {
+                "event": request.event,
+                "actions": [a.to_dict() for a in actions],
+                "additional_context": ctx,
+            }
+
+        elif request.event == "PreToolUse":
+            actions, ctx = await bridge.fire_pre_tool_use(
+                request.tool_name or "test_tool", request.arguments, request.agent_id
+            )
+            return {
+                "event": request.event,
+                "actions": [a.to_dict() for a in actions],
+                "additional_context": ctx,
+            }
+
+        elif request.event == "PostToolUse":
+            actions = await bridge.fire_post_tool_use(
+                request.tool_name or "test_tool", request.result, request.duration_ms, request.agent_id
+            )
+            return {"event": request.event, "actions": [a.to_dict() for a in actions]}
+
+        elif request.event == "PermissionRequest":
+            actions, decision = await bridge.fire_permission_request(
+                request.tool_name or "test_tool", request.arguments, request.agent_id
+            )
+            return {
+                "event": request.event,
+                "actions": [a.to_dict() for a in actions],
+                "permission_decision": decision,
+            }
+
+        elif request.event == "PreCompact":
+            actions = await bridge.fire_pre_compact(
+                request.trigger or "manual", request.context_size, request.session_id
+            )
+            return {"event": request.event, "actions": [a.to_dict() for a in actions]}
+
+        elif request.event == "PostCompact":
+            actions = await bridge.fire_post_compact(
+                request.original_size, request.new_size, request.session_id
+            )
+            return {"event": request.event, "actions": [a.to_dict() for a in actions]}
+
+        elif request.event == "SubagentStart":
+            actions = await bridge.fire_subagent_start(
+                request.subagent_id or "test-subagent", request.task or "test task"
+            )
+            return {"event": request.event, "actions": [a.to_dict() for a in actions]}
+
+        elif request.event == "SubagentStop":
+            actions = await bridge.fire_subagent_stop(
+                request.subagent_id or "test-subagent", request.result or "done"
+            )
+            return {"event": request.event, "actions": [a.to_dict() for a in actions]}
+
+        elif request.event == "SessionEnd":
+            actions = await bridge.fire_session_end(
+                request.session_id or "test-session", request.duration_ms
+            )
+            return {"event": request.event, "actions": [a.to_dict() for a in actions]}
+
+        else:
+            raise HTTPException(
+                status_code=400,
+                detail=f"未知事件类型: {request.event}",
+            )
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"业务事件触发失败: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
