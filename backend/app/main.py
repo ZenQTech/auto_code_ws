@@ -819,6 +819,22 @@ app.include_router(trace_router, prefix="/api/trace", tags=["trace-enforcement"]
 from .api.slash_commands import router as slash_commands_router
 app.include_router(slash_commands_router, prefix="/api/slash-commands", tags=["slash-commands"])
 
+# v1.0.0 Cycle 8 P0-13：Custom Commands 系统（.trae/commands/）
+from .api.custom_commands import router as custom_commands_router
+app.include_router(custom_commands_router, tags=["custom-commands"])
+
+# 启动时自动扫描 .trae/commands/ 目录
+@app.on_event("startup")
+async def _init_custom_commands():
+    """应用启动时扫描自定义命令目录"""
+    try:
+        from app.services.custom_commands.service import CustomCommandsService
+        service = CustomCommandsService.get_instance()
+        service.refresh()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"启动时扫描自定义命令失败: {e}")
+
 # 注册全局异常处理器
 app.add_exception_handler(Exception, global_exception_handler)
 
