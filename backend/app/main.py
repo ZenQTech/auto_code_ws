@@ -31,6 +31,8 @@
 #     index-Bic32m5_.js 等历史 bundle 导致前端逻辑不生效
 #   - 2026-07-27 | v5.5.0 | Cycle 7 P0-10 新增：注册 Multi-Agent v2 path-based
 #     addressing 路由（spawn_agent/wait_agent/close_agent/send_message/followup_task）
+#   - 2026-07-27 | v5.6.0 | Cycle 7 P0-11 新增：注册 TRACE 编译与执行路由
+#     （compile/check/rules/stats/subjects）实现用户纠正到运行时强制执行的管道
 #   - 2026-07-01 | v2.5.0 | 新增 ArchitectureWorkflowService 初始化，注入
 #     hermes_service / workflow_engine / git_manager，注册到 app.state
 #   - 2026-07-24 | v5.9.0 | Module B 后端性能优化：
@@ -798,6 +800,20 @@ app.include_router(session_rollout_router, prefix="/api", tags=["session-rollout
 #   - POST   /api/multi-agents/auto-cleanup    turn-end cleanup
 from .api.multi_agents import router as multi_agents_router
 app.include_router(multi_agents_router, prefix="/api", tags=["multi-agents-v2"])
+
+# 注册 TRACE 编译与执行路由（Cycle 7 P0-11）
+#   - POST /api/trace/compile       编译用户消息为规则
+#   - POST /api/trace/check         预检查工具调用
+#   - GET  /api/trace/rules         列出规则
+#   - GET  /api/trace/rules/{id}    获取单条规则
+#   - DELETE /api/trace/rules/{id}  停用规则
+#   - DELETE /api/trace/rules/{id}/hard  物理删除
+#   - GET  /api/trace/stats         统计
+#   - POST /api/trace/clear         清空 session 规则
+#   - GET  /api/trace/subjects      列出已知主题
+#   - GET  /api/trace/health        健康检查
+from .api.trace import router as trace_router
+app.include_router(trace_router, prefix="/api/trace", tags=["trace-enforcement"])
 
 # 注册全局异常处理器
 app.add_exception_handler(Exception, global_exception_handler)

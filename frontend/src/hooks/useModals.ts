@@ -24,6 +24,7 @@
  *   - 2026-07-27 | v1.7.0 | Cycle 7 P0-8 新增 oauthConfig OAuth 2.1 + PKCE 配置
  *   - 2026-07-27 | v1.8.0 | Cycle 7 P0-9 新增 sessionRollout JSONL 持久化面板
  *   - 2026-07-27 | v1.9.0 | Cycle 7 P0-10 新增 multiAgentTree Multi-Agent v2 Path Tree 面板
+ *   - 2026-07-27 | v2.0.0 | Cycle 7 P0-11 新增 traceRule TRACE 规则管理面板
  * ============================================================
  */
 
@@ -91,10 +92,12 @@ export interface UseModalsResult {
   sessionRollout: PanelController;
   /** v1.9.0 (Cycle 7 P0-10) 新增：Multi-Agent v2 Path Tree 面板 */
   multiAgentTree: PanelController;
+  /** v2.0.0 (Cycle 7 P0-11) 新增：TRACE 规则管理面板 */
+  traceRule: PanelController;
 }
 
 /**
- * useModals - 集中管理 16 个面板/弹窗的显隐状态
+ * useModals - 集中管理 17 个面板/弹窗的显隐状态
  * 返回值：包含每个面板 controller 的对象
  */
 export function useModals(): UseModalsResult {
@@ -118,6 +121,7 @@ export function useModals(): UseModalsResult {
   const oauthConfig = usePanelController(false);  // v1.7.0 (Cycle 7 P0-8) 新增
   const sessionRollout = usePanelController(false);  // v1.8.0 (Cycle 7 P0-9) 新增
   const multiAgentTree = usePanelController(false);  // v1.9.0 (Cycle 7 P0-10) 新增
+  const traceRule = usePanelController(false);  // v2.0.0 (Cycle 7 P0-11) 新增
 
   return {
     settings,
@@ -140,6 +144,7 @@ export function useModals(): UseModalsResult {
     oauthConfig,  // v1.7.0 (Cycle 7 P0-8) 新增
     sessionRollout,  // v1.8.0 (Cycle 7 P0-9) 新增
     multiAgentTree,  // v1.9.0 (Cycle 7 P0-10) 新增
+    traceRule,  // v2.0.0 (Cycle 7 P0-11) 新增
   };
 }
 

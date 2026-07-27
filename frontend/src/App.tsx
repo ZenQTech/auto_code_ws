@@ -179,6 +179,8 @@ import OAuthConfigModal from './components/OAuthConfigModal';
 import SessionRolloutPanel from './components/SessionRolloutPanel';
 /** v5.14.0 (Cycle 7 P0-10) 新增：Multi-Agent v2 Path Tree 面板 */
 import MultiAgentTreePanel from './components/MultiAgentTreePanel';
+/** v5.6.0 (Cycle 7 P0-11) 新增：TRACE 规则管理面板 */
+import RulePanel from './components/RulePanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -314,6 +316,7 @@ export default function App() {
     oauthConfig: oauthConfigModal,  // v1.7.0 (Cycle 7 P0-8) 新增
     sessionRollout: sessionRolloutModal,  // v1.8.0 (Cycle 7 P0-9) 新增
     multiAgentTree: multiAgentTreeModal,  // v1.9.0 (Cycle 7 P0-10) 新增
+    traceRule: traceRuleModal,  // v2.0.0 (Cycle 7 P0-11) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -1722,6 +1725,7 @@ export default function App() {
           onOpenOAuthConfig={() => oauthConfigModal.onOpen()}
           onOpenSessionRollout={() => sessionRolloutModal.onOpen()}
           onOpenMultiAgentTree={() => multiAgentTreeModal.onOpen()}
+          onOpenTraceRule={() => traceRuleModal.onOpen()}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
           onReasoningIntensityChange={(i) => showToast(`推理强度已设为 ${i}`, 'info')}
           workflowStatusCurrentStage={workflowStatus?.current_stage ?? null}
@@ -2029,6 +2033,12 @@ export default function App() {
       {multiAgentTreeModal.open && (
         <Cycle3Modal onClose={multiAgentTreeModal.onClose} maxWidth="max-w-5xl">
           <MultiAgentTreePanel onClose={multiAgentTreeModal.onClose} />
+        </Cycle3Modal>
+      )}
+
+      {traceRuleModal.open && (
+        <Cycle3Modal onClose={traceRuleModal.onClose} maxWidth="max-w-5xl">
+          <RulePanel onClose={traceRuleModal.onClose} />
         </Cycle3Modal>
       )}
     </div>

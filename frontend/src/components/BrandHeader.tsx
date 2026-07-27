@@ -98,6 +98,8 @@ export interface BrandHeaderProps {
   onOpenSessionRollout?: () => void;
   /** v2.8.0 (Cycle 7 P0-10) 新增：打开 Multi-Agent v2 Path Tree 面板回调（可选） */
   onOpenMultiAgentTree?: () => void;
+  /** v2.9.0 (Cycle 7 P0-11) 新增：打开 TRACE 规则管理面板回调（可选） */
+  onOpenTraceRule?: () => void;
 }
 
 /**
@@ -107,7 +109,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -297,6 +299,14 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <circle cx="15" cy="17" r="1.5" fill="currentColor" />
         </svg>
       );
+    case 'shield-check':
+      // v2.9.0 (Cycle 7 P0-11) 新增：TRACE 规则管理（盾牌+勾, 表达 enforcement）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -343,6 +353,8 @@ export default function BrandHeader({
   onOpenSessionRollout,
   /** v2.8.0 (Cycle 7 P0-10) 新增 */
   onOpenMultiAgentTree,
+  /** v2.9.0 (Cycle 7 P0-11) 新增 */
+  onOpenTraceRule,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -783,6 +795,23 @@ export default function BrandHeader({
                 >
                   <Icon name="tree" className="w-4 h-4 text-emerald-500" />
                   <span>🌳 Multi-Agent v2 Path Tree</span>
+                </button>
+              )}
+
+              {/* v2.9.0 (Cycle 7 P0-11) 新增：TRACE 规则管理（菜单项）
+               *  行为：点击调 onOpenTraceRule() 弹出 RulePanel 规则管理面板
+               *       实现 Zhou et al. June 2026 论文：用户纠正编译为运行时强制规则
+               *  图标：shield-check（盾牌+勾），表达 enforcement + compliance */}
+              {onOpenTraceRule && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenTraceRule)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-rose-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="shield-check" className="w-4 h-4 text-rose-500" />
+                  <span>🛡️ TRACE 规则管理</span>
                 </button>
               )}
 

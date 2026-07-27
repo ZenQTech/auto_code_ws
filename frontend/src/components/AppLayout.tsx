@@ -107,6 +107,8 @@ export interface AppLayoutProps {
   onOpenSessionRollout: () => void;
   /** v6.21.0 (Cycle 7 P0-10) 新增：打开 Multi-Agent v2 Path Tree 面板 */
   onOpenMultiAgentTree: () => void;
+  /** v6.22.0 (Cycle 7 P0-11) 新增：打开 TRACE 规则管理面板 */
+  onOpenTraceRule: () => void;
 
   // 工具栏
   onModelChange: (id: string) => void;
@@ -204,6 +206,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenOAuthConfig,  // v6.19.0 (Cycle 7 P0-8) 透传 BrandHeader
   onOpenSessionRollout,  // v6.20.0 (Cycle 7 P0-9) 透传 BrandHeader
   onOpenMultiAgentTree,  // v6.21.0 (Cycle 7 P0-10) 透传 BrandHeader
+  onOpenTraceRule,  // v6.22.0 (Cycle 7 P0-11) 透传 BrandHeader
   onModelChange,
   onReasoningIntensityChange,
   workflowStatusCurrentStage,
@@ -378,6 +381,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenOAuthConfig={onOpenOAuthConfig}
         onOpenSessionRollout={onOpenSessionRollout}
         onOpenMultiAgentTree={onOpenMultiAgentTree}
+        onOpenTraceRule={onOpenTraceRule}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}
