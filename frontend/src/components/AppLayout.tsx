@@ -1,0 +1,701 @@
+/**
+ * # ============================================================
+ * AppLayout - 主对话舞台布局组件
+ * # ============================================================
+ * 核心作用：从 App.tsx 抽离主对话舞台布局
+ * 包含：
+ *   1. BrandHeader（豆包风格极简顶栏）
+ *   2. Codex 风格工具栏（ModelSelector + ReasoningIntensitySelector + 斜杠命令提示 + 文件路径）
+ *   3. ChatMainArea（消息流 + 浮动输入区 + 流式状态指示器）
+ *   4. 编程模式垂直分屏（CodeViewer 上 + 紧凑聊天区下）
+ *   5. 子 CLI 实例状态网格（AgentChatCard）
+ *   6. Loop Engineering 状态展示（ReviewReport + PipelineProgress + GoalProgress）
+ *   7. 模态弹窗（ClarificationModal + ArchitectureDesignModal）
+ *   8. 底部固定输入区（玻璃拟态）
+ * 抽取日期：2026-07-27
+ * 模块版本：v6.10.0 - P0-2 App.tsx 拆分第四阶段
+ * 修改记录：
+ *   - 2026-07-27 | v6.10.0 | 从 App.tsx 抽离主对话舞台布局（BrandHeader+Toolbar+
+ *     ChatMainArea+Modals+CodeViewer+AgentGrid+固定输入区）
+ *   - 2026-07-27 | v6.10.1 | Phase 5 UI/UX 优化：工具栏增加渐变背景 + 分割线 +
+ *     斜杠命令 kbd 边框 + 文件路径 badge 样式
+ * ============================================================
+ */
+
+import React from 'react';
+import BrandHeader from './BrandHeader';
+import WelcomeState from './WelcomeState';
+import MessageBubble from './MessageBubble';
+import ThinkingBlock from './ThinkingBlock';
+import ClarificationProgress from './ClarificationProgress';
+import ClarificationModal from './ClarificationModal';
+import ArchitectureDesignModal from './ArchitectureDesignModal';
+import ReviewReport from './ReviewReport';
+import PipelineProgress from './PipelineProgress';
+import GoalProgress from './GoalProgress';
+import CodeViewer from './CodeViewer';
+import AgentChatCard from './AgentChatCard';
+import ModelSelector from './ModelSelector';
+import ReasoningIntensitySelector from './ReasoningIntensitySelector';
+import type { StreamingStatus } from './ChatMainArea';
+import type { Agent, ReviewData, PipelineData, GoalData } from '../types';
+import type { ChatMessage } from '../utils/messageFormatters';
+
+export type AppMode = 'chat' | 'coding';
+
+export interface ClarificationModalData {
+  summary: string;
+  questions: Array<{ dimension: string; question: string; importance: string; options?: string[]; allowMultiple?: boolean }>;
+  roundNumber: number;
+  maxRounds: number;
+  isComplete: boolean;
+}
+
+export interface DesignModalData {
+  requirementV2: string;
+  critiqueResult: any;
+  iterationCount: number;
+  maxIterations: number;
+}
+
+export interface AppLayoutProps {
+  // 模式与项目
+  appMode: AppMode;
+  selectedProject: string | null;
+  openedFile: string | null;
+  setOpenedFile: (file: string | null) => void;
+  currentSessionTitle: string;
+
+  // 顶部回调
+  onNewChat: () => void;
+  newChatLoading: boolean;
+  onOpenSettings: () => void;
+  onOpenUsage: () => void;
+  onOpenFileExplorer: () => void;
+  fileExplorerOpen: boolean;
+  onOpenLoopV7: () => void;
+  /** v6.14.0 Cycle 2 新增：打开 MCP 工具面板 */
+  onOpenMCP: () => void;
+  /** v6.14.0 Cycle 2 新增：打开会话压缩面板 */
+  onOpenCompaction: () => void;
+  /** v6.14.0 Cycle 2 新增：打开技能管理面板 */
+  onOpenSkills: () => void;
+  /** v6.14.0 Cycle 2 新增：打开 AGENTS.md 记忆面板 */
+  onOpenAgentsMd: () => void;
+  /** Cycle 3 v1.0.0 新增：打开 Cycle 3 MCP 高级功能面板 */
+  onOpenCycle3: () => void;
+  /** Cycle 3 v1.0.0 新增：打开双触发压缩面板 */
+  onOpenDualCompaction: () => void;
+  /** Cycle 3 v1.0.0 新增：打开多类型规则扫描面板 */
+  onOpenRules: () => void;
+
+  // 工具栏
+  onModelChange: (id: string) => void;
+  onReasoningIntensityChange: (intensity: string) => void;
+
+  // 工作流状态
+  workflowStatusCurrentStage: string | null;
+  clarificationData: ClarificationModalData | null;
+  showClarifyModal: boolean;
+  reviewData: ReviewData | null;
+  pipelineData: PipelineData | null;
+  goalData: GoalData | null;
+
+  // 消息 + 流式
+  messages: ChatMessage[];
+  detailLoading: boolean;
+  streamingStatus: StreamingStatus;
+  streamingMessageId: string | null;
+  thinkingContent: string;
+  isSending: boolean;
+
+  // 输入区
+  inputValue: string;
+  setInputValue: (v: string) => void;
+  onSend: () => void;
+  onStop: () => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
+  inputRef: React.RefObject<HTMLTextAreaElement>;
+  messagesEndRef: React.RefObject<HTMLDivElement>;
+  lastMessageIdRef: React.MutableRefObject<string | null>;
+
+  // Clarification Modal 回调
+  onSubmitClarification: (answersText: string) => void;
+  onConfirmClarification: (wfId?: string) => void;
+  onContinueAddClarification: () => void;
+  workflowIdRef: React.MutableRefObject<string | null | undefined>;
+  sessionDetailWorkflowId: string | null | undefined;
+  workflowStatusWorkflowId: string | null | undefined;
+
+  // Architecture Design Modal
+  showDesignModal: boolean;
+  designModalData: DesignModalData | null;
+  isDesignLoading: boolean;
+  onConfirmDesign: () => void;
+  onRejectDesign: (reason: string) => void | Promise<void>;
+
+  // Agents
+  displayAgents: Agent[];
+  agentsLoading: boolean;
+  expandedAgentId: string | null;
+  onToggleAgentExpand: (id: string) => void;
+  onAgentChanged: () => void;
+
+  // onWelcomePrompt 选择（启动欢迎页）
+  onSelectWelcomePrompt: (prompt: string) => void;
+}
+
+/**
+ * AppLayout - 主对话舞台布局
+ * - 聊天模式：BrandHeader + 工具栏 + ChatMainArea + 弹窗 + Agent网格 + 固定输入区
+ * - 编程模式（带打开文件）：CodeViewer 上半 + 紧凑聊天下半
+ * - 编程模式（无打开文件）：ProjectSelector 在外层处理
+ */
+export const AppLayout: React.FC<AppLayoutProps> = ({
+  appMode,
+  selectedProject,
+  openedFile,
+  setOpenedFile,
+  currentSessionTitle,
+  onNewChat,
+  newChatLoading,
+  onOpenSettings,
+  onOpenUsage,
+  onOpenFileExplorer,
+  fileExplorerOpen,
+  onOpenLoopV7,
+  onOpenMCP,
+  onOpenCompaction,
+  onOpenSkills,
+  onOpenAgentsMd,
+  onOpenCycle3,
+  onOpenDualCompaction,
+  onOpenRules,
+  onModelChange,
+  onReasoningIntensityChange,
+  workflowStatusCurrentStage,
+  clarificationData,
+  showClarifyModal,
+  reviewData,
+  pipelineData,
+  goalData,
+  messages,
+  detailLoading,
+  streamingStatus,
+  streamingMessageId,
+  thinkingContent,
+  isSending,
+  inputValue,
+  setInputValue,
+  onSend,
+  onStop,
+  onKeyDown,
+  inputRef,
+  messagesEndRef,
+  lastMessageIdRef,
+  onSubmitClarification,
+  onConfirmClarification,
+  onContinueAddClarification,
+  workflowIdRef,
+  sessionDetailWorkflowId,
+  workflowStatusWorkflowId,
+  showDesignModal,
+  designModalData,
+  isDesignLoading,
+  onConfirmDesign,
+  onRejectDesign,
+  displayAgents,
+  agentsLoading,
+  expandedAgentId,
+  onToggleAgentExpand,
+  onAgentChanged,
+  onSelectWelcomePrompt,
+}) => {
+  // 编程模式 + 文件打开 → 垂直分屏布局
+  if (appMode === 'coding' && selectedProject && openedFile) {
+    return (
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* CodeViewer 上半部分 */}
+        <div
+          className="flex-1 min-h-0 border-b border-surface-300 overflow-hidden"
+          style={{ flexBasis: '50%' }}
+        >
+          <CodeViewer
+            project={selectedProject}
+            filePath={openedFile}
+            onClose={() => setOpenedFile(null)}
+          />
+        </div>
+        {/* 紧凑聊天区 下半部分 */}
+        <div
+          className="flex flex-col bg-surface-100"
+          style={{ flexBasis: '50%', minHeight: 0 }}
+        >
+          <div className="flex-shrink-0 flex items-center justify-between px-4 py-1.5 border-b border-surface-300/30">
+            <span className="text-xs font-medium text-surface-600">💬 对话</span>
+            <span className="text-xs text-surface-500 truncate ml-2">
+              项目：{selectedProject}
+            </span>
+          </div>
+          {/* 紧凑消息区 */}
+          <div className="flex-1 overflow-y-auto px-3 py-2">
+            {workflowStatusCurrentStage === 'clarifying' && (
+              <ClarificationProgress
+                roundNumber={clarificationData?.roundNumber || 1}
+                maxRounds={clarificationData?.maxRounds || 5}
+                isComplete={clarificationData?.isComplete || false}
+              />
+            )}
+            {reviewData && <ReviewReport reviewData={reviewData} />}
+            {pipelineData && <PipelineProgress pipelineData={pipelineData} />}
+            {goalData && <GoalProgress goalData={goalData} />}
+            <div className="space-y-3">
+              {messages.length === 0 && !detailLoading && (
+                <div className="text-xs text-surface-500 text-center py-4">
+                  输入消息开始对话
+                </div>
+              )}
+              {detailLoading && messages.length === 0 && (
+                <div className="space-y-2">
+                  <div className="skeleton h-10 w-3/4 rounded-lg" />
+                  <div className="skeleton h-10 w-2/3 ml-auto" />
+                </div>
+              )}
+              {messages.map((msg) => (
+                <MessageRow
+                  key={msg.id}
+                  msg={msg}
+                  lastMessageIdRef={lastMessageIdRef}
+                  streamingMessageId={streamingMessageId}
+                  streamingStatus={streamingStatus}
+                  thinkingContent={thinkingContent}
+                />
+              ))}
+              {showClarifyModal && clarificationData && (
+                <ClarificationModal
+                  key={clarificationData.roundNumber}
+                  summary={clarificationData.summary}
+                  questions={clarificationData.questions}
+                  roundNumber={clarificationData.roundNumber}
+                  maxRounds={clarificationData.maxRounds}
+                  isComplete={clarificationData.isComplete}
+                  workflowId={workflowIdRef.current || sessionDetailWorkflowId || workflowStatusWorkflowId || undefined}
+                  onSubmit={onSubmitClarification}
+                  onConfirm={onConfirmClarification}
+                  onContinueAdd={onContinueAddClarification}
+                />
+              )}
+              {showDesignModal && (
+                <ArchitectureDesignModal
+                  requirementV2={designModalData?.requirementV2 || ''}
+                  critiqueResult={designModalData?.critiqueResult || null}
+                  isLoading={isDesignLoading}
+                  iterationCount={designModalData?.iterationCount || 1}
+                  maxIterations={designModalData?.maxIterations || 3}
+                  onConfirm={onConfirmDesign}
+                  onReject={onRejectDesign}
+                />
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+          </div>
+          {/* 紧凑输入区 */}
+          <div className="flex-shrink-0 px-3 pb-2 pt-1 border-t border-surface-300/30">
+            <div className="flex items-end gap-2">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="输入消息..."
+                disabled={isSending}
+                rows={1}
+                className="flex-1 resize-none bg-surface-200 border border-surface-400/50 rounded-xl px-3 py-1.5 text-sm text-surface-800 placeholder:text-surface-500 outline-none focus:border-hermes-500 focus:shadow-glow-hermes-sm max-h-24 min-h-[28px] disabled:opacity-60 leading-5 transition-all duration-default ease-material"
+              />
+              <button
+                onClick={isSending ? onStop : onSend}
+                disabled={!inputValue.trim() && !isSending}
+                className="w-8 h-8 rounded-full bg-gradient-to-br from-hermes-500 to-hermes-600 hover:from-hermes-600 hover:to-hermes-700 disabled:from-surface-300 disabled:to-surface-300 text-white flex items-center justify-center flex-shrink-0 shadow-level-1 transition-all duration-default ease-material active:scale-[0.97]"
+                aria-label={isSending ? '停止' : '发送'}
+              >
+                {isSending ? (
+                  <svg className="w-3 h-3" fill="white" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-3 h-3"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  >
+                    <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 默认布局：聊天模式 / 编程模式无打开文件
+  return (
+    <div className="flex-1 flex flex-col min-w-0">
+      {/* BrandHeader（豆包风格） */}
+      <BrandHeader
+        sessionTitle={currentSessionTitle}
+        onNewChat={onNewChat}
+        newChatLoading={newChatLoading}
+        onOpenSettings={onOpenSettings}
+        onOpenUsage={onOpenUsage}
+        onOpenFileExplorer={onOpenFileExplorer}
+        fileExplorerOpen={fileExplorerOpen}
+        onOpenLoopV7={onOpenLoopV7}
+        onOpenMCP={onOpenMCP}
+        onOpenCompaction={onOpenCompaction}
+        onOpenSkills={onOpenSkills}
+        onOpenAgentsMd={onOpenAgentsMd}
+        onOpenCycle3={onOpenCycle3}
+        onOpenDualCompaction={onOpenDualCompaction}
+        onOpenRules={onOpenRules}
+      />
+
+      {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}
+      <div className="relative px-3 md:px-4 py-2.5 bg-gradient-to-b from-surface-50/60 to-surface-50/20 border-b border-surface-200/60 backdrop-blur-sm">
+        <div className="max-w-3xl mx-auto flex items-center justify-between gap-3 flex-wrap">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <ModelSelector onChange={onModelChange} />
+            <span className="hidden sm:inline-block w-px h-4 bg-surface-300/60" />
+            <ReasoningIntensitySelector onChange={onReasoningIntensityChange} />
+          </div>
+          <div className="flex items-center gap-1.5 text-[10px] text-surface-500 hidden sm:flex">
+            <span className="text-surface-400">斜杠命令：</span>
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-200/70 text-surface-700 font-mono border border-surface-300/40">/review</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-200/70 text-surface-700 font-mono border border-surface-300/40">/fix</kbd>
+            <kbd className="px-1.5 py-0.5 rounded bg-surface-200/70 text-surface-700 font-mono border border-surface-300/40">/review-fix-loop</kbd>
+            {openedFile && (
+              <span
+                className="ml-2 px-2 py-0.5 rounded-md bg-hermes-500/10 text-hermes-400 border border-hermes-400/20 truncate max-w-[200px]"
+                title={openedFile}
+              >
+                📄 {openedFile}
+              </span>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* 主消息区 */}
+      <main className="flex-1 overflow-y-auto px-3 md:px-4 py-6">
+        <div className="max-w-3xl mx-auto space-y-4">
+          {workflowStatusCurrentStage === 'clarifying' && (
+            <ClarificationProgress
+              roundNumber={clarificationData?.roundNumber || 1}
+              maxRounds={clarificationData?.maxRounds || 5}
+              isComplete={clarificationData?.isComplete || false}
+            />
+          )}
+          {reviewData && <ReviewReport reviewData={reviewData} />}
+          {pipelineData && <PipelineProgress pipelineData={pipelineData} />}
+          {goalData && <GoalProgress goalData={goalData} />}
+          {messages.length === 0 && !detailLoading && (
+            <WelcomeState onSelectPrompt={onSelectWelcomePrompt} />
+          )}
+          {detailLoading && messages.length === 0 && (
+            <div className="space-y-3">
+              <div className="skeleton h-16 w-3/4" />
+              <div className="skeleton h-16 w-2/3 ml-auto" />
+              <div className="skeleton h-16 w-4/5" />
+            </div>
+          )}
+          {messages.map((msg) => (
+            <MessageRow
+              key={msg.id}
+              msg={msg}
+              lastMessageIdRef={lastMessageIdRef}
+              streamingMessageId={streamingMessageId}
+              streamingStatus={streamingStatus}
+              thinkingContent={thinkingContent}
+            />
+          ))}
+          {showClarifyModal && clarificationData && (
+            <ClarificationModal
+              key={clarificationData.roundNumber}
+              summary={clarificationData.summary}
+              questions={clarificationData.questions}
+              roundNumber={clarificationData.roundNumber}
+              maxRounds={clarificationData.maxRounds}
+              isComplete={clarificationData.isComplete}
+              workflowId={workflowIdRef.current || sessionDetailWorkflowId || workflowStatusWorkflowId || undefined}
+              onSubmit={onSubmitClarification}
+              onConfirm={onConfirmClarification}
+              onContinueAdd={onContinueAddClarification}
+            />
+          )}
+          {showDesignModal && (
+            <ArchitectureDesignModal
+              requirementV2={designModalData?.requirementV2 || ''}
+              critiqueResult={designModalData?.critiqueResult || null}
+              isLoading={isDesignLoading}
+              iterationCount={designModalData?.iterationCount || 1}
+              maxIterations={designModalData?.maxIterations || 3}
+              onConfirm={onConfirmDesign}
+              onReject={onRejectDesign}
+            />
+          )}
+          <div ref={messagesEndRef} />
+        </div>
+      </main>
+
+      {/* AgentChatCard 网格 */}
+      {displayAgents.length > 0 && (
+        <div className="border-t border-surface-300 bg-surface-100/50 px-3 md:px-4 py-4 flex-shrink-0">
+          <div className="max-w-3xl mx-auto">
+            <h3 className="text-xs font-medium text-surface-600 uppercase tracking-wider mb-3">
+              子 CLI 实例状态 ({displayAgents.length})
+            </h3>
+            {agentsLoading ? (
+              <div className="py-2">
+                <div className="skeleton h-4 w-32" />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {displayAgents.map((agent) => (
+                  <AgentChatCard
+                    key={agent.id}
+                    agent={agent}
+                    isExpanded={expandedAgentId === agent.id}
+                    onToggleExpand={() => onToggleAgentExpand(agent.id)}
+                    onAgentChanged={onAgentChanged}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 固定底部输入区（玻璃拟态） */}
+      <div className="flex-shrink-0 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="bg-white/90 backdrop-blur-md border border-surface-200 rounded-3xl shadow-level-3 px-4 py-3 focus-within:shadow-glow-hermes focus-within:border-hermes-300 transition-all duration-default ease-material">
+            <div className="flex items-end gap-3">
+              <textarea
+                ref={inputRef}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
+                onKeyDown={onKeyDown}
+                placeholder="输入消息，Enter 发送，Shift+Enter 换行..."
+                disabled={isSending}
+                rows={1}
+                className="flex-1 resize-none bg-transparent border-none outline-none text-base text-surface-900 placeholder:text-surface-400 max-h-32 min-h-[24px] disabled:opacity-60 leading-7"
+              />
+              <button
+                onClick={isSending ? onStop : onSend}
+                disabled={!inputValue.trim() && !isSending}
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-hermes-500 to-hermes-600 hover:from-hermes-600 hover:to-hermes-700 disabled:from-surface-300 disabled:to-surface-300 text-white flex items-center justify-center shadow-level-1 hover:shadow-level-2 transition-all duration-default ease-material active:scale-[0.97]"
+                aria-label={isSending ? '停止生成' : '发送消息'}
+                title={isSending ? '停止生成' : '发送消息'}
+              >
+                {isSending ? (
+                  <svg className="w-4 h-4" fill="white" viewBox="0 0 24 24">
+                    <rect x="6" y="6" width="12" height="12" rx="2" />
+                  </svg>
+                ) : (
+                  <svg
+                    className="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                  >
+                    <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// MessageRow - 单条消息行（含 Hermes 头像 + 气泡 + 状态指示器）
+// ============================================================
+interface MessageRowProps {
+  msg: ChatMessage;
+  lastMessageIdRef: React.MutableRefObject<string | null>;
+  streamingMessageId: string | null;
+  streamingStatus: StreamingStatus;
+  thinkingContent: string;
+}
+
+const MessageRow: React.FC<MessageRowProps> = ({
+  msg,
+  lastMessageIdRef,
+  streamingMessageId,
+  streamingStatus,
+  thinkingContent,
+}) => {
+  if (msg.error) {
+    return (
+      <div className="animate-msg-enter">
+        <MessageBubble role="assistant" content="" error={msg.error} />
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`flex animate-msg-enter ${
+        msg.id === lastMessageIdRef.current ? 'msg-breath' : ''
+      } ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+    >
+      {msg.role === 'hermes' && (
+        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-hermes-500 to-hermes-600 flex items-center justify-center flex-shrink-0 mr-3 mt-1 shadow-md shadow-hermes-900/20">
+          <svg
+            className="w-4 h-4 text-white"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M13 10V3L4 14h7v7l9-11h-7z"
+            />
+          </svg>
+        </div>
+      )}
+      <div
+        className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+          msg.role === 'user'
+            ? 'bg-hermes-500 text-white rounded-br-md'
+            : 'bg-surface-200 text-surface-900 rounded-bl-md border border-surface-400/50'
+        }`}
+      >
+        {/* 状态指示器（仅流式消息） */}
+        {msg.role === 'hermes' && msg.id === streamingMessageId && streamingStatus && (
+          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-surface-400/30">
+            {streamingStatus === 'thinking' && (
+              <>
+                <svg
+                  className="animate-spin w-3.5 h-3.5 text-hermes-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                  />
+                </svg>
+                <span className="text-xs text-hermes-400 font-medium">思考中...</span>
+              </>
+            )}
+            {streamingStatus === 'answering' && (
+              <>
+                <span className="relative flex h-2.5 w-2.5">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-hermes-400 opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-hermes-500" />
+                </span>
+                <span className="text-xs text-hermes-400 font-medium">回答中...</span>
+              </>
+            )}
+            {streamingStatus === 'done' && (
+              <>
+                <svg
+                  className="w-3.5 h-3.5 text-emerald-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2.5}
+                    d="M5 13l4 4L19 7"
+                  />
+                </svg>
+                <span className="text-xs text-emerald-400 font-medium">回答完成</span>
+              </>
+            )}
+          </div>
+        )}
+
+        {/* 思考过程折叠块 */}
+        {(msg.id === streamingMessageId || msg.thinking) && (
+          <ThinkingBlock
+            content={msg.id === streamingMessageId ? thinkingContent : msg.thinking || ''}
+            isStreaming={
+              msg.id === streamingMessageId && streamingStatus === 'thinking'
+            }
+          />
+        )}
+
+        {/* 消息正文 */}
+        {msg.content && (
+          <div className="whitespace-pre-wrap break-words">
+            {msg.content}
+            {msg.role === 'hermes' &&
+              msg.id === streamingMessageId &&
+              streamingStatus === 'answering' && (
+                <span className="inline-block w-0.5 h-4 bg-hermes-400 ml-0.5 align-text-bottom animate-pulse" />
+              )}
+          </div>
+        )}
+
+        {/* 空内容占位 */}
+        {!msg.content &&
+          msg.role === 'hermes' &&
+          msg.id === streamingMessageId &&
+          streamingStatus === 'thinking' && (
+            <div className="text-surface-500 italic text-xs">等待回复中...</div>
+          )}
+
+        <div
+          className={`text-xs mt-1.5 ${
+            msg.role === 'user' ? 'text-hermes-200' : 'text-surface-600'
+          }`}
+        >
+          {new Date(msg.timestamp).toLocaleTimeString()}
+        </div>
+      </div>
+      {msg.role === 'user' && (
+        <div className="w-8 h-8 rounded-full bg-surface-400 flex items-center justify-center flex-shrink-0 ml-3 mt-1">
+          <svg
+            className="w-4 h-4 text-surface-800"
+            fill="currentColor"
+            viewBox="0 0 20 20"
+          >
+            <path
+              fillRule="evenodd"
+              d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default AppLayout;

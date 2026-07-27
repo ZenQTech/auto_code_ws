@@ -28,7 +28,15 @@
  * #   - 2026-06-24 | v1.2.0 | 渲染模式切换 pill（解决 BrandHeader appMode prop 未渲染问题）
  * #   - 2026-06-24 | v1.3.0 | 删除模式切换 pill（信息密度过高；保留 Sidebar/ProjectSelector 入口）
  * #   - 2026-07-24 | v1.4.0 | 新增 onOpenLoopV7 回调 + 菜单项"Loop v7 工作流"，提供端到端 15 步工作流启动入口
- * # ============================================================
+#   - 2026-07-24 | v1.5.0 | 新增 newChatLoading 可选 prop：新建对话按钮显示加载态
+#     防止快速重复点击触发多次 handleNewTask，避免并发创建多个空 Session
+#   - 2026-07-27 | v1.6.0 | Cycle 2 新增：菜单项 MCP 工具 / 会话压缩 / 技能管理 / AGENTS.md 记忆
+#     提供 onOpenMCP / onOpenCompaction / onOpenSkills / onOpenAgentsMd 回调
+#   - 2026-07-27 | v1.7.0 | Cycle 3 新增：菜单项 MCP 高级功能 / 双触发压缩 / 多类型规则扫描
+#     新增 onOpenCycle3 / onOpenDualCompaction / onOpenRules 回调
+#     新增 shield (盾牌) + cpu (CPU) 内联 SVG 图标
+#     新增"Cycle 3 新功能"分组（带顶部分割线）
+# ============================================================
  */
 
 import { useState, useEffect, useRef, useCallback } from 'react';
@@ -41,6 +49,8 @@ export interface BrandHeaderProps {
   sessionTitle: string;
   /** 新建对话按钮点击回调 */
   onNewChat: () => void;
+  /** v1.5.0 新增：新建对话按钮是否处于加载态（true 时禁用按钮 + 显示旋转图标） */
+  newChatLoading?: boolean;
   /** 打开设置面板回调（可选，提供则菜单显示"设置"项） */
   onOpenSettings?: () => void;
   /** 打开回收站回调（可选，提供则菜单显示"回收站"项） */
@@ -53,6 +63,20 @@ export interface BrandHeaderProps {
   fileExplorerOpen?: boolean;
   /** v1.4.0 新增：打开 Loop v7 工作流弹窗回调（可选，提供则菜单显示"Loop v7 工作流"项） */
   onOpenLoopV7?: () => void;
+  /** v1.6.0 新增：打开 MCP 工具面板回调（可选，提供则菜单显示"MCP 工具"项） */
+  onOpenMCP?: () => void;
+  /** v1.6.0 新增：打开会话压缩面板回调（可选，提供则菜单显示"会话压缩"项） */
+  onOpenCompaction?: () => void;
+  /** v1.6.0 新增：打开技能管理面板回调（可选，提供则菜单显示"技能管理"项） */
+  onOpenSkills?: () => void;
+  /** v1.6.0 新增：打开 AGENTS.md 记忆管理回调（可选，提供则菜单显示"AGENTS.md 记忆"项） */
+  onOpenAgentsMd?: () => void;
+  /** Cycle 3 v1.0.0 新增：打开 Cycle 3 MCP 高级功能面板回调（可选） */
+  onOpenCycle3?: () => void;
+  /** Cycle 3 v1.0.0 新增：打开双触发压缩面板回调（可选） */
+  onOpenDualCompaction?: () => void;
+  /** Cycle 3 v1.0.0 新增：打开多类型规则扫描面板回调（可选） */
+  onOpenRules?: () => void;
 }
 
 /**
@@ -62,7 +86,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -133,6 +157,56 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5" />
         </svg>
       );
+    case 'plug':
+      // v1.6.0 新增：插头 - MCP 工具（菜单项图标）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 22v-5" />
+          <path d="M9 7V2" />
+          <path d="M15 7V2" />
+          <path d="M6 13V8h12v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4z" />
+        </svg>
+      );
+    case 'compress':
+      // v1.6.0 新增：压缩 - 会话压缩（菜单项图标）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M4 9l4-4M4 9h6V3" />
+          <path d="M20 15l-4 4m4-4h-6v6" />
+        </svg>
+      );
+    case 'sparkles':
+      // v1.6.0 新增：闪光 - 技能管理（菜单项图标）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 3l1.9 5.8a2 2 0 0 0 1.3 1.3L21 12l-5.8 1.9a2 2 0 0 0-1.3 1.3L12 21l-1.9-5.8a2 2 0 0 0-1.3-1.3L3 12l5.8-1.9a2 2 0 0 0 1.3-1.3L12 3z" />
+        </svg>
+      );
+    case 'book':
+      // v1.6.0 新增：书 - AGENTS.md 记忆（菜单项图标）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+          <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+      );
+    case 'shield':
+      // Cycle 3 v1.0.0 新增：盾牌 - MCP 高级功能（权限/审批/审计）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+      );
+    case 'cpu':
+      // Cycle 3 v1.0.0 新增：CPU - 双触发压缩 / 规则扫描（技术感）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="4" y="4" width="16" height="16" rx="2" />
+          <rect x="9" y="9" width="6" height="6" />
+          <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -147,12 +221,20 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
 export default function BrandHeader({
   sessionTitle,
   onNewChat,
+  newChatLoading = false,
   onOpenSettings,
   onOpenTrash,
   onOpenUsage,
   onOpenFileExplorer,
   fileExplorerOpen,
   onOpenLoopV7,
+  onOpenMCP,
+  onOpenCompaction,
+  onOpenSkills,
+  onOpenAgentsMd,
+  onOpenCycle3,
+  onOpenDualCompaction,
+  onOpenRules,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -213,15 +295,44 @@ export default function BrandHeader({
       {/* 右侧：新建对话按钮 + 三个点下拉菜单 */}
       <div className="flex items-center gap-2">
         {/* 新建对话按钮：圆形，hover 时旋转 90° */}
+        {/* v1.5.0：newChatLoading=true 时禁用按钮 + 显示旋转加载图标 + 灰化样式 */}
         <button
           onClick={onNewChat}
-          title="新建对话"
-          aria-label="新建对话"
-          className="w-9 h-9 rounded-full bg-hermes-50 hover:bg-hermes-100 text-hermes-600
-                     hover:rotate-90 transition-transform duration-default ease-spring
-                     flex items-center justify-center shadow-glow-hermes-sm"
+          disabled={newChatLoading}
+          title={newChatLoading ? '创建中...' : '新建对话'}
+          aria-label={newChatLoading ? '创建中...' : '新建对话'}
+          aria-busy={newChatLoading}
+          className={`w-9 h-9 rounded-full flex items-center justify-center shadow-glow-hermes-sm
+                      transition-all duration-default ease-spring
+                      ${newChatLoading
+                        ? 'bg-surface-200 text-surface-500 cursor-not-allowed'
+                        : 'bg-hermes-50 hover:bg-hermes-100 text-hermes-600 hover:rotate-90'
+                      }`}
         >
-          <Icon name="plus" className="w-5 h-5" />
+          {newChatLoading ? (
+            // 加载中：旋转的 spinner
+            <svg
+              className="w-5 h-5 animate-spin"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+              />
+            </svg>
+          ) : (
+            <Icon name="plus" className="w-5 h-5" />
+          )}
         </button>
 
         {/* 三个点下拉菜单 */}
@@ -287,6 +398,132 @@ export default function BrandHeader({
                 >
                   <Icon name="rocket" className="w-4 h-4" />
                   <span>🚀 Loop v7 工作流</span>
+                </button>
+              )}
+
+              {/* v1.6.0 新增：分组标题 - Cycle 2 高级功能 */}
+              {(onOpenMCP || onOpenCompaction || onOpenSkills || onOpenAgentsMd) && (
+                <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wider text-surface-400 font-medium">
+                  高级功能
+                </div>
+              )}
+
+              {/* v1.6.0 新增：MCP 工具（菜单项）
+               *  行为：点击调 onOpenMCP() 弹出 McpPanel 工具调用面板
+               *  图标：插头（plug），强调外部工具集成 */}
+              {onOpenMCP && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMCP)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-surface-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="plug" className="w-4 h-4" />
+                  <span>🔌 MCP 工具</span>
+                </button>
+              )}
+
+              {/* v1.6.0 新增：会话压缩（菜单项）
+               *  行为：点击调 onOpenCompaction() 弹出 CompactionIndicator
+               *  图标：压缩（compress），强调长会话上下文管理 */}
+              {onOpenCompaction && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCompaction)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-surface-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="compress" className="w-4 h-4" />
+                  <span>🗜️ 会话压缩</span>
+                </button>
+              )}
+
+              {/* v1.6.0 新增：技能管理（菜单项）
+               *  行为：点击调 onOpenSkills() 弹出 Skills 管理面板
+               *  图标：闪光（sparkles），强调 Skills 插件系统 */}
+              {onOpenSkills && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSkills)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-surface-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="sparkles" className="w-4 h-4" />
+                  <span>✨ 技能管理</span>
+                </button>
+              )}
+
+              {/* v1.6.0 新增：AGENTS.md 记忆（菜单项）
+               *  行为：点击调 onOpenAgentsMd() 弹出 AGENTS.md 记忆管理
+               *  图标：书（book），强调项目级规则持久化 */}
+              {onOpenAgentsMd && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenAgentsMd)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-surface-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="book" className="w-4 h-4" />
+                  <span>📚 AGENTS.md 记忆</span>
+                </button>
+              )}
+
+              {/* Cycle 3 v1.0.0 新增：分组标题 - Cycle 3 高级功能 */}
+              {(onOpenCycle3 || onOpenDualCompaction || onOpenRules) && (
+                <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wider text-surface-400 font-medium border-t border-surface-100 mt-1">
+                  Cycle 3 新功能
+                </div>
+              )}
+
+              {/* Cycle 3 v1.0.0 新增：MCP 高级功能（菜单项）
+               *  行为：点击调 onOpenCycle3() 弹出 Cycle3Panel 权限/服务器/审批/审计面板
+               *  图标：盾牌（shield），强调权限保护与安全控制 */}
+              {onOpenCycle3 && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCycle3)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-indigo-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="shield" className="w-4 h-4 text-indigo-500" />
+                  <span>🛡️ MCP 高级功能</span>
+                </button>
+              )}
+
+              {/* Cycle 3 v1.0.0 新增：双触发压缩（菜单项）
+               *  行为：点击调 onOpenDualCompaction() 弹出 DualCompactionPanel
+               *  图标：CPU（cpu），强调双触发机制与计算密集 */}
+              {onOpenDualCompaction && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenDualCompaction)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-amber-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="cpu" className="w-4 h-4 text-amber-500" />
+                  <span>⚡ 双触发压缩</span>
+                </button>
+              )}
+
+              {/* Cycle 3 v1.0.0 新增：多类型规则扫描（菜单项）
+               *  行为：点击调 onOpenRules() 弹出 RulesPanel 多文件类型扫描面板
+               *  图标：CPU（cpu），强调多文件类型 + 4 层架构 */}
+              {onOpenRules && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenRules)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-teal-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="cpu" className="w-4 h-4 text-teal-500" />
+                  <span>📜 多类型规则扫描</span>
                 </button>
               )}
 

@@ -7,7 +7,7 @@
 # 运行流程：
 #   1. 应用启动时初始化数据库、创建默认智能体
 #   2. 注册 API 路由和 WebSocket 端点
-#   3. 配置 CORS 中间件
+#   3. 配置 CORS / GZip / 限流 / 请求追踪 ID 中间件
 #   4. 启动 Uvicorn 服务器
 # 输入参数：无（通过配置文件读取）
 # 输出结果：运行中的 Web 服务
@@ -31,16 +31,38 @@
 #     index-Bic32m5_.js 等历史 bundle 导致前端逻辑不生效
 #   - 2026-07-01 | v2.5.0 | 新增 ArchitectureWorkflowService 初始化，注入
 #     hermes_service / workflow_engine / git_manager，注册到 app.state
+#   - 2026-07-24 | v5.9.0 | Module B 后端性能优化：
+#     1) 新增 GZipMiddleware（minimum_size=500, compresslevel=4）
+#     2) 新增 /api/hermes/chat 与 /api/hermes/chat/stream 限流（20 req/min/IP，超限 429）
+#     3) CORS 配置：cors_origins=["*"] 时打印 WARNING 日志
+#     4) /health 端点增强：DB SELECT 1 + LLM API 2s 超时探测
+#     5) 新增 X-Request-ID 中间件（UUID4）注入 request.state 与响应头
+#     6) 日志过滤器注入 request_id extra 字段，结构化日志
+#   - 2026-07-24 | v6.0.0 | Module F4 API 响应缓存：
+#     1) /api/stats/overview 与 /api/quota/overview 添加 Cache-Control: max-age=30
+#     2) /api/config 添加 ETag 支持：
+#        - 基于响应体 SHA-256 计算强 ETag
+#        - 客户端 If-None-Match 命中时返回 304 Not Modified
+#        - 失败兜底：异常不影响主响应，仅记录日志
 # ============================================================
 """
 
+import hashlib
+import json
 import logging
 import sys
+import time
+import uuid
 from pathlib import Path
 from contextlib import asynccontextmanager
+from collections import defaultdict, deque
+from typing import Deque, Dict, Tuple
 
+import httpx
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 # 确保项目根目录在 Python 路径中
@@ -55,6 +77,159 @@ from .error_handler import setup_logging, global_exception_handler, TaskRecovery
 # 配置日志
 setup_logging()
 logger = logging.getLogger(__name__)
+
+
+# ============================================================
+# 结构化日志：注入 request_id（v5.9.0 Module B 新增）
+# ============================================================
+class RequestIdFilter(logging.Filter):
+    """
+    日志过滤器：将当前请求上下文的 request_id 注入到 LogRecord
+    调用方：所有 logger（通过 setup_logging 挂到根 logger）
+    被调用方：日志格式化（%(request_id)s 可在格式串中使用）
+    运行步骤：
+      1. 尝试从 contextvars/request.state 获取当前 request_id
+      2. 若无则使用占位符 "-"
+      3. 将字段挂到 LogRecord 上，供格式化使用
+    """
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        # 默认占位符
+        record.request_id = getattr(record, "request_id", "-")
+        return True
+
+
+# 将过滤器挂到根 logger 与本模块 logger
+_root_logger = logging.getLogger()
+if not any(isinstance(f, RequestIdFilter) for f in _root_logger.filters):
+    _root_logger.addFilter(RequestIdFilter())
+if not any(isinstance(f, RequestIdFilter) for f in logger.filters):
+    logger.addFilter(RequestIdFilter())
+# v6.13.0 修复：同时把 filter 挂到所有 root handler 上，
+# 解决子 logger（如 database/services/...）日志记录缺少 request_id 字段
+# 导致 "Formatting field not found in record: 'request_id'" 错误的问题。
+for _handler in _root_logger.handlers:
+    if not any(isinstance(f, RequestIdFilter) for f in _handler.filters):
+        _handler.addFilter(RequestIdFilter())
+
+
+# ============================================================
+# 简易滑动窗口限流器（v5.9.0 Module B 新增）
+# ============================================================
+class SimpleRateLimiter:
+    """
+    基于内存的滑动窗口限流器
+    作用：保护关键 API 端点，避免被单一 IP 刷爆
+    调用方：限流中间件
+    被调用方：无
+    运行步骤：
+      1. 为每个 (endpoint, ip) 维护一个 timestamp 队列
+      2. 每次请求时清理超出窗口的旧时间戳
+      3. 队列未满则放行并追加；满则拒绝
+    说明：不依赖 slowapi，零外部依赖，单实例足够，
+         多实例部署需替换为 Redis。
+    参数：
+      - max_requests: 窗口期内允许的最大请求数
+      - window_seconds: 滑动窗口大小（秒）
+    """
+
+    def __init__(self, max_requests: int, window_seconds: int):
+        self.max_requests = max_requests
+        self.window_seconds = window_seconds
+        self._buckets: Dict[Tuple[str, str], Deque[float]] = defaultdict(deque)
+        self._last_cleanup = time.time()
+
+    def hit(self, endpoint: str, client_ip: str) -> bool:
+        """
+        记录一次请求并判断是否超限
+        参数：
+          - endpoint: 限流端点标识
+          - client_ip: 客户端 IP
+        返回值：True 放行；False 超限
+        """
+        now = time.time()
+        key = (endpoint, client_ip)
+        bucket = self._buckets[key]
+
+        # 清理过期时间戳
+        cutoff = now - self.window_seconds
+        while bucket and bucket[0] < cutoff:
+            bucket.popleft()
+
+        # 桶满则拒绝
+        if len(bucket) >= self.max_requests:
+            return False
+
+        bucket.append(now)
+        # 周期清理空桶，避免内存膨胀（每 60s 一次）
+        if now - self._last_cleanup > 60:
+            self._cleanup_empty_buckets()
+            self._last_cleanup = now
+        return True
+
+    def _cleanup_empty_buckets(self):
+        """清理空桶（仅清理真正为空的）"""
+        empty_keys = [k for k, v in self._buckets.items() if not v]
+        for k in empty_keys:
+            del self._buckets[k]
+
+
+# /api/hermes/chat 与 /api/hermes/chat/stream 限流：20 req/min/IP
+_RATE_LIMITER = SimpleRateLimiter(max_requests=20, window_seconds=60)
+_RATE_LIMITED_PATHS = {"/api/hermes/chat", "/api/hermes/chat/stream"}
+
+
+def _get_client_ip(request: Request) -> str:
+    """
+    提取客户端 IP（优先 X-Forwarded-For，回落到 client.host）
+    """
+    xff = request.headers.get("x-forwarded-for")
+    if xff:
+        return xff.split(",")[0].strip()
+    real_ip = request.headers.get("x-real-ip")
+    if real_ip:
+        return real_ip.strip()
+    return (request.client.host if request.client else "unknown") or "unknown"
+
+
+# ============================================================
+# 健康检查（v5.9.0 Module B 增强）
+# ============================================================
+async def _check_database() -> Tuple[str, str]:
+    """
+    探测数据库连接：执行 SELECT 1
+    返回值：(status, detail) status 为 "ok" 或 "error"
+    """
+    try:
+        session_factory = get_session_factory()
+        async with session_factory() as session:
+            from sqlalchemy import text
+            await session.execute(text("SELECT 1"))
+        return "ok", "database reachable"
+    except Exception as e:
+        logger.error(f"健康检查-数据库连接失败: {e}")
+        return "error", str(e)
+
+
+async def _check_llm_api() -> Tuple[str, str]:
+    """
+    探测 LLM API 可达性：HEAD 请求 LLM base_url（2s 超时）
+    返回值：(status, detail) status 为 "ok" 或 "error"
+    """
+    base_url = settings.cli.get("env", {}).get("ANTHROPIC_BASE_URL", "")
+    if not base_url:
+        return "error", "ANTHROPIC_BASE_URL not configured"
+    try:
+        async with httpx.AsyncClient(timeout=2.0) as client:
+            # 多数 LLM 网关对根路径或 /health 返回 200/401/405
+            resp = await client.get(base_url.rstrip("/") + "/")
+            # 2xx/3xx/4xx 都视为可达（网关存在），5xx 才视为异常
+            if resp.status_code < 500:
+                return "ok", f"llm api reachable (status={resp.status_code})"
+            return "error", f"llm api returned {resp.status_code}"
+    except Exception as e:
+        logger.error(f"健康检查-LLM API 连接失败: {e}")
+        return "error", str(e)
 
 
 @asynccontextmanager
@@ -224,6 +399,44 @@ async def lifespan(app: FastAPI):
     app.state.github_repo_manager = github_repo_manager
     logger.info("GitHub 仓库管理器已初始化")
 
+    # v6.3.0 (P0-4) 新增：Plan 模式服务初始化
+    from .services.plan_mode import PlanModeService
+    plan_mode_service = PlanModeService(
+        session_factory=get_session_factory(),
+        executor=getattr(app.state, "hermes_executor", None) or getattr(app.state, "executor", None),
+    )
+    app.state.plan_mode_service = plan_mode_service
+    logger.info("Plan 模式服务已初始化")
+
+    # v6.13.0 (Cycle 2 T2) 新增：长会话压缩服务初始化
+    from .services.compaction import CompactionService
+    compaction_service = CompactionService(
+        session_factory=get_session_factory(),
+        hermes_service=app.state.hermes_service,
+    )
+    app.state.compaction_service = compaction_service
+    logger.info("长会话压缩服务已初始化")
+
+    # v6.13.0 (Cycle 2 T3) 新增：会话 fork/resume 服务初始化
+    from .services.session_fork_resume import SessionForkResumeService
+    session_fork_resume_service = SessionForkResumeService(
+        session_factory=get_session_factory(),
+    )
+    app.state.session_fork_resume_service = session_fork_resume_service
+    logger.info("会话 fork/resume 服务已初始化")
+
+    # v6.13.0 (Cycle 2 T4) 新增：Skills 插件系统服务初始化
+    from .services.skills import SkillService
+    skill_service = SkillService(session_factory=get_session_factory())
+    app.state.skill_service = skill_service
+    logger.info("Skills 插件服务已初始化")
+
+    # v6.13.0 (Cycle 2 T5) 新增：AGENTS.md Memory 服务初始化
+    from .services.agents_md_memory import AgentsMdMemoryService
+    agents_md_service = AgentsMdMemoryService()
+    app.state.agents_md_service = agents_md_service
+    logger.info("AGENTS.md Memory 服务已初始化")
+
     # 启动健康检查
     await agent_manager.start_health_check()
 
@@ -264,14 +477,80 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# ============================================================
+# 中间件注册顺序（v5.9.0 Module B）
+# ============================================================
+# FastAPI 中间件按 LIFO（后注册先执行）顺序工作；
+# 期望链路：Request -> RequestId -> RateLimit -> GZip -> CORS -> 路由
+# 实际注册顺序（自下而上）：CORS, GZip, RateLimit, RequestId
+
 # 配置 CORS
+_cors_origins = settings.server.get("cors_origins", ["*"])
+if isinstance(_cors_origins, list) and len(_cors_origins) == 1 and _cors_origins[0] == "*":
+    # 通配符模式：仅适合开发环境；生产应配置具体来源
+    logger.warning(
+        "CORS 配置为通配符 ['*']，仅用于开发环境；生产部署请在 "
+        "config/auto_code_config.yaml 的 server.cors_origins 配置具体允许的来源"
+    )
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.server.get("cors_origins", ["*"]),
+    allow_origins=_cors_origins if isinstance(_cors_origins, list) else ["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# 启用 GZip 压缩（minimum_size=500, compresslevel=4）
+# minimum_size 避免对非常小的响应浪费 CPU；
+# compresslevel=4 平衡压缩率与 CPU 开销。
+app.add_middleware(GZipMiddleware, minimum_size=500, compresslevel=4)
+
+
+@app.middleware("http")
+async def request_id_and_rate_limit_middleware(request: Request, call_next):
+    """
+    请求追踪 ID + 限流中间件（v5.9.0 Module B）
+    作用：
+      1. 为每个请求生成 UUID4 作为 X-Request-ID；
+         - 优先使用请求头传入的 X-Request-ID（便于跨服务链路追踪）
+         - 否则新生成一个
+      2. 注入到 request.state.request_id 供下游路由使用
+      3. 命中限流端点时检查 _RATE_LIMITER，超限直接返回 429
+      4. 在响应头中回传 X-Request-ID
+      5. 通过 contextvars/request.state 暴露 request_id 供日志过滤器使用
+    调用方：所有 HTTP 请求
+    被调用方：下游路由
+    """
+    # 1) 生成 / 复用 request_id
+    incoming = request.headers.get("x-request-id")
+    request_id = incoming if incoming else str(uuid.uuid4())
+    request.state.request_id = request_id
+
+    # 2) 限流检查（仅作用于配置的端点）
+    if request.url.path in _RATE_LIMITED_PATHS:
+        client_ip = _get_client_ip(request)
+        if not _RATE_LIMITER.hit(request.url.path, client_ip):
+            logger.warning(
+                "限流触发: path=%s ip=%s request_id=%s",
+                request.url.path,
+                client_ip,
+                request_id,
+                extra={"request_id": request_id},
+            )
+            return JSONResponse(
+                status_code=429,
+                content={
+                    "error": "rate_limited",
+                    "message": "请求过于频繁，请稍后重试",
+                    "request_id": request_id,
+                },
+                headers={"X-Request-ID": request_id, "Retry-After": "60"},
+            )
+
+    # 3) 执行下游
+    response: Response = await call_next(request)
+    response.headers["X-Request-ID"] = request_id
+    return response
 
 
 @app.middleware("http")
@@ -297,9 +576,162 @@ async def no_store_frontend_static_cache(request: Request, call_next):
         response.headers["Expires"] = "0"
     return response
 
+
+# ============================================================
+# API 响应缓存中间件（v6.0.0 Module F4 新增）
+# ============================================================
+# 设计：
+#   - 集中式管理：避免在每个 endpoint 重复声明
+#   - 路径白名单：仅对配置中的路径生效
+#   - Cache-Control 路径：max-age=30（浏览器/代理可缓存 30 秒）
+#   - ETag 路径：基于响应体 SHA-256 计算强 ETag，命中 If-None-Match 时
+#     返回 304 Not Modified，节省带宽
+# 失败兜底：异常不影响主响应，仅记录日志
+# ============================================================
+
+# Cache-Control 路径：响应添加 max-age=30
+_API_CACHE_CONTROL_PATHS = {
+    "/api/stats/overview",
+    "/api/quota/overview",
+}
+_API_CACHE_MAX_AGE = 30  # 秒
+
+# ETag 路径：基于响应体生成 ETag，支持 304 协商缓存
+_API_ETAG_PATHS = {
+    "/api/config",
+}
+
+
+def _compute_strong_etag(body: bytes) -> str:
+    """
+    计算强 ETag（基于响应体 SHA-256）
+    输入：body - 响应体字节串
+    输出：双引号包裹的 ETag 字符串（符合 RFC 7232）
+    """
+    digest = hashlib.sha256(body).hexdigest()
+    return f'"{digest}"'
+
+
+async def _read_response_body(response: Response) -> bytes:
+    """
+    读取 Response 的 body 内容（v6.0.0 Module F4 新增）
+    背景：FastAPI/Starlette 的 Response 默认不会暴露 body，
+          但经过中间件时 body_iterator 还未被消费。
+    兜底：若 body_iterator 不可读，返回空字节。
+    """
+    body_iter = getattr(response, "body_iterator", None)
+    if body_iter is None:
+        return b""
+    chunks = []
+    try:
+        async for chunk in body_iter:
+            if isinstance(chunk, str):
+                chunks.append(chunk.encode("utf-8"))
+            elif isinstance(chunk, bytes):
+                chunks.append(chunk)
+            else:
+                chunks.append(str(chunk).encode("utf-8"))
+    except Exception as exc:
+        logger.debug(f"读取响应 body 失败: {exc}")
+        return b""
+    return b"".join(chunks)
+
+
+@app.middleware("http")
+async def api_response_cache_middleware(request: Request, call_next):
+    """
+    API 响应缓存中间件（v6.0.0 Module F4 新增）
+    作用：
+      1) 对 _API_CACHE_CONTROL_PATHS 路径设置 Cache-Control: max-age=30
+      2) 对 _API_ETAG_PATHS 路径计算 ETag，命中 If-None-Match 返回 304
+    调用方：所有 HTTP 请求
+    被调用方：下游路由
+    异常处理：所有异常均为非阻塞，仅记录日志
+    """
+    path = request.url.path
+
+    # 1) 先执行下游路由获取响应
+    try:
+        response: Response = await call_next(request)
+    except Exception as exc:
+        # 下游异常：放行原始异常（全局异常处理器兜底）
+        raise
+
+    # 2) 命中 Cache-Control 白名单
+    if path in _API_CACHE_CONTROL_PATHS:
+        try:
+            # 保留已有 Cache-Control（兜底），否则覆盖
+            existing = response.headers.get("Cache-Control")
+            if not existing:
+                response.headers["Cache-Control"] = f"public, max-age={_API_CACHE_MAX_AGE}"
+        except Exception as exc:
+            logger.debug(f"设置 Cache-Control 失败 path={path}: {exc}")
+
+    # 3) 命中 ETag 白名单
+    if path in _API_ETAG_PATHS:
+        try:
+            # 读取响应体计算 ETag
+            body = await _read_response_body(response)
+            if body:
+                etag = _compute_strong_etag(body)
+
+                # 重新构造响应（因为 body 已被消费）
+                from fastapi.responses import Response as FastAPIResponse
+                response = FastAPIResponse(
+                    content=body,
+                    status_code=response.status_code,
+                    headers=dict(response.headers),
+                    media_type=response.media_type,
+                )
+
+                # 检查 If-None-Match 协商缓存
+                if_none_match = request.headers.get("if-none-match", "").strip()
+                if if_none_match and if_none_match == etag:
+                    # 命中 304：返回空 body
+                    not_modified = FastAPIResponse(
+                        content=b"",
+                        status_code=304,
+                        headers={
+                            "ETag": etag,
+                            "X-Request-ID": response.headers.get("X-Request-ID", ""),
+                        },
+                    )
+                    return not_modified
+
+                # 未命中：设置 ETag 头
+                response.headers["ETag"] = etag
+        except Exception as exc:
+            logger.debug(f"ETag 处理失败 path={path}: {exc}")
+
+    return response
+
 # 注册路由
 app.include_router(api_router, prefix="/api")
 app.include_router(ws_router)
+
+# v6.3.0 (P0-4) 新增：注册 Plan 模式 API 路由
+from .api.plan import router as plan_router
+app.include_router(plan_router, prefix="/api/workflow", tags=["plan-mode"])
+
+# v6.11.0 (P0 Cycle 2) 新增：注册 MCP (Model Context Protocol) API 路由
+from .api.mcp import router as mcp_router
+app.include_router(mcp_router, prefix="/api/mcp", tags=["mcp"])
+
+# v6.13.0 (Cycle 2 T2) 新增：注册长会话压缩 (Compaction) API 路由
+from .api.compaction import router as compaction_router
+app.include_router(compaction_router, prefix="/api", tags=["compaction"])
+
+# v6.13.0 (Cycle 2 T3) 新增：注册会话 fork/resume API 路由
+from .api.session_fork_resume import router as fork_resume_router
+app.include_router(fork_resume_router, prefix="/api", tags=["session-fork-resume"])
+
+# v6.13.0 (Cycle 2 T4) 新增：注册 Skills API 路由
+from .api.skills import router as skills_router
+app.include_router(skills_router, prefix="/api", tags=["skills"])
+
+# v6.13.0 (Cycle 2 T5) 新增：注册 AGENTS.md Memory API 路由
+from .api.agents_md import router as agents_md_router
+app.include_router(agents_md_router, prefix="/api", tags=["agents-md"])
 
 # 注册全局异常处理器
 app.add_exception_handler(Exception, global_exception_handler)
@@ -307,8 +739,34 @@ app.add_exception_handler(Exception, global_exception_handler)
 
 @app.get("/health")
 async def health_check():
-    """健康检查端点"""
-    return {"status": "ok", "service": "claude-code-scheduling-platform"}
+    """
+    健康检查端点（v5.9.0 Module B 增强）
+    作用：探测数据库连接与 LLM API 可达性
+    返回值：JSONResponse
+      {
+        "status": "healthy" | "unhealthy",
+        "database": "ok" | "error",
+        "database_detail": "...",
+        "llm_api": "ok" | "error",
+        "llm_api_detail": "...",
+        "service": "claude-code-scheduling-platform"
+      }
+    """
+    db_status, db_detail = await _check_database()
+    llm_status, llm_detail = await _check_llm_api()
+    overall = "healthy" if (db_status == "ok" and llm_status == "ok") else "unhealthy"
+    payload = {
+        "status": overall,
+        "database": db_status,
+        "database_detail": db_detail,
+        "llm_api": llm_status,
+        "llm_api_detail": llm_detail,
+        "service": "claude-code-scheduling-platform",
+    }
+    return JSONResponse(
+        status_code=200 if overall == "healthy" else 503,
+        content=payload,
+    )
 
 
 @app.get("/")

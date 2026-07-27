@@ -73,127 +73,95 @@
 #     ② 点击后立即 setIsDesignLoading(true) 提供即时视觉反馈；
 #     ③ 后端 success=false / API 异常时均通过 showToast 显示具体错误，不再仅 console.error；
 #     ④ useCallback 依赖项追加 showToast，避免闭包过期
+#   - 2026-07-24 | v5.9.0 | Module A 前端 UI 优化（Task A1）：
+#     ① 为所有 localStorage.getItem/setItem/removeItem 调用补充 try-catch 异常防护，
+#        防止 Safari 隐私模式 / 配额满 / 第三方 cookie 拦截等异常导致应用崩溃
+#     ② handleSendMessage 引入 inFlightRef 300ms 防重入守卫
+#     ③ Sidebar 搜索框增加 300ms 输入防抖
+#     ④ tsconfig.json 启用 noUnusedLocals/noUnusedParameters 严格模式
+#     ⑤ vite.config.ts 增加 manualChunks vendor 切分
+#   - 2026-07-24 | v5.10.0 | Module C2 结构桩拆分 - 新增以下 5 个子组件占位：
+#     ① components/chat/ChatView.tsx - 对话消息显示区域
+#     ② components/chat/InputArea.tsx - 底部输入区
+#     ③ components/workflow/ClarificationHandler.tsx - 需求澄清流程
+#     ④ components/workflow/WorkflowStageRenderer.tsx - 工作流阶段渲染器
+#     ⑤ components/workflow/DesignPhaseHandler.tsx - 架构设计阶段处理器
+#     当前为 STRUCTURAL refactor：仅定义 Props 接口与占位组件，JSX 迁移待
+#     后续 Module 完成（详见各子组件文件头注释的 TODO 标注）。
+#   - 2026-07-24 | v5.11.0 | Module E Codex 核心特性集成：
+#     ① 导入 ModelSelector / ReasoningIntensitySelector / reviewCode / fixCode
+#        / runReviewFixLoop；
+#     ② 新增 handleSlashCommand 分发器，handleSendMessage 调用前检测 /review
+#        / /fix / /review-fix-loop 斜杠命令，命中则直接调对应 API 而不走流式对话；
+#     ③ /review 默认审查当前打开的文件（openedFile），结果写入 reviewData 触发
+#        ReviewReport 渲染 + 追加摘要消息；
+#     ④ /fix 必填 file 路径，先 review 再 fix，输出 diff 摘要；
+#     ⑤ /review-fix-loop 触发后端 ReviewFixLoop 服务，最长 3 轮自迭代；
+#     ⑥ BrandHeader 下方新增常驻工具栏：ModelSelector + ReasoningIntensitySelector
+#        + 斜杠命令提示 + 当前文件路径 hint
+#   - 2026-07-27 | v5.12.0 | Cycle 3 UI/UX 优化：
+#     ① 移除面板外部冗余标题（Cycle3Panel/DualCompactionPanel/RulesPanel
+#        内部已有渐变标题），改为纯容器包装；
+#     ② 弹窗背景升级为 bg-black/40 + backdrop-blur-md（玻璃拟态）；
+#     ③ 弹窗布局改为 flex column + 固定高度（h-[85vh]）+ overflow-hidden，
+#        配合面板内部 overflow-y-auto 区域实现独立滚动
+#   - 2026-07-27 | v5.13.0 | Cycle 3 UI/UX 进一步优化：
+#     ① 新增 Cycle3Modal 统一模态组件（带 Escape 键关闭 + 背景点击关闭）
+#     ② 三个面板均接受 onClose prop，在渐变标题栏右侧显示 ✕ 关闭按钮
+#     ③ Cycle3Panel/DualCompactionPanel/RulesPanel 升级为 v1.1.1
+#        （渐变标题 + 玻璃拟态 + 加载骨架 + toast 提示 + 空状态）
+#     ④ BrandHeader 新增 onOpenCycle3/onOpenDualCompaction/onOpenRules 菜单项
+#        + shield/cpu 内联 SVG 图标 + "Cycle 3 新功能"分组标题
 # ============================================================
  */
 
 import { useState, useCallback, useRef, useEffect } from 'react';
 import {
   useAgents, useStats, useSessions, useSessionDetail,
-  optimizeWithHermes, confirmPlan, chatWithHermesStreaming,
+  confirmPlan, chatWithHermesStreaming,
   createSession, deleteSession, updateSession,
   batchDeleteSessions, fetchWorkflowStatus,
   startDesignPhase, confirmDesignPhase, rejectDesignPhase,
+  reviewCode, fixCode, runReviewFixLoop,
 } from './hooks/useApi';
-import AgentChatCard from './components/AgentChatCard';
 import Toast from './components/Toast';
 import PlanViewer from './components/PlanViewer';
-import ThinkingBlock from './components/ThinkingBlock';
 import Sidebar from './components/Sidebar';
 import SettingsPanel from './components/SettingsPanel';
-import BrandHeader from './components/BrandHeader';
-import WelcomeState from './components/WelcomeState';
-import MessageBubble from './components/MessageBubble';
 import ModeSelector from './components/ModeSelector';
 import ProjectSelector from './components/ProjectSelector';
 import FileExplorer from './components/FileExplorer';
-import CodeViewer from './components/CodeViewer';
-import ClarificationCard from './components/ClarificationCard';
-import ClarificationModal from './components/ClarificationModal';
-import ClarificationProgress from './components/ClarificationProgress';
-import ArchitectureDesignModal from './components/ArchitectureDesignModal';
-import ReviewReport from './components/ReviewReport';
-import PipelineProgress from './components/PipelineProgress';
-import GoalProgress from './components/GoalProgress';
 import LoopV7Runner from './components/LoopV7Runner';
 import type { Agent, Session, LoopWorkflowStatus, ReviewData, PipelineData, GoalData } from './types';
 
-/** localStorage 中保存当前激活会话 ID 的 key */
-const LS_CURRENT_SESSION_ID = 'current_session_id';
-
-/** localStorage 中保存应用模式的 key（v3.0.0 新增） */
-const LS_APP_MODE = 'app_mode';
-
-/**
- * 对话消息类型定义
- * 扩展：增加 thinking 字段，便于历史会话打开时还原流式思考过程
- * v2.9.2 扩展：增加 error 字段，用于渲染 MessageBubble 错误卡片
- */
-interface ChatMessage {
-  /** 消息唯一标识 */
-  id: string;
-  /** 消息角色：user（用户）或 hermes（Hermes） */
-  role: 'user' | 'hermes';
-  /** 消息文本内容 */
-  content: string;
-  /** 消息时间戳（毫秒） */
-  timestamp: number;
-  /** 思考过程内容（仅 hermes 消息有值） */
-  thinking?: string;
-  /** 流式错误信息（v2.9.2 新增）；非空时表示该消息处理失败 */
-  error?: string;
-}
+/** 从 utils/messageFormatters 抽离的 helper 函数 + 常量 + 类型 */
+import { LS_CURRENT_SESSION_ID, LS_APP_MODE, extractSummary, extractQuestions } from './utils/messageFormatters';
+import type { ChatMessage } from './utils/messageFormatters';
+/** 从 hooks/useToast 抽离的 toast 状态管理 */
+import { useToast } from './hooks/useToast';
+/** v6.9.0 P0-2：从 App.tsx 抽离的用量监控面板 */
+import { UsagePanel, type UsageStats } from './components/UsagePanel';
+/** v6.10.0 P0-2：从 App.tsx 抽离的主对话舞台布局 */
+import { AppLayout } from './components/AppLayout';
+/** v6.14.0 Cycle 2 新增：MCP 工具调用面板 */
+import McpPanel from './components/McpPanel';
+/** v6.14.0 Cycle 2 新增：会话压缩指示器 */
+import CompactionIndicator from './components/CompactionIndicator';
+/** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
+import SkillsPanelContent from './components/SkillsPanelContent';
+/** v6.14.0 Cycle 2 新增：AGENTS.md 面板内容（弹窗辅助组件） */
+import AgentsMdPanelContent from './components/AgentsMdPanelContent';
+/** Cycle 3 v1.0.0 新增：MCP 高级功能面板（权限/外部服务器/审批/审计） */
+import Cycle3Panel from './components/Cycle3Panel';
+/** Cycle 3 v1.0.0 新增：双触发压缩面板 */
+import DualCompactionPanel from './components/DualCompactionPanel';
+/** Cycle 3 v1.0.0 新增：多类型规则扫描面板 */
+import RulesPanel from './components/RulesPanel';
 
 /**
- * 格式化 Token 数量，使用 K/M 后缀
- * @param n - Token 数量
- * @returns 格式化后的字符串
+ * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
+ * 类型 + helper 函数 + 常量已抽离到 ./utils/messageFormatters 和 ./hooks/useToast
  */
-function formatTokens(n: number): string {
-  if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-  if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-  return n.toString();
-}
-
-/**
- * v3.1.0：从澄清消息内容中提取 AI 需求总结部分
- * 提取 "### 需要您补充以下信息" 之前的所有内容作为 summary
- * 参数：
- *   - content: 完整的澄清消息 Markdown 文本
- * 返回值：提取的 summary 文本（不含澄清问题部分）
- */
-function extractSummary(content: string): string {
-  const idx = content.indexOf('### 需要您补充以下信息');
-  if (idx > 0) return content.substring(0, idx).trim();
-  // 兼容纯文本格式：查找 "需要您补充以下信息"
-  const idx2 = content.indexOf('需要您补充以下信息');
-  if (idx2 > 0) return content.substring(0, idx2).trim();
-  return '';
-}
-
-/**
- * v3.1.0：从澄清消息内容中解析结构化问题列表
- * 支持的格式：
- *   - Markdown: "- **【维度名】** 问题描述（重要性：high/medium/low）"
- *   - 纯文本: "- 【维度名】 问题描述（重要性：high/medium/low）"
- * 参数：
- *   - content: 完整的澄清消息文本
- * 返回值：解析后的问题数组，每项含 dimension/question/importance
- */
-function extractQuestions(content: string): Array<{ dimension: string; question: string; importance: 'high' | 'medium' | 'low' }> {
-  const questions: Array<{ dimension: string; question: string; importance: 'high' | 'medium' | 'low' }> = [];
-  // 匹配 Markdown 格式：- **【维度名】** 描述（重要性：xxx）
-  const mdRegex = /- \*\*【(.+?)】\*\*\s*(.+?)（重要性：(\w+)）/g;
-  let match;
-  while ((match = mdRegex.exec(content)) !== null) {
-    questions.push({
-      dimension: match[1],
-      question: match[2].trim(),
-      importance: match[3] as 'high' | 'medium' | 'low',
-    });
-  }
-  // 若 Markdown 格式未匹配到，尝试纯文本格式
-  if (questions.length === 0) {
-    const txtRegex = /- 【(.+?)】\s*(.+?)（重要性：(\w+)）/g;
-    while ((match = txtRegex.exec(content)) !== null) {
-      questions.push({
-        dimension: match[1],
-        question: match[2].trim(),
-        importance: match[3] as 'high' | 'medium' | 'low',
-      });
-    }
-  }
-  return questions;
-}
 
 export default function App() {
   // ============================================================
@@ -236,32 +204,15 @@ export default function App() {
   const [inputValue, setInputValue] = useState('');
   /** 是否正在等待 Hermes 回复 */
   const [isSending, setIsSending] = useState(false);
-  /** Toast 通知：是否可见 */
-  const [toastVisible, setToastVisible] = useState(false);
-  /** Toast 通知：消息文本 */
-  const [toastMessage, setToastMessage] = useState('');
-  /** Toast 通知：弹窗类型（success / error / warning / info），默认 success */
-  const [toastType, setToastType] = useState<'success' | 'error' | 'warning' | 'info'>('success');
-
   /**
-   * 显示 Toast 通知（v2.8.1 修复：完整透传 type 到 Toast 组件）
-   * 位置说明（v2.10.4）：从原「事件处理函数」区上移到此处，
-   *   是为了让 handleSessionNotFound（位于 useSessionDetail 调用之前）能直接引用 showToast，
-   *   避免 ESLint no-use-before-define 错误。showToast 内部仅依赖稳定的 useState setter，
-   *   移位不影响其他调用方。
-   * 运行步骤：
-   *   1. 设置通知文本 message
-   *   2. 设置通知类型 toastType（决定图标与边框颜色）
-   *   3. 设置 visible=true 触发 Toast 显示
-   * 参数：
-   *   - msg: 通知文本
-   *   - type: 弹窗类型（success / error / warning / info），默认 success
+   * Toast 通知：v6.4.0 起从 useToast hook 统一管理
+   * - toastVisible: 是否可见
+   * - toastMessage: 消息文本
+   * - toastType: 弹窗类型
+   * - showToast(msg, type): 触发显示，2.4s 自动消失
+   * - handleToastClose: 手动关闭回调
    */
-  const showToast = useCallback((msg: string, type: 'success' | 'error' | 'warning' | 'info' = 'success') => {
-    setToastMessage(msg);
-    setToastType(type);
-    setToastVisible(true);
-  }, []);
+  const { visible: toastVisible, message: toastMessage, type: toastType, showToast, hideToast: handleToastClose } = useToast();
 
   /**
    * v2.10.4 新增：会话详情 404 回退回调
@@ -317,6 +268,20 @@ export default function App() {
   const [showUsagePanel, setShowUsagePanel] = useState(false);
   /** 是否显示全局设置面板（v2.8.0 新增 - Task 7） */
   const [settingsOpen, setSettingsOpen] = useState(false);
+  /** v6.14.0 Cycle 2 新增：是否显示 MCP 工具面板 */
+  const [mcpPanelOpen, setMcpPanelOpen] = useState(false);
+  /** v6.14.0 Cycle 2 新增：是否显示会话压缩面板 */
+  const [compactionPanelOpen, setCompactionPanelOpen] = useState(false);
+  /** v6.14.0 Cycle 2 新增：是否显示技能管理面板 */
+  const [skillsPanelOpen, setSkillsPanelOpen] = useState(false);
+  /** v6.14.0 Cycle 2 新增：是否显示 AGENTS.md 记忆面板 */
+  const [agentsMdPanelOpen, setAgentsMdPanelOpen] = useState(false);
+  /** Cycle 3 v1.0.0 新增：MCP 高级功能面板（Cycle3Panel） */
+  const [cycle3PanelOpen, setCycle3PanelOpen] = useState(false);
+  /** Cycle 3 v1.0.0 新增：双触发压缩面板 */
+  const [dualCompactionOpen, setDualCompactionOpen] = useState(false);
+  /** Cycle 3 v1.0.0 新增：多类型规则扫描面板 */
+  const [rulesPanelOpen, setRulesPanelOpen] = useState(false);
   /** 消息列表容器引用，用于自动滚动到底部 */
   const messagesEndRef = useRef<HTMLDivElement>(null);
   /** 输入框 ref（v2.9.0 新增 - Task 5：贴底浮动输入区，需要 focus 控制） */
@@ -355,6 +320,17 @@ export default function App() {
 
   /** v5.7.0：控制 LoopV7Runner 弹窗显示/隐藏 */
   const [showLoopV7Runner, setShowLoopV7Runner] = useState(false);
+
+  /**
+   * v5.9.0 新增（Task A2 - 按钮反馈）：API 触发按钮加载态
+   * 作用：API 调用进行时禁用对应按钮 + 展示加载指示，避免重复点击
+   */
+  /** 新建任务按钮加载态（handleNewTask 进行中） */
+  const [isNewTaskLoading, setIsNewTaskLoading] = useState(false);
+  /** 删除/批量删除按钮加载态（handleDeleteSession / handleBatchDelete 进行中） */
+  const [isDeletingSession, setIsDeletingSession] = useState(false);
+  /** 确认计划按钮加载态（handleConfirmPlan 进行中） */
+  const [isConfirmPlanLoading, setIsConfirmPlanLoading] = useState(false);
 
   // ============================================================
   // v1.9.0：Loop Engineering 工作流展示数据状态
@@ -402,6 +378,49 @@ export default function App() {
   //   校验失败的问题
   const skipConfirmInFlightRef = useRef<boolean>(false);
 
+  /**
+   * v6.10.0 P0-2：从 ClarificationModal / onConfirm 解包到此处统一管理
+   * 单次点击只发起一次 /clarify/confirm 请求，防止快速双击/多次点击导致后端
+   *   confirming→designing 推进与 designing→prompting 校验失败的问题
+   * 失败时保持弹窗打开（让用户继续编辑或重试）
+   */
+  const handleConfirmClarificationFromModal = useCallback(async (wfId?: string) => {
+    if (skipConfirmInFlightRef.current) return;
+    const id = wfId || workflowIdRef.current || workflowStatus?.workflow_id;
+    if (!id) {
+      showToast('工作流 ID 缺失，请稍后重试', 'error');
+      return;
+    }
+    skipConfirmInFlightRef.current = true;
+    try {
+      const baseUrl = window.location.origin;
+      const res = await fetch(`${baseUrl}/api/workflow/${id}/clarify/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ confirmed: true }),
+      });
+      const data = await res.json().catch(() => ({ success: false }));
+      if (!data.success) {
+        console.warn('确认需求文档失败:', data.message);
+        showToast(data.message || '确认失败，请重试', 'error');
+        return; // 保持弹窗打开
+      }
+      setShowClarifyModal(false);
+      refetchSessions();
+      // 启动架构设计阶段
+      setTimeout(() => handleStartDesignPhase(), 500);
+    } catch (e) {
+      console.error('确认需求文档异常:', e);
+      showToast('网络异常，请重试', 'error');
+    } finally {
+      skipConfirmInFlightRef.current = false;
+    }
+  }, [workflowStatus?.workflow_id, showToast, refetchSessions]);
+
+  // v5.9.0 新增（Task A2 - 请求防抖）：handleSendMessage 300ms 防重入守卫，
+  //   防止快速双击 Enter / 双击发送按钮导致重复发起流式请求
+  const sendInFlightRef = useRef<boolean>(false);
+
   // v3.9.0 修复：澄清完成时强制弹窗（防御运行时状态竞争）
   // v3.10.0 修复：仅当工作流仍在 clarifying 阶段时才弹窗
   useEffect(() => {
@@ -422,7 +441,8 @@ export default function App() {
    *   3. 若没有，appMode 保持 null → 渲染 ModeSelector 等待用户选择
    */
   useEffect(() => {
-    const storedMode = localStorage.getItem(LS_APP_MODE);
+    let storedMode: string | null = null;
+    try { storedMode = localStorage.getItem(LS_APP_MODE); } catch { /* Safari 隐私模式等异常场景静默降级 */ }
     if (storedMode === 'chat' || storedMode === 'coding') {
       setAppMode(storedMode);
     }
@@ -458,7 +478,8 @@ export default function App() {
    */
   useEffect(() => {
     if (!appMode) return; // 等待用户选择模式后再初始化会话
-    const stored = localStorage.getItem(LS_CURRENT_SESSION_ID);
+    let stored: string | null = null;
+    try { stored = localStorage.getItem(LS_CURRENT_SESSION_ID); } catch { /* 静默降级 */ }
     if (stored) {
       setCurrentSessionId(stored);
     } else {
@@ -466,7 +487,7 @@ export default function App() {
       createSession({ mode: appMode })
         .then((s) => {
           setCurrentSessionId(s.id);
-          localStorage.setItem(LS_CURRENT_SESSION_ID, s.id);
+          try { localStorage.setItem(LS_CURRENT_SESSION_ID, s.id); } catch { /* 静默降级 */ }
         })
         .catch((e) => {
           console.error('自动创建 Session 失败：', e);
@@ -580,11 +601,9 @@ export default function App() {
   // ============================================================
 
   /**
-   * 关闭 Toast 通知
+   * 关闭 Toast 通知（v6.4.0 起改用 useToast hook 提供的 hideToast）
+   * 此处保留变量引用一致性：handleToastClose 由 useToast() 的 hideToast 提供。
    */
-  const handleToastClose = useCallback(() => {
-    setToastVisible(false);
-  }, []);
 
   /**
    * 切换侧边栏展开/折叠
@@ -600,7 +619,7 @@ export default function App() {
    *   2. 设置 appMode → 触发会话初始化
    */
   const handleModeSelect = useCallback((mode: 'chat' | 'coding') => {
-    localStorage.setItem(LS_APP_MODE, mode);
+    try { localStorage.setItem(LS_APP_MODE, mode); } catch { /* 静默降级 */ }
     setAppMode(mode);
   }, []);
 
@@ -613,14 +632,14 @@ export default function App() {
    */
   const handleModeSwitch = useCallback((mode: 'chat' | 'coding') => {
     if (mode === appMode) return; // 同一模式不重复切换
-    localStorage.setItem(LS_APP_MODE, mode);
+    try { localStorage.setItem(LS_APP_MODE, mode); } catch { /* 静默降级 */ }
     setAppMode(mode);
     // 加载新模式下最近一条会话
     // useSessions 的 mode 参数变化后会自动 refetch，
     // 在 sessions 更新后从列表中取最近一条切换
     // 此处先清空当前会话，避免旧模式残留
     setCurrentSessionId(null);
-    localStorage.removeItem(LS_CURRENT_SESSION_ID);
+    try { localStorage.removeItem(LS_CURRENT_SESSION_ID); } catch { /* 静默降级 */ }
     setMessages([]);
     setPlanVisible(false);
     setPlanContent('');
@@ -661,33 +680,6 @@ export default function App() {
   }, []);
 
   /**
-   * v2.10.2 新增：BrandHeader 模式切换 pill 点击回调
-   * 行为：chat ↔ coding 交替切换
-   *   - 当前 chat  → 切到 coding（用户切回编程模式时，若 selectedProject 仍存在则恢复项目视图，否则进入 ProjectSelector）
-   *   - 当前 coding → 切到 chat（保留 selectedProject / openedFile / currentSessionId）
-   *   - 其他（null） → 保持 null
-   * 运行步骤：
-   *   1. 读取当前 appMode
-   *   2. 计算新 mode
-   *   3. 同步 localStorage
-   *   4. setAppMode 触发重渲染
-   * 注意：与 handleModeSwitch 不同，本回调**不**清空 currentSessionId 与
-   *       selectedProject / openedFile，确保切换无缝衔接
-   */
-  const handleSwitchMode = useCallback(() => {
-    setAppMode(prev => {
-      if (prev === 'chat') {
-        try { localStorage.setItem(LS_APP_MODE, 'coding'); } catch { /* ignore */ }
-        return 'coding';
-      } else if (prev === 'coding') {
-        try { localStorage.setItem(LS_APP_MODE, 'chat'); } catch { /* ignore */ }
-        return 'chat';
-      }
-      return prev;
-    });
-  }, []);
-
-  /**
    * 选择历史会话
    * 运行步骤：
    *   1. 更新 currentSessionId
@@ -697,7 +689,7 @@ export default function App() {
   const handleSelectSession = useCallback((id: string) => {
     if (id === currentSessionId) return;
     setCurrentSessionId(id);
-    localStorage.setItem(LS_CURRENT_SESSION_ID, id);
+    try { localStorage.setItem(LS_CURRENT_SESSION_ID, id); } catch { /* 静默降级 */ }
   }, [currentSessionId]);
 
   /**
@@ -712,10 +704,13 @@ export default function App() {
    */
   const handleNewTask = useCallback(async () => {
     if (!appMode) return;
+    // v5.9.0：防重入 + 按钮加载态
+    if (isNewTaskLoading) return;
+    setIsNewTaskLoading(true);
     try {
       const newSession = await createSession({ mode: appMode });
       setCurrentSessionId(newSession.id);
-      localStorage.setItem(LS_CURRENT_SESSION_ID, newSession.id);
+      try { localStorage.setItem(LS_CURRENT_SESSION_ID, newSession.id); } catch { /* 静默降级 */ }
       setMessages([]);
       setPlanVisible(false);
       setPlanContent('');
@@ -724,8 +719,10 @@ export default function App() {
       refetchSessions();
     } catch (e) {
       showToast(`新建任务失败：${(e as Error).message}`, 'error');
+    } finally {
+      setIsNewTaskLoading(false);
     }
-  }, [appMode, refetchSessions, showToast]);
+  }, [appMode, refetchSessions, showToast, isNewTaskLoading]);
 
   /**
    * v5.7.0：打开 Loop v7 端到端工作流弹窗
@@ -746,6 +743,8 @@ export default function App() {
    */
   const handleDeleteSession = useCallback(async (id: string) => {
     if (!confirm('确定删除此会话？所有对话记录将被清除')) return;
+    // v5.9.0：按钮加载态
+    setIsDeletingSession(true);
     try {
       await deleteSession(id);
       showToast('会话已删除', 'success');
@@ -755,7 +754,7 @@ export default function App() {
       if (id === currentSessionId) {
         const newSess = await createSession({ mode: appMode! });
         setCurrentSessionId(newSess.id);
-        localStorage.setItem(LS_CURRENT_SESSION_ID, newSess.id);
+        try { localStorage.setItem(LS_CURRENT_SESSION_ID, newSess.id); } catch { /* 静默降级 */ }
         setMessages([]);
         setPlanVisible(false);
         setPlanContent('');
@@ -764,8 +763,10 @@ export default function App() {
       }
     } catch (e) {
       showToast(`删除失败：${(e as Error).message}`, 'error');
+    } finally {
+      setIsDeletingSession(false);
     }
-  }, [currentSessionId, refetchSessions, showToast]);
+  }, [currentSessionId, refetchSessions, showToast, appMode]);
 
   /**
    * 批量删除会话（v2.7.0 新增）
@@ -777,6 +778,8 @@ export default function App() {
    */
   const handleBatchDelete = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
+    // v5.9.0：按钮加载态
+    setIsDeletingSession(true);
     try {
       const result = await batchDeleteSessions(ids);
       showToast(result.message || `已批量删除 ${result.deleted_count} 个会话`, 'success');
@@ -786,7 +789,7 @@ export default function App() {
       if (ids.includes(currentSessionId!)) {
         const newSess = await createSession({ mode: appMode! });
         setCurrentSessionId(newSess.id);
-        localStorage.setItem(LS_CURRENT_SESSION_ID, newSess.id);
+        try { localStorage.setItem(LS_CURRENT_SESSION_ID, newSess.id); } catch { /* 静默降级 */ }
         setMessages([]);
         setPlanVisible(false);
         setPlanContent('');
@@ -795,8 +798,10 @@ export default function App() {
       }
     } catch (e) {
       showToast(`批量删除失败：${(e as Error).message}`, 'error');
+    } finally {
+      setIsDeletingSession(false);
     }
-  }, [currentSessionId, refetchSessions, showToast]);
+  }, [currentSessionId, refetchSessions, showToast, appMode]);
 
   /**
    * 在流式回调中实时访问最新的 thinkingContent
@@ -1147,19 +1152,204 @@ export default function App() {
    * 发送消息给 Hermes（流式版本）
    * v3.6.0：clarifying 阶段不再走裸 fetch /clarify/respond，统一走 sendStreamingMessage，
    *         由后端 chat/stream 识别 clarifying 阶段并返回 clarify_questions 事件。
+   * v5.9.0：增加 300ms 防重入守卫（sendInFlightRef），防止快速双击 Enter / 发送按钮
+   *         导致重复发起流式请求，避免后端会话状态污染。
    * 运行步骤：
    *   1. 校验输入内容非空
-   *   2. 清空输入框，设置发送状态
-   *   3. 调用 sendStreamingMessage 执行流式对话
+   *   2. 300ms 防重入检查（sendInFlightRef 守卫）
+   *   3. 清空输入框，设置发送状态
+   *   4. 调用 sendStreamingMessage 执行流式对话
+   *   5. 300ms 后释放守卫，允许下一次发送
    */
   const handleSendMessage = useCallback(async () => {
     const trimmed = inputValue.trim();
     if (!trimmed || isSending) return;
 
+    // v5.9.0：300ms 防重入守卫，避免快速双击导致重复请求
+    if (sendInFlightRef.current) return;
+    sendInFlightRef.current = true;
+    // 300ms 后自动释放守卫，覆盖快速双击场景
+    window.setTimeout(() => { sendInFlightRef.current = false; }, 300);
+
     setInputValue('');
     setIsSending(true);
+    // v5.11.0 Module E：检测 Codex 风格斜杠命令
+    // 支持：/review [file] / /fix <file> / /review-fix-loop <file>
+    if (trimmed.startsWith('/')) {
+      const handled = await handleSlashCommand(trimmed);
+      if (handled) {
+        setIsSending(false);
+        return;
+      }
+      // 未识别的命令：回退到普通对话
+    }
     await sendStreamingMessage(trimmed);
   }, [inputValue, isSending, sendStreamingMessage]);
+
+  /**
+   * v5.11.0 Module E：Codex 风格斜杠命令分发器
+   * 作用：解析以「/」开头的输入，路由到对应的本地 API 调用
+   * 支持命令：
+   *   - /review [file]              对当前打开文件或指定文件做代码审查
+   *   - /fix <file>                 对指定文件做自动修复
+   *   - /review-fix-loop <file>     review-fix 自迭代循环
+   * 参数：
+   *   - raw: 已 trim 的原始用户输入
+   * 返回值：true 已处理（含错误）；false 非命令或未识别（回退到普通对话）
+   */
+  const handleSlashCommand = useCallback(
+    async (raw: string): Promise<boolean> => {
+      // 解析命令名 + 剩余参数
+      const match = raw.match(/^\/([a-zA-Z-]+)\s*(.*)$/);
+      if (!match) return false;
+      const cmd = match[1].toLowerCase();
+      const arg = match[2].trim();
+
+      if (cmd === 'review') {
+        // /review [file] — file 可选，默认审查当前打开的文件或当前会话
+        const target = arg || openedFile || '';
+        // 添加用户消息
+        const userMsg: ChatMessage = {
+          id: `user-cmd-${Date.now()}`,
+          role: 'user',
+          content: raw,
+          timestamp: Date.now(),
+        };
+        setMessages(prev => [...prev, userMsg]);
+        setIsSending(true);
+        try {
+          const res = await reviewCode({
+            files: target ? [target] : undefined,
+            session_id: currentSessionId || undefined,
+          });
+          // 用 reviewData state 触发 ReviewReport 渲染
+          setReviewData({
+            overall_score: res.score,
+            dimension_scores: {},
+            defects: res.issues.map(i => ({
+              defect_id: i.id,
+              severity: i.severity,
+              dimension: 'code-review',
+              location: i.file ? `${i.file}:${i.line}` : `L${i.line}`,
+              description: i.description,
+              impact_scope: i.fix_suggestion,
+              repair_plan: i.fix_suggestion,
+            })),
+            passed: res.score >= 80,
+            summary: res.summary,
+          });
+          // 同时追加一条文本摘要
+          const reviewMsg: ChatMessage = {
+            id: `hermes-review-${Date.now()}`,
+            role: 'hermes',
+            content: res.summary,
+            timestamp: Date.now(),
+          };
+          setMessages(prev => [...prev, reviewMsg]);
+          showToast(`/review 完成：发现 ${res.issue_count} 个问题，评分 ${res.score}/100`, 'success');
+        } catch (e) {
+          showToast(`/review 失败：${(e as Error).message}`, 'error');
+          const errMsg: ChatMessage = {
+            id: `hermes-review-err-${Date.now()}`,
+            role: 'hermes',
+            content: `审查失败：${(e as Error).message}`,
+            timestamp: Date.now(),
+            error: (e as Error).message,
+          };
+          setMessages(prev => [...prev, errMsg]);
+        } finally {
+          setIsSending(false);
+        }
+        return true;
+      }
+
+      if (cmd === 'fix') {
+        // /fix <file> — file 必填
+        if (!arg) {
+          showToast('用法：/fix <文件路径>', 'warning');
+          return true;
+        }
+        const userMsg: ChatMessage = {
+          id: `user-cmd-${Date.now()}`,
+          role: 'user',
+          content: raw,
+          timestamp: Date.now(),
+        };
+        setMessages(prev => [...prev, userMsg]);
+        setIsSending(true);
+        try {
+          // 先对目标文件做一次 review 取 issues，再调用 fix
+          const review = await reviewCode({
+            files: [arg],
+            session_id: currentSessionId || undefined,
+          });
+          const fixRes = await fixCode({
+            review: review as unknown as Record<string, unknown>,
+            file_paths: [arg],
+            session_id: currentSessionId || undefined,
+          });
+          const fixMsg: ChatMessage = {
+            id: `hermes-fix-${Date.now()}`,
+            role: 'hermes',
+            content: `${fixRes.summary}\n\n${fixRes.fixed_files
+              .map(f => `**${f.path}**：应用 ${f.applied_fixes.length} 处修复`)
+              .join('\n')}`,
+            timestamp: Date.now(),
+          };
+          setMessages(prev => [...prev, fixMsg]);
+          showToast(`/fix 完成：${fixRes.summary}`, 'success');
+        } catch (e) {
+          showToast(`/fix 失败：${(e as Error).message}`, 'error');
+        } finally {
+          setIsSending(false);
+        }
+        return true;
+      }
+
+      if (cmd === 'review-fix-loop') {
+        // /review-fix-loop <file> — 自迭代循环
+        if (!arg) {
+          showToast('用法：/review-fix-loop <文件路径>', 'warning');
+          return true;
+        }
+        const userMsg: ChatMessage = {
+          id: `user-cmd-${Date.now()}`,
+          role: 'user',
+          content: raw,
+          timestamp: Date.now(),
+        };
+        setMessages(prev => [...prev, userMsg]);
+        setIsSending(true);
+        try {
+          const res = await runReviewFixLoop({
+            file_path: arg,
+            max_iterations: 3,
+            session_id: currentSessionId || undefined,
+          });
+          const loopMsg: ChatMessage = {
+            id: `hermes-loop-${Date.now()}`,
+            role: 'hermes',
+            content: res.summary,
+            timestamp: Date.now(),
+          };
+          setMessages(prev => [...prev, loopMsg]);
+          showToast(
+            res.converged ? 'review-fix 循环已收敛' : 'review-fix 循环已达上限',
+            res.converged ? 'success' : 'warning',
+          );
+        } catch (e) {
+          showToast(`/review-fix-loop 失败：${(e as Error).message}`, 'error');
+        } finally {
+          setIsSending(false);
+        }
+        return true;
+      }
+
+      // 未识别命令：让上层走普通对话
+      return false;
+    },
+    [openedFile, currentSessionId, showToast, setReviewData, setIsSending]
+  );
 
   /**
    * v3.6.0：提交澄清卡片的结构化回答，触发下一轮澄清
@@ -1206,40 +1396,6 @@ export default function App() {
   }, [showToast]);
 
   /**
-   * 处理优化请求（通过对话触发）
-   * 运行步骤：
-   *   - 聊天模式下跳过优化逻辑（仅编程模式可用）
-   *   1. 调用 optimizeWithHermes API，透传 session_id
-   *   2. 显示 Toast 通知
-   *   3. 如果返回计划内容，展示 PlanViewer
-   */
-  const handleOptimize = useCallback(async (rawPrompt: string) => {
-    // v3.0.0：聊天模式下跳过优化逻辑
-    if (appMode === 'chat') {
-      showToast('优化提示词功能仅在编程模式下可用', 'warning');
-      return;
-    }
-    try {
-      const result = await optimizeWithHermes(rawPrompt, currentSessionId);
-      showToast('提示词优化完成', 'success');
-
-      // 如果返回了计划内容，展示 PlanViewer
-      if (result.plan_content) {
-        setPlanContent(result.plan_content);
-        setPlanVisible(true);
-      }
-
-      // 刷新智能体列表（可能有新创建的 CLI 实例）
-      refetchAgents();
-      refetchStats();
-      // 刷新边栏会话列表
-      refetchSessions();
-    } catch (e) {
-      showToast(`优化失败：${(e as Error).message}`, 'error');
-    }
-  }, [appMode, currentSessionId, refetchAgents, refetchStats, refetchSessions, showToast]);
-
-  /**
    * 确认执行计划
    * 运行步骤：
    *   1. 调用 confirmPlan API，透传 session_id
@@ -1248,6 +1404,9 @@ export default function App() {
    *   4. 刷新智能体列表
    */
   const handleConfirmPlan = useCallback(async () => {
+    // v5.9.0：按钮加载态
+    if (isConfirmPlanLoading) return;
+    setIsConfirmPlanLoading(true);
     try {
       await confirmPlan(planContent, currentSessionId);
       setPlanVisible(false);
@@ -1267,8 +1426,10 @@ export default function App() {
       refetchSessions();
     } catch (e) {
       showToast(`执行失败：${(e as Error).message}`, 'error');
+    } finally {
+      setIsConfirmPlanLoading(false);
     }
-  }, [planContent, currentSessionId, refetchAgents, refetchStats, refetchSessions, showToast]);
+  }, [planContent, currentSessionId, refetchAgents, refetchStats, refetchSessions, showToast, isConfirmPlanLoading]);
 
   /**
    * 切换智能体卡片展开/收起
@@ -1279,11 +1440,13 @@ export default function App() {
 
   /**
    * 智能体变更后刷新
+   * v6.10.0 P0-2：handleAgentChanged 已迁移到 <AppLayout onAgentChanged /> 处内联实现
+   *   （refetchAgents 仍在 useAgents 内部使用，refetchStats 在此调用）
    */
-  const handleAgentChanged = useCallback(() => {
-    refetchAgents();
-    refetchStats();
-  }, [refetchAgents, refetchStats]);
+  // const handleAgentChanged = useCallback(() => {
+  //   refetchAgents();
+  //   refetchStats();
+  // }, [refetchAgents, refetchStats]);
 
   /**
    * 处理键盘事件：Enter 发送消息，Shift+Enter 换行
@@ -1298,6 +1461,43 @@ export default function App() {
   // ============================================================
   // 渲染
   // ============================================================
+
+  /**
+   * Cycle 3 v1.1.1 新增：统一的模态弹窗组件
+   * - 背景点击关闭（onClick + stopPropagation）
+   * - Escape 键关闭（useEffect 监听 keydown）
+   * - 玻璃拟态背景（bg-black/40 + backdrop-blur-md）
+   * - 入场动画（animate-lift-in）
+   */
+  const Cycle3Modal: React.FC<{
+    onClose: () => void;
+    maxWidth?: string;
+    height?: string;
+    children: React.ReactNode;
+  }> = ({ onClose, maxWidth = 'max-w-4xl', height = 'h-[85vh]', children }) => {
+    useEffect(() => {
+      const handler = (e: KeyboardEvent) => {
+        if (e.key === 'Escape') onClose();
+      };
+      window.addEventListener('keydown', handler);
+      return () => window.removeEventListener('keydown', handler);
+    }, [onClose]);
+    return (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-md p-4 animate-lift-in"
+        onClick={onClose}
+        role="dialog"
+        aria-modal="true"
+      >
+        <div
+          className={`w-full ${maxWidth} ${height} bg-transparent rounded-2xl shadow-2xl m-4 flex flex-col overflow-hidden`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {children}
+        </div>
+      </div>
+    );
+  };
 
   // 优先使用 sessionDetail 提供的 agents（按 session 隔离），否则用全局拉取的结果兜底
   const displayAgents: Agent[] = sessionDetail?.agents ?? agents;
@@ -1332,6 +1532,7 @@ export default function App() {
           visible={planVisible}
           onConfirm={handleConfirmPlan}
           onClose={() => setPlanVisible(false)}
+          confirmLoading={isConfirmPlanLoading}
         />
       )}
 
@@ -1364,6 +1565,7 @@ export default function App() {
         onNewTask={handleNewTask}
         appMode={appMode!}
         onModeSwitch={handleModeSwitch}
+        deletingSession={isDeletingSession}
       />
 
       {/* ============================================================ */}
@@ -1375,531 +1577,75 @@ export default function App() {
           showToast={showToast}
         />
       ) : (
-        <div className="flex-1 flex flex-col min-w-0">
-        {/* v2.10.0：编程模式 + 文件打开 → 垂直分屏布局 */}
-        {appMode === 'coding' && selectedProject && openedFile ? (
-          <>
-            {/* CodeViewer 上半部分 */}
-            <div className="flex-1 min-h-0 border-b border-surface-300 overflow-hidden" style={{ flexBasis: '50%' }}>
-              <CodeViewer
-                project={selectedProject}
-                filePath={openedFile}
-                onClose={() => setOpenedFile(null)}
-              />
-            </div>
-            {/* 紧凑聊天区 下半部分 */}
-            <div className="flex flex-col bg-surface-100" style={{ flexBasis: '50%', minHeight: 0 }}>
-              <div className="flex-shrink-0 flex items-center justify-between px-4 py-1.5
-                              border-b border-surface-300/30">
-                <span className="text-xs font-medium text-surface-600">💬 对话</span>
-                {appMode === 'coding' && selectedProject && (
-                  <span className="text-xs text-surface-500 truncate ml-2">项目：{selectedProject}</span>
-                )}
-              </div>
-              {/* 紧凑消息区 */}
-              <div className="flex-1 overflow-y-auto px-3 py-2">
-                {/* v3.1.0：需求澄清进度条（仅在 clarifying 阶段显示） */}
-                {workflowStatus?.current_stage === 'clarifying' && (
-                  <ClarificationProgress
-                    roundNumber={clarificationData?.roundNumber || 1}
-                    maxRounds={clarificationData?.maxRounds || 5}
-                    isComplete={clarificationData?.isComplete || false}
-                  />
-                )}
-                {/* v1.9.0：Loop Engineering 工作流展示组件 */}
-                {reviewData && <ReviewReport reviewData={reviewData} />}
-                {pipelineData && <PipelineProgress pipelineData={pipelineData} />}
-                {goalData && <GoalProgress goalData={goalData} />}
-                <div className="space-y-3">
-                  {messages.length === 0 && !detailLoading && (
-                    <div className="text-xs text-surface-500 text-center py-4">
-                      输入消息开始对话
-                    </div>
-                  )}
-                  {detailLoading && messages.length === 0 && (
-                    <div className="space-y-2">
-                      <div className="skeleton h-10 w-3/4 rounded-lg" />
-                      <div className="skeleton h-10 w-2/3 rounded-lg ml-auto" />
-                    </div>
-                  )}
-                  {messages.map(msg => {
-                    if (msg.error) {
-                      return (
-                        <div key={msg.id} className="animate-msg-enter">
-                          <MessageBubble role="assistant" content="" error={msg.error} />
-                        </div>
-                      );
-                    }
-                    return (
-                      <div key={msg.id} className={`flex animate-msg-enter ${msg.id === lastMessageIdRef.current ? 'msg-breath' : ''}`}>
-                        {msg.role === 'hermes' && (
-                          <div className="w-6 h-6 rounded-lg bg-gradient-to-br from-hermes-500 to-hermes-600 flex items-center justify-center flex-shrink-0 mr-2 mt-0.5 shadow-sm">
-                            <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                          </div>
-                        )}
-                        <div className={`max-w-[90%] rounded-xl px-3 py-2 text-xs leading-relaxed ${msg.role === 'user' ? 'bg-hermes-500 text-white rounded-br-sm ml-auto' : 'bg-surface-200 text-surface-800 rounded-bl-sm border border-surface-400/50'}`}>
-                          {(msg.id === streamingMessageId || msg.thinking) && (
-                            <ThinkingBlock content={msg.id === streamingMessageId ? thinkingContent : (msg.thinking || '')} isStreaming={msg.id === streamingMessageId && streamingStatus === 'thinking'} />
-                          )}
-                          {msg.content && (
-                            <div className="whitespace-pre-wrap break-words">{msg.content}
-                              {msg.role === 'hermes' && msg.id === streamingMessageId && streamingStatus === 'answering' && (
-                                <span className="inline-block w-0.5 h-3 bg-hermes-400 ml-0.5 align-text-bottom animate-pulse" />
-                              )}
-                            </div>
-                          )}
-                          {!msg.content && msg.role === 'hermes' && msg.id === streamingMessageId && streamingStatus === 'thinking' && (
-                            <div className="text-surface-500 italic text-xs">等待回复中...</div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                  {/* v3.6.0：基于 clarificationData 结构化数据渲染交互式澄清卡片（每轮渲染一次） */}
-                  {showClarifyModal && clarificationData && (clarificationData.questions.length > 0 || clarificationData.isComplete) && (
-                    <ClarificationModal
-                      key={clarificationData.roundNumber}
-                      summary={clarificationData.summary}
-                      questions={clarificationData.questions}
-                      roundNumber={clarificationData.roundNumber}
-                      maxRounds={clarificationData.maxRounds}
-                      isComplete={clarificationData.isComplete}
-                      workflowId={workflowIdRef.current || sessionDetail?.session?.workflow_id || workflowStatus?.workflow_id}
-                      onSubmit={(answersText) => {
-                        // 将汇总的结构化回答作为一条用户消息发送，触发下一轮澄清
-                        handleSendClarifyAnswer(answersText);
-                        setShowClarifyModal(false);
-                      }}
-                      onConfirm={async (wfId?: string) => {
-                        // v2.0.4 修复：直接使用 ClarificationCard 传入的 workflowId，消除闭包问题
-                        // v5.6.0 修复（Bug：跳过按钮无防重入，导致重复请求 designing→prompting 校验失败）：
-                        //   添加 inFlightRef 守卫，单次点击只发起一次请求
-                        if (skipConfirmInFlightRef.current) {
-                          return;
-                        }
-                        const id = wfId || workflowIdRef.current || workflowStatus?.workflow_id;
-                        if (id) {
-                          skipConfirmInFlightRef.current = true;
-                          try {
-                            const baseUrl = window.location.origin;
-                            const res = await fetch(`${baseUrl}/api/workflow/${id}/clarify/confirm`, {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ confirmed: true }),
-                            });
-                            const data = await res.json().catch(() => ({ success: false }));
-                            if (!data.success) {
-                              console.warn('确认需求文档失败:', data.message);
-                              return; // 保持弹窗打开
-                            }
-                            // 刷新工作流状态
-                            setShowClarifyModal(false);
-                            refetchSessions();
-                            // v2.0.0 新增：启动架构设计阶段
-                            setTimeout(() => handleStartDesignPhase(), 500);
-                          } finally {
-                            skipConfirmInFlightRef.current = false;
-                          }
-                        }
-                      }}
-                      onContinueAdd={() => {
-                        setShowClarifyModal(false);
-                        inputRef.current?.focus();
-                      }}
-                    />
-                  )}
-                  {/* v2.0.0 新增：架构设计批判迭代模态弹窗 */}
-                  {showDesignModal && (
-                    <ArchitectureDesignModal
-                      requirementV2={designModalData?.requirementV2 || ''}
-                      critiqueResult={designModalData?.critiqueResult || null}
-                      isLoading={isDesignLoading}
-                      iterationCount={designModalData?.iterationCount || 1}
-                      maxIterations={designModalData?.maxIterations || 3}
-                      onConfirm={handleConfirmDesign}
-                      onReject={handleRejectDesign}
-                    />
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-              </div>
-              {/* 紧凑输入区 */}
-          <div className="flex-shrink-0 px-3 pb-2 pt-1 border-t border-surface-300/30">
-            <div className="flex items-end gap-2">
-              <textarea
-                ref={inputRef}
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                placeholder="输入消息..."
-                disabled={isSending}
-                rows={1}
-                className="flex-1 resize-none bg-surface-200 border border-surface-400/50 rounded-xl px-3 py-1.5
-                           text-sm text-surface-800 placeholder:text-surface-500
-                           outline-none focus:border-hermes-500 focus:shadow-glow-hermes-sm
-                           max-h-24 min-h-[28px] disabled:opacity-60 leading-5
-                           transition-all duration-default ease-material"
-              />
-              <button
-                onClick={isSending ? handleStop : handleSendMessage}
-                disabled={!inputValue.trim() && !isSending}
-                className="w-8 h-8 rounded-full bg-gradient-to-br from-hermes-500 to-hermes-600
-                           hover:from-hermes-600 hover:to-hermes-700
-                           disabled:from-surface-300 disabled:to-surface-300
-                           text-white flex items-center justify-center flex-shrink-0
-                           shadow-level-1 transition-all duration-default ease-material active:scale-[0.97]"
-                aria-label={isSending ? '停止' : '发送'}
-              >
-                {isSending ? (
-                  <svg className="w-3 h-3" fill="white" viewBox="0 0 24 24">
-                    <rect x="6" y="6" width="12" height="12" rx="2" />
-                  </svg>
-                ) : (
-                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
-                    <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                  </svg>
-                )}
-              </button>
-            </div>
-          </div>
-            </div>
-          </>
-        ) : (
-        <>
-        {/* ============================================================ */}
-        {/* 顶部：v2.9.0 替换为极简 BrandHeader（豆包风格） */}
-        {/* v2.10.1：新增 onOpenFileExplorer + fileExplorerOpen 透传 */}
-        {/* v2.10.2：appMode 改为可空安全传递 + 新增 onSwitchMode 透传 */}
-        {/* v2.10.3：取消 onSwitchMode 透传（pill 已删除，handleSwitchMode 函数仍保留以备复用） */}
-        {/* ============================================================ */}
-        <BrandHeader
-          sessionTitle={currentSession?.title || '新对话'}
+        <AppLayout
+          appMode={appMode!}
+          selectedProject={selectedProject}
+          openedFile={openedFile}
+          setOpenedFile={setOpenedFile}
+          currentSessionTitle={currentSession?.title || '新对话'}
           onNewChat={handleNewTask}
+          newChatLoading={isNewTaskLoading}
           onOpenSettings={() => setSettingsOpen(true)}
           onOpenUsage={() => setShowUsagePanel(prev => !prev)}
           onOpenFileExplorer={() => setFileExplorerOpen(prev => !prev)}
           fileExplorerOpen={fileExplorerOpen}
           onOpenLoopV7={handleOpenLoopV7}
+          onOpenMCP={() => setMcpPanelOpen(true)}
+          onOpenCompaction={() => setCompactionPanelOpen(true)}
+          onOpenSkills={() => setSkillsPanelOpen(true)}
+          onOpenAgentsMd={() => setAgentsMdPanelOpen(true)}
+          onOpenCycle3={() => setCycle3PanelOpen(true)}
+          onOpenDualCompaction={() => setDualCompactionOpen(true)}
+          onOpenRules={() => setRulesPanelOpen(true)}
+          onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
+          onReasoningIntensityChange={(i) => showToast(`推理强度已设为 ${i}`, 'info')}
+          workflowStatusCurrentStage={workflowStatus?.current_stage ?? null}
+          clarificationData={clarificationData}
+          showClarifyModal={showClarifyModal}
+          reviewData={reviewData}
+          pipelineData={pipelineData}
+          goalData={goalData}
+          messages={messages}
+          detailLoading={detailLoading}
+          streamingStatus={streamingStatus}
+          streamingMessageId={streamingMessageId}
+          thinkingContent={thinkingContent}
+          isSending={isSending}
+          inputValue={inputValue}
+          setInputValue={setInputValue}
+          onSend={handleSendMessage}
+          onStop={handleStop}
+          onKeyDown={handleKeyDown}
+          inputRef={inputRef}
+          messagesEndRef={messagesEndRef}
+          lastMessageIdRef={lastMessageIdRef}
+          onSubmitClarification={handleSendClarifyAnswer}
+          onConfirmClarification={handleConfirmClarificationFromModal}
+          onContinueAddClarification={() => {
+            setShowClarifyModal(false);
+            inputRef.current?.focus();
+          }}
+          workflowIdRef={workflowIdRef}
+          sessionDetailWorkflowId={sessionDetail?.session?.workflow_id}
+          workflowStatusWorkflowId={workflowStatus?.workflow_id}
+          showDesignModal={showDesignModal}
+          designModalData={designModalData}
+          isDesignLoading={isDesignLoading}
+          onConfirmDesign={handleConfirmDesign}
+          onRejectDesign={handleRejectDesign}
+          displayAgents={displayAgents}
+          agentsLoading={loading}
+          expandedAgentId={expandedAgentId}
+          onToggleAgentExpand={handleToggleExpand}
+          onAgentChanged={() => {
+            // 智能体变更后刷新 stats
+            refetchStats();
+          }}
+          onSelectWelcomePrompt={(p) => {
+            setInputValue(p);
+            inputRef.current?.focus();
+          }}
         />
-
-        {/* ============================================================ */}
-        {/* 中间：对话消息区域（v2.9.0 - 贴底浮动输入区，主区 pb-40 留出空间） */}
-        {/* ============================================================ */}
-        <main className="flex-1 overflow-y-auto px-3 md:px-4 py-6">
-          <div className="max-w-3xl mx-auto space-y-4">
-            {/* v3.1.0：需求澄清进度条（仅在 clarifying 阶段显示） */}
-            {workflowStatus?.current_stage === 'clarifying' && (
-              <ClarificationProgress
-                roundNumber={clarificationData?.roundNumber || 1}
-                maxRounds={clarificationData?.maxRounds || 5}
-                isComplete={clarificationData?.isComplete || false}
-              />
-            )}
-            {/* v1.9.0：Loop Engineering 工作流展示组件 */}
-            {reviewData && <ReviewReport reviewData={reviewData} />}
-            {pipelineData && <PipelineProgress pipelineData={pipelineData} />}
-            {goalData && <GoalProgress goalData={goalData} />}
-            {/* 启动欢迎页（v2.9.0 - Task 2：替换原 inline 欢迎块） */}
-            {messages.length === 0 && !detailLoading && (
-              <WelcomeState
-                onSelectPrompt={(p) => {
-                  setInputValue(p);
-                  inputRef.current?.focus();
-                }}
-              />
-            )}
-
-            {/* 加载详情中的骨架占位 */}
-            {detailLoading && messages.length === 0 && (
-              <div className="space-y-3">
-                <div className="skeleton h-16 w-3/4" />
-                <div className="skeleton h-16 w-2/3 ml-auto" />
-                <div className="skeleton h-16 w-4/5" />
-              </div>
-            )}
-
-            {/* 对话消息列表 */}
-            {messages.map(msg => {
-              // v2.9.2：error 字段非空时直接渲染 MessageBubble 错误卡片
-              if (msg.error) {
-                return (
-                  <div
-                    key={msg.id}
-                    className="animate-msg-enter"
-                  >
-                    <MessageBubble
-                      role="assistant"
-                      content=""
-                      error={msg.error}
-                    />
-                  </div>
-                );
-              }
-              return (
-              <div
-                key={msg.id}
-                className={`flex animate-msg-enter ${msg.id === lastMessageIdRef.current ? 'msg-breath' : ''} ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-              >
-                {/* Hermes 头像（左对齐消息） */}
-                {msg.role === 'hermes' && (
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-hermes-500 to-hermes-600 flex items-center justify-center flex-shrink-0 mr-3 mt-1 shadow-md shadow-hermes-900/20">
-                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                        d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                )}
-
-                {/* 消息气泡 */}
-                <div
-                  className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed
-                    ${msg.role === 'user'
-                      ? 'bg-hermes-500 text-white rounded-br-md'
-                      : 'bg-surface-200 text-surface-900 rounded-bl-md border border-surface-400/50'
-                    }`}
-                >
-                  {/* Hermes 消息状态指示器（仅流式消息显示） */}
-                  {msg.role === 'hermes' && msg.id === streamingMessageId && streamingStatus && (
-                    <div className="flex items-center gap-2 mb-2 pb-2 border-b border-surface-400/30">
-                      {streamingStatus === 'thinking' && (
-                        <>
-                          <svg className="animate-spin w-3.5 h-3.5 text-hermes-400" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                          </svg>
-                          <span className="text-xs text-hermes-400 font-medium">思考中...</span>
-                        </>
-                      )}
-                      {streamingStatus === 'answering' && (
-                        <>
-                          <span className="relative flex h-2.5 w-2.5">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-hermes-400 opacity-75" />
-                            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-hermes-500" />
-                          </span>
-                          <span className="text-xs text-hermes-400 font-medium">回答中...</span>
-                        </>
-                      )}
-                      {streamingStatus === 'done' && (
-                        <>
-                          <svg className="w-3.5 h-3.5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                          </svg>
-                          <span className="text-xs text-emerald-400 font-medium">回答完成</span>
-                        </>
-                      )}
-                    </div>
-                  )}
-
-                  {/* 思考过程折叠块（流式消息 或 历史消息含 thinking 都显示） */}
-                  {(msg.id === streamingMessageId || msg.thinking) && (
-                    <ThinkingBlock
-                      content={msg.id === streamingMessageId ? thinkingContent : (msg.thinking || '')}
-                      isStreaming={msg.id === streamingMessageId && streamingStatus === 'thinking'}
-                    />
-                  )}
-
-                  {/* 消息正文 */}
-                  {msg.content && (
-                    <div className="whitespace-pre-wrap break-words">
-                      {msg.content}
-                      {/* 回答中闪烁光标 */}
-                      {msg.role === 'hermes' && msg.id === streamingMessageId && streamingStatus === 'answering' && (
-                        <span className="inline-block w-0.5 h-4 bg-hermes-400 ml-0.5 align-text-bottom animate-pulse" />
-                      )}
-                    </div>
-                  )}
-
-                  {/* 空内容占位（流式等待中） */}
-                  {!msg.content && msg.role === 'hermes' && msg.id === streamingMessageId && streamingStatus === 'thinking' && (
-                    <div className="text-surface-500 italic text-xs">等待回复中...</div>
-                  )}
-
-                  <div
-                    className={`text-xs mt-1.5 ${
-                      msg.role === 'user' ? 'text-hermes-200' : 'text-surface-600'
-                    }`}
-                  >
-                    {new Date(msg.timestamp).toLocaleTimeString()}
-                  </div>
-                </div>
-
-                {/* 用户头像（右对齐消息） */}
-                {msg.role === 'user' && (
-                  <div className="w-8 h-8 rounded-full bg-surface-400 flex items-center justify-center flex-shrink-0 ml-3 mt-1">
-                    <svg className="w-4 h-4 text-surface-800" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                    </svg>
-                  </div>
-                )}
-              </div>
-              );
-            })}
-
-            {/* v3.6.0：基于 clarificationData 结构化数据渲染交互式澄清卡片（每轮渲染一次） */}
-            {showClarifyModal && clarificationData && (clarificationData.questions.length > 0 || clarificationData.isComplete || clarificationData.roundNumber >= 3) && (
-              <ClarificationModal
-                key={clarificationData.roundNumber}
-                summary={clarificationData.summary}
-                questions={clarificationData.questions}
-                roundNumber={clarificationData.roundNumber}
-                maxRounds={clarificationData.maxRounds}
-                isComplete={clarificationData.isComplete}
-                workflowId={workflowIdRef.current || sessionDetail?.session?.workflow_id || workflowStatus?.workflow_id}
-                onSubmit={(answersText) => {
-                  // 将汇总的结构化回答作为一条用户消息发送，触发下一轮澄清
-                  handleSendClarifyAnswer(answersText);
-                  setShowClarifyModal(false);
-                }}
-                onConfirm={async (wfId?: string) => {
-                  // v2.0.4 修复：直接使用 ClarificationCard 传入的 workflowId，消除闭包问题
-                  // v5.6.0 修复（Bug：跳过按钮无防重入）：与编程模式同源守卫，避免双击触发
-                  //   后端 designing→prompting 阶段边界校验失败
-                  if (skipConfirmInFlightRef.current) {
-                    return;
-                  }
-                  const id = wfId || workflowIdRef.current || workflowStatus?.workflow_id;
-                  if (id) {
-                    skipConfirmInFlightRef.current = true;
-                    try {
-                      const baseUrl = window.location.origin;
-                      const res = await fetch(`${baseUrl}/api/workflow/${id}/clarify/confirm`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ confirmed: true }),
-                      });
-                      const data = await res.json().catch(() => ({ success: false }));
-                      if (!data.success) {
-                        console.warn('确认需求文档失败:', data.message);
-                        return; // 保持弹窗打开
-                      }
-                      setShowClarifyModal(false);
-                      refetchSessions();
-                      // v2.0.0 新增：启动架构设计阶段
-                      setTimeout(() => handleStartDesignPhase(), 500);
-                    } finally {
-                      skipConfirmInFlightRef.current = false;
-                    }
-                  }
-                }}
-                onContinueAdd={() => {
-                  setShowClarifyModal(false);
-                  inputRef.current?.focus();
-                }}
-              />
-            )}
-            {/* v2.0.0 新增：架构设计批判迭代模态弹窗 */}
-            {showDesignModal && (
-              <ArchitectureDesignModal
-                requirementV2={designModalData?.requirementV2 || ''}
-                critiqueResult={designModalData?.critiqueResult || null}
-                isLoading={isDesignLoading}
-                iterationCount={designModalData?.iterationCount || 1}
-                maxIterations={designModalData?.maxIterations || 3}
-                onConfirm={handleConfirmDesign}
-                onReject={handleRejectDesign}
-              />
-            )}
-
-            {/* 自动滚动锚点 */}
-            <div ref={messagesEndRef} />
-          </div>
-        </main>
-
-        {/* ============================================================ */}
-        {/* 子 CLI 实例状态展示区域（AgentChatCard 网格） */}
-        {/* 优先使用 sessionDetail.agents（按 session 隔离），fallback 到全局 agents */}
-        {/* ============================================================ */}
-        {displayAgents.length > 0 && (
-          <div className="border-t border-surface-300 bg-surface-100/50 px-3 md:px-4 py-4 flex-shrink-0">
-            <div className="max-w-3xl mx-auto">
-              <h3 className="text-xs font-medium text-surface-600 uppercase tracking-wider mb-3">
-                子 CLI 实例状态 ({displayAgents.length})
-              </h3>
-              {loading ? (
-                <div className="py-2">
-                  <div className="skeleton h-4 w-32" />
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  {displayAgents.map(agent => (
-                    <AgentChatCard
-                      key={agent.id}
-                      agent={agent}
-                      isExpanded={expandedAgentId === agent.id}
-                      onToggleExpand={() => handleToggleExpand(agent.id)}
-                      onAgentChanged={handleAgentChanged}
-                    />
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* ============================================================ */}
-        {/* v4.5.2 - 输入区固定底部：flex-shrink-0 确保输入框始终可见 */}
-        {/* 关键点：脱离 mt-auto 定位，作为 flex 容器末尾元素；           */}
-        {/*   flex-shrink-0 保证不被消息区压缩，始终固定在可视区底部。    */}
-        {/* 玻璃拟态、圆角、阴影、焦点光环、发送/停止按钮全部保留。        */}
-        {/* ============================================================ */}
-        <div className="flex-shrink-0 px-4">
-          <div className="max-w-3xl mx-auto">
-            <div
-              className="bg-white/90 backdrop-blur-md border border-surface-200
-                         rounded-3xl shadow-level-3 px-4 py-3
-                         focus-within:shadow-glow-hermes focus-within:border-hermes-300
-                         transition-all duration-default ease-material"
-            >
-              <div className="flex items-end gap-3">
-                {/* 消息输入框：textarea auto-resize（max-h-32） */}
-                <textarea
-                  ref={inputRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="输入消息，Enter 发送，Shift+Enter 换行..."
-                  disabled={isSending}
-                  rows={1}
-                  className="flex-1 resize-none bg-transparent border-none outline-none
-                             text-base text-surface-900 placeholder:text-surface-400
-                             max-h-32 min-h-[24px] disabled:opacity-60 leading-7"
-                />
-                {/* 发送 / 停止按钮：发送中切换为 Square 图标并触发 handleStop */}
-                <button
-                  onClick={isSending ? handleStop : handleSendMessage}
-                  disabled={!inputValue.trim() && !isSending}
-                  className="w-10 h-10 rounded-full bg-gradient-to-br from-hermes-500 to-hermes-600
-                             hover:from-hermes-600 hover:to-hermes-700
-                             disabled:from-surface-300 disabled:to-surface-300
-                             text-white flex items-center justify-center
-                             shadow-level-1 hover:shadow-level-2
-                             transition-all duration-default ease-material
-                             active:scale-[0.97]"
-                  aria-label={isSending ? '停止生成' : '发送消息'}
-                  title={isSending ? '停止生成' : '发送消息'}
-                >
-                  {isSending ? (
-                    // Square 停止图标
-                    <svg className="w-4 h-4" fill="white" viewBox="0 0 24 24">
-                      <rect x="6" y="6" width="12" height="12" rx="2" />
-                    </svg>
-                  ) : (
-                    // Send 发送图标（飞机）
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                         strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
-                      <path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-                    </svg>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-          </>
-          )}
-      </div>
       )}
 
       {/* ============================================================ */}
@@ -1926,106 +1672,19 @@ export default function App() {
       )}
 
       {/* ============================================================ */}
-      {/* 右侧面板：用量监控面板（预留位置） */}
+      {/* 右侧面板：用量监控面板（v6.9.0 P0-2 拆分为 UsagePanel 组件） */}
       {/* ============================================================ */}
       {showUsagePanel && (
-        <aside className="w-full md:w-80 bg-surface-100 border-t md:border-l border-surface-300 flex-shrink-0 overflow-y-auto
-                          fixed bottom-0 left-0 right-0 md:static z-30 max-h-[60vh] md:max-h-none
-                          rounded-t-2xl md:rounded-none shadow-2xl md:shadow-none">
-          {/* 移动端拖拽手柄 */}
-          <div className="flex justify-center pt-2 pb-1 md:hidden">
-            <div className="w-10 h-1 rounded-full bg-surface-500/60" />
-          </div>
-          <div className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold text-surface-900">用量监控</h2>
-              <button
-                onClick={() => setShowUsagePanel(false)}
-                className="w-6 h-6 rounded flex items-center justify-center text-surface-600 hover:text-surface-800 transition-colors"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-
-            {/* 用量数据卡片 */}
-            <div className="space-y-3">
-              {/* API 调用次数 */}
-              <div className="bg-surface-200 rounded-xl p-4 border border-surface-400/50">
-                <div className="text-xs text-surface-600 mb-1">API 调用次数（近 5 小时）</div>
-                <div className="text-2xl font-bold text-hermes-400">
-                  {stats ? stats.resources.total_api_calls.toLocaleString() : '--'}
-                </div>
-                <div className="mt-2 w-full bg-surface-300 rounded-full h-1.5">
-                  <div className="bg-hermes-500 h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: `${Math.min((stats ? stats.resources.total_api_calls / 10000 * 100 : 0), 100)}%` }} />
-                </div>
-                <div className="text-xs text-surface-500 mt-1">
-                  配额 10,000 · 已用 {stats ? ((stats.resources.total_api_calls / 10000 * 100).toFixed(1)) : '0'}%
-                </div>
-              </div>
-
-              {/* Token 消耗 */}
-              <div className="bg-surface-200 rounded-xl p-4 border border-surface-400/50">
-                <div className="text-xs text-surface-600 mb-1">累计 Token 消耗</div>
-                <div className="text-2xl font-bold text-emerald-400">
-                  {stats ? formatTokens(stats.resources.total_tokens) : '--'}
-                </div>
-              </div>
-
-              {/* 剩余可用调用 */}
-              <div className="bg-surface-200 rounded-xl p-4 border border-surface-400/50">
-                <div className="text-xs text-surface-600 mb-1">剩余可用调用次数</div>
-                <div className="text-2xl font-bold text-hermes-400">
-                  {stats ? (10000 - stats.resources.total_api_calls).toLocaleString() : '--'}
-                </div>
-                <div className="mt-2 w-full bg-surface-300 rounded-full h-1.5">
-                  <div className="bg-hermes-500 h-1.5 rounded-full transition-all duration-500"
-                    style={{ width: `${stats ? Math.max(0, (10000 - stats.resources.total_api_calls) / 10000 * 100).toFixed(1) : 0}%` }} />
-                </div>
-                <div className="text-xs text-surface-500 mt-1">
-                  剩余 {stats ? ((10000 - stats.resources.total_api_calls) / 10000 * 100).toFixed(1) : '0'}%
-                </div>
-              </div>
-
-              {/* 任务统计 */}
-              {stats && (
-                <div className="bg-surface-200 rounded-xl p-4 border border-surface-400/50">
-                  <div className="text-xs text-surface-600 mb-2">任务统计</div>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-surface-700">总任务数</span>
-                      <span className="text-surface-900">{stats.tasks.total}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-surface-700">已完成</span>
-                      <span className="text-emerald-400">{stats.tasks.completed}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-surface-700">执行中</span>
-                      <span className="text-hermes-400">{stats.tasks.running}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-surface-700">失败</span>
-                      <span className="text-red-400">{stats.tasks.failed}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-surface-700">完成率</span>
-                      <span className="text-surface-900">{(stats.tasks.completion_rate * 100).toFixed(1)}%</span>
-                    </div>
-                  </div>
-                  <div className="mt-3">
-                    <div className="w-full bg-surface-300 rounded-full h-1.5">
-                      <div className="bg-emerald-500 h-1.5 rounded-full transition-all duration-500"
-                        style={{ width: `${(stats.tasks.completion_rate * 100).toFixed(1)}%` }} />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </aside>
+        <div
+          className={`flex-shrink-0 h-screen sticky top-0
+                      transition-all duration-300 ease-expressive
+                      ${showUsagePanel ? 'w-full md:w-80' : 'w-0 overflow-hidden'}`}
+        >
+          <UsagePanel
+            stats={stats as UsageStats | null}
+            onClose={() => setShowUsagePanel(false)}
+          />
+        </div>
       )}
         </>
         )}
@@ -2036,6 +1695,151 @@ export default function App() {
        * 位置：根 fragment 末尾，z-index 由 LoopV7Runner 自身管理（z-50） */}
       {showLoopV7Runner && (
         <LoopV7Runner onClose={() => setShowLoopV7Runner(false)} />
+      )}
+
+      {/* v6.14.0 Cycle 2 新增：MCP 工具调用面板弹窗
+       * 触发：BrandHeader 菜单"🔌 MCP 工具"项
+       * 关闭：McpPanel 内部 onClose 回调
+       * 功能：查看 MCP 服务器/工具列表、调用工具（list_directory、read_file 等） */}
+      {mcpPanelOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setMcpPanelOpen(false)}>
+          <div className="w-full max-w-4xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+            <McpPanel />
+            <button
+              onClick={() => setMcpPanelOpen(false)}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center text-surface-700"
+              aria-label="关闭"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗
+       * 触发：BrandHeader 菜单"🗜️ 会话压缩"项
+       * 关闭：按钮回调
+       * 功能：显示当前会话 token 使用情况，触发手动压缩
+       * 注意：需要 currentSessionId 才显示，否则提示选择会话 */}
+      {compactionPanelOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setCompactionPanelOpen(false)}>
+          <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-6 m-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <span>🗜️</span>
+                <span>会话压缩</span>
+              </h2>
+              <button
+                onClick={() => setCompactionPanelOpen(false)}
+                className="w-8 h-8 rounded-full hover:bg-surface-100 flex items-center justify-center text-surface-700"
+                aria-label="关闭"
+              >
+                ✕
+              </button>
+            </div>
+            {currentSessionId ? (
+              <CompactionIndicator
+                sessionId={currentSessionId}
+                onCompacted={() => {
+                  showToast('会话已成功压缩', 'success');
+                }}
+              />
+            ) : (
+              <div className="text-sm text-surface-500 text-center py-8">
+                请先选择一个会话以查看压缩状态
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* v6.14.0 Cycle 2 新增：技能管理面板弹窗
+       * 触发：BrandHeader 菜单"✨ 技能管理"项
+       * 关闭：按钮回调
+       * 功能：查看/启用/禁用 Skills 插件（内置 3 个 + 用户自定义） */}
+      {skillsPanelOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setSkillsPanelOpen(false)}>
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl p-6 m-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <span>✨</span>
+                <span>技能管理 (Skills)</span>
+              </h2>
+              <button
+                onClick={() => setSkillsPanelOpen(false)}
+                className="w-8 h-8 rounded-full hover:bg-surface-100 flex items-center justify-center text-surface-700"
+                aria-label="关闭"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="text-sm text-surface-500 mb-4">
+              Skills 是可复用的提示词工具集。启用后会自动注入到 LLM 系统提示中。
+            </div>
+            <div id="skills-panel-content">
+              {/* 动态加载 Skills 列表 */}
+              <SkillsPanelContent />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* v6.14.0 Cycle 2 新增：AGENTS.md 记忆管理面板弹窗
+       * 触发：BrandHeader 菜单"📚 AGENTS.md 记忆"项
+       * 关闭：按钮回调
+       * 功能：扫描项目中的 AGENTS.md 文件，注入项目级规则到 LLM */}
+      {agentsMdPanelOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={() => setAgentsMdPanelOpen(false)}>
+          <div className="w-full max-w-2xl max-h-[90vh] overflow-auto bg-white rounded-2xl shadow-2xl p-6 m-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <span>📚</span>
+                <span>AGENTS.md 记忆</span>
+              </h2>
+              <button
+                onClick={() => setAgentsMdPanelOpen(false)}
+                className="w-8 h-8 rounded-full hover:bg-surface-100 flex items-center justify-center text-surface-700"
+                aria-label="关闭"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="text-sm text-surface-500 mb-4">
+              自动扫描项目中的 AGENTS.md 文件，加载项目级规则并注入 LLM 提示。
+            </div>
+            <AgentsMdPanelContent />
+          </div>
+        </div>
+      )}
+
+      {/* Cycle 3 v1.1.1 UI/UX 升级：MCP 高级功能面板（权限/外部服务器/审批/审计） */}
+      {cycle3PanelOpen && (
+        <Cycle3Modal
+          onClose={() => setCycle3PanelOpen(false)}
+        >
+          <Cycle3Panel onClose={() => setCycle3PanelOpen(false)} />
+        </Cycle3Modal>
+      )}
+
+      {/* Cycle 3 v1.1.1 UI/UX 升级：双触发压缩面板 */}
+      {dualCompactionOpen && (
+        <Cycle3Modal
+          onClose={() => setDualCompactionOpen(false)}
+          maxWidth="max-w-3xl"
+          height="h-[80vh]"
+        >
+          <DualCompactionPanel onClose={() => setDualCompactionOpen(false)} />
+        </Cycle3Modal>
+      )}
+
+      {/* Cycle 3 v1.1.1 UI/UX 升级：多类型规则扫描面板 */}
+      {rulesPanelOpen && (
+        <Cycle3Modal
+          onClose={() => setRulesPanelOpen(false)}
+          maxWidth="max-w-3xl"
+        >
+          <RulesPanel onClose={() => setRulesPanelOpen(false)} />
+        </Cycle3Modal>
       )}
     </div>
       )}
