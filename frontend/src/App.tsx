@@ -164,6 +164,10 @@ import DualCompactionPanel from './components/DualCompactionPanel';
 import RulesPanel from './components/RulesPanel';
 /** v6.13.0 (Cycle 4 P0-3) 新增：Plan 编辑器模态弹窗 */
 import PlanEditorModal from './components/PlanEditorModal';
+/** v6.14.0 (Cycle 4 P0-4) 新增：Hooks 事件系统面板 */
+import HooksPanel from './components/HooksPanel';
+/** v6.15.0 (Cycle 4 P0-4) 新增：SubAgent 记忆查看器 */
+import SubAgentMemoryViewer from './components/SubAgentMemoryViewer';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -291,6 +295,8 @@ export default function App() {
     fileExplorer: fileExplorerModal,
     loopV7: loopV7Modal,
     planEditor: planEditorModal,
+    hooks: hooksModal,
+    subagentMemory: subagentMemoryModal,
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -339,6 +345,14 @@ export default function App() {
   const planEditorOpen = planEditorModal.open;
   const setPlanEditorOpen = planEditorModal.onOpen;
   const closePlanEditor = planEditorModal.onClose;
+  /** v6.14.0 (Cycle 4 P0-4) 别名：Hooks 事件系统面板 */
+  const hooksPanelOpen = hooksModal.open;
+  const setHooksPanelOpen = hooksModal.onOpen;
+  const closeHooksPanel = hooksModal.onClose;
+  /** v6.15.0 (Cycle 4 P0-4) 别名：SubAgent 记忆查看器面板 */
+  const subagentMemoryPanelOpen = subagentMemoryModal.open;
+  const setSubagentMemoryPanelOpen = subagentMemoryModal.onOpen;
+  const closeSubagentMemoryPanel = subagentMemoryModal.onClose;
 
   /** 消息列表容器引用，用于自动滚动到底部 */
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1683,6 +1697,8 @@ export default function App() {
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
           onOpenPlanEditor={setPlanEditorOpen}
+          onOpenHooks={setHooksPanelOpen}
+          onOpenSubagentMemory={setSubagentMemoryPanelOpen}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
           onReasoningIntensityChange={(i) => showToast(`推理强度已设为 ${i}`, 'info')}
           workflowStatusCurrentStage={workflowStatus?.current_stage ?? null}
@@ -1944,6 +1960,20 @@ export default function App() {
           }}
           onClose={closePlanEditor}
         />
+      )}
+
+      {/* v6.14.0 (Cycle 4 P0-4) 新增：Hooks 事件系统面板 */}
+      {hooksPanelOpen && (
+        <Cycle3Modal onClose={closeHooksPanel} maxWidth="max-w-4xl">
+          <HooksPanel onClose={closeHooksPanel} />
+        </Cycle3Modal>
+      )}
+
+      {/* v6.15.0 (Cycle 4 P0-4) 新增：SubAgent 记忆查看器 */}
+      {subagentMemoryPanelOpen && (
+        <Cycle3Modal onClose={closeSubagentMemoryPanel} maxWidth="max-w-5xl">
+          <SubAgentMemoryViewer onClose={closeSubagentMemoryPanel} />
+        </Cycle3Modal>
       )}
     </div>
       )}

@@ -90,6 +90,10 @@ export interface AppLayoutProps {
   onOpenRules: () => void;
   /** v6.13.0 (Cycle 4 P0-3) 新增：打开 Plan 编辑器面板 */
   onOpenPlanEditor: () => void;
+  /** v6.14.0 (Cycle 4 P0-4) 新增：打开 Hooks 事件系统面板 */
+  onOpenHooks: () => void;
+  /** v6.15.0 (Cycle 4 P0-4) 新增：打开 SubAgent 记忆查看器面板 */
+  onOpenSubagentMemory: () => void;
 
   // 工具栏
   onModelChange: (id: string) => void;
@@ -179,6 +183,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenDualCompaction,
   onOpenRules,
   onOpenPlanEditor,
+  onOpenHooks,
+  onOpenSubagentMemory,
   onModelChange,
   onReasoningIntensityChange,
   workflowStatusCurrentStage,
@@ -345,6 +351,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenDualCompaction={onOpenDualCompaction}
         onOpenRules={onOpenRules}
         onOpenPlanEditor={onOpenPlanEditor}
+        onOpenHooks={onOpenHooks}
+        onOpenSubagentMemory={onOpenSubagentMemory}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

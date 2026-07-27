@@ -5,10 +5,12 @@
 # 核心作用：管理外部 MCP 服务器的生命周期
 # 支持传输：
 #   - stdio: 子进程 + JSONL over stdin/stdout
-#   - streamable_http: HTTPS 远程端点
-#   - sse: Server-Sent Events（已废弃但保留兼容）
+#   - streamable_http: HTTPS 远程端点（同步 HTTP）
+#   - sse: Server-Sent Events（真实实现，httpx async SSE 客户端）
 # 创建日期：2026-07-27
-# 模块版本：v1.0.0
+# 模块版本：v1.1.0
+#   - v1.0.0 (2026-07-27): 初始实现
+#   - v1.1.0 (2026-07-27): Cycle 4 P0-1：拆出 sse_transport.py 真实 SSE 实现
 # ============================================================
 """
 
@@ -636,8 +638,12 @@ class ExternalMCPManager:
         # 创建实例
         if config.transport == MCPTransport.STDIO:
             server = StdioMCPServer(config)
-        elif config.transport in (MCPTransport.STREAMABLE_HTTP, MCPTransport.SSE):
+        elif config.transport == MCPTransport.STREAMABLE_HTTP:
             server = StreamableHTTPMCPServer(config)
+        elif config.transport == MCPTransport.SSE:
+            # Cycle 4 P0-1: 真实 SSE 实现
+            from backend.app.services.mcp.sse_transport import SSEMCPServer
+            server = SSEMCPServer(config)
         else:
             logger.error(f"不支持的传输: {config.transport}")
             return False

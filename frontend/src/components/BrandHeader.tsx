@@ -79,6 +79,10 @@ export interface BrandHeaderProps {
   onOpenRules?: () => void;
   /** v2.0.0 (Cycle 4 P0-3) 新增：打开 Plan 编辑器面板回调（可选） */
   onOpenPlanEditor?: () => void;
+  /** v2.1.0 (Cycle 4 P0-4) 新增：打开 Hooks 事件系统面板回调（可选） */
+  onOpenHooks?: () => void;
+  /** v2.2.0 (Cycle 4 P0-4) 新增：打开 SubAgent 记忆查看器回调（可选） */
+  onOpenSubagentMemory?: () => void;
 }
 
 /**
@@ -88,7 +92,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -218,6 +222,14 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M9 12l2 2 4-4" />
         </svg>
       );
+    case 'hook':
+      // v2.1.0 (Cycle 4 P0-4) 新增：Hook - 钩子事件（U 形弯钩）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M18 9V4a2 2 0 00-2-2h-3a2 2 0 00-2 2v15a6 6 0 006 6 6 6 0 006-6V11a2 2 0 00-2-2h-1" />
+          <circle cx="15" cy="6" r="2" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -248,6 +260,10 @@ export default function BrandHeader({
   onOpenRules,
   /** v2.0.0 (Cycle 4 P0-3) 新增 */
   onOpenPlanEditor,
+  /** v2.1.0 (Cycle 4 P0-4) 新增 */
+  onOpenHooks,
+  /** v2.2.0 (Cycle 4 P0-4) 新增 */
+  onOpenSubagentMemory,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -561,6 +577,40 @@ export default function BrandHeader({
                 >
                   <Icon name="plan" className="w-4 h-4 text-purple-500" />
                   <span>📋 Plan 编辑器</span>
+                </button>
+              )}
+
+              {/* v2.1.0 (Cycle 4 P0-4) 新增：Hooks 事件系统（菜单项）
+               *  行为：点击调 onOpenHooks() 弹出 HooksPanel
+               *       仿照 Codex v0.150+ Hooks 规范设计（10 类事件）
+               *  图标：hook（U 形弯钩），强调事件触发+执行+审计 */}
+              {onOpenHooks && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenHooks)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="hook" className="w-4 h-4 text-cyan-500" />
+                  <span>🪝 Hooks 事件系统</span>
+                </button>
+              )}
+
+              {/* v2.2.0 (Cycle 4 P0-4) 新增：SubAgent 记忆（菜单项）
+               *  行为：点击调 onOpenSubagentMemory() 弹出 SubAgentMemoryViewer
+               *       对应 TRAE Sub Agent 三大组件中的"独立工作区"
+               *  图标：brain（脑），强调独立 context + 父→子记忆继承 */}
+              {onOpenSubagentMemory && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSubagentMemory)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-pink-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="brain" className="w-4 h-4 text-pink-500" />
+                  <span>🧠 SubAgent 记忆</span>
                 </button>
               )}
 

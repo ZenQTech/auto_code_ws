@@ -12,6 +12,8 @@
 #   - 2026-06-24 | v4.1.1 | 新增 architecture 路由注册（架构设计批判迭代 API）
 #   - 2026-06-24 | v4.1.2 | 新增 evaluation 路由注册（集成校验与系统评测 API）
 #   - 2026-06-24 | v4.1.3 | 新增 config 路由注册（全局配置中心 API）
+#   - 2026-07-24 | v1.3.0 | Module E 新增 models / reasoning / review / fix
+#     四个路由注册（Codex 核心特性：模型选择 / 推理强度 / /review / /fix）
 # ============================================================
 """
 
@@ -36,6 +38,10 @@ from .workspace import router as workspace_router
 from .worktree import router as worktree_router
 from .dashboard import router as dashboard_router
 from .loop_v7 import router as loop_v7_router
+from .models import router as models_router
+from .reasoning import router as reasoning_router
+from .review import router as review_router
+from .fix import router as fix_router
 
 api_router = APIRouter()
 
@@ -58,3 +64,11 @@ api_router.include_router(workspace_router, prefix="/workspace", tags=["工作�
 api_router.include_router(worktree_router, prefix="/worktree", tags=["Git Worktree"])
 api_router.include_router(dashboard_router, prefix="/dashboard", tags=["工作流监控"])
 api_router.include_router(loop_v7_router, prefix="/workflow", tags=["Loop Engineering v7"])
+# v1.3.0 Module E：Codex 核心特性路由
+api_router.include_router(models_router, prefix="/models", tags=["模型版本选择"])
+api_router.include_router(reasoning_router, prefix="/reasoning", tags=["推理强度调节"])
+api_router.include_router(review_router, prefix="/review", tags=["代码审查"])
+api_router.include_router(fix_router, prefix="/fix", tags=["代码自动修复"])
+# v1.4.0 P0-4 Cycle 4：SubAgent 记忆继承与独立 Context
+from .subagent_memory import router as subagent_memory_router
+api_router.include_router(subagent_memory_router, prefix="/agents", tags=["SubAgent 记忆"])

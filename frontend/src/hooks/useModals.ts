@@ -9,12 +9,14 @@
  *   3. 各弹窗 onClose 统一调用 panel.onClose() 即可关闭
  * 输入参数：无
  * 输出结果：{ settings, mcp, compaction, skills, agentsMd, cycle3,
- *           dualCompaction, rules, usage, fileExplorer, loopV7, planEditor }
+ *           dualCompaction, rules, usage, fileExplorer, loopV7,
+ *           planEditor, hooks }
  *           每个含 { open, onOpen, onClose, onToggle }
  * 修改记录：
  *   - 2026-07-27 | v1.0.0 | P0-2 App.tsx 拆分第五阶段：从 App.tsx 抽离
  *     8 个 panel state + usage + fileExplorer + loopV7
  *   - 2026-07-27 | v1.1.0 | P0-3 Plan Mode 深化：新增 planEditor 面板
+ *   - 2026-07-27 | v1.2.0 | P0-4 Hook 事件完整化：新增 hooks 面板
  * ============================================================
  */
 
@@ -66,10 +68,14 @@ export interface UseModalsResult {
   loopV7: PanelController;
   /** v1.1.0 P0-3 新增：Plan 编辑器弹窗 */
   planEditor: PanelController;
+  /** v1.2.0 P0-4 新增：Hooks 事件管理面板 */
+  hooks: PanelController;
+  /** v1.3.0 P0-4 新增：SubAgent 记忆查看器 */
+  subagentMemory: PanelController;
 }
 
 /**
- * useModals - 集中管理 12 个面板/弹窗的显隐状态
+ * useModals - 集中管理 14 个面板/弹窗的显隐状态
  * 返回值：包含每个面板 controller 的对象
  */
 export function useModals(): UseModalsResult {
@@ -85,6 +91,8 @@ export function useModals(): UseModalsResult {
   const fileExplorer = usePanelController(true);  // 默认展开
   const loopV7 = usePanelController(false);
   const planEditor = usePanelController(false);  // v1.1.0 P0-3 新增
+  const hooks = usePanelController(false);  // v1.2.0 P0-4 新增
+  const subagentMemory = usePanelController(false);  // v1.3.0 P0-4 新增
 
   return {
     settings,
@@ -99,6 +107,8 @@ export function useModals(): UseModalsResult {
     fileExplorer,
     loopV7,
     planEditor,
+    hooks,
+    subagentMemory,
   };
 }
 
