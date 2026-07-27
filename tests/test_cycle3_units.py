@@ -9,6 +9,7 @@
 #   - T9: 双触发压缩
 #   - T10: MCP 权限控制
 #   - T11: SubAgent workspace 字段（v4.3.0 P2-1 新增）
+#   - T12: Plan 模式服务（v4.1.0 P0-4 Plan 模式后端实现）
 # 创建日期：2026-07-27
 # ============================================================
 """
@@ -615,6 +616,216 @@ class TestSubAgentWorkspaceFields(unittest.TestCase):
 
 
 # ============================================================
+# T12: Plan 模式服务测试（v4.1.0 P0-4 新增）
+# ============================================================
+class TestPlanModeService(unittest.TestCase):
+    """测试 Plan 模式服务的核心功能
+    - PlanDocument / PlanStage / PlanTask / PlanRisk dataclass 序列化
+    - PlanModeService 基本方法（无需 DB 的纯逻辑部分）
+    - 与 P0-4 Plan 模式后端实现配套
+    """
+
+    def test_plan_risk_dataclass(self):
+        """测试 PlanRisk dataclass"""
+        from backend.app.services.plan_mode import PlanRisk
+        risk = PlanRisk(
+            risk_id="r-001",
+            description="紧急停止逻辑未实现",
+            severity="extreme",
+            mitigation="添加独立 emergency_stop 模块",
+        )
+        self.assertEqual(risk.risk_id, "r-001")
+        self.assertEqual(risk.severity, "extreme")
+        self.assertIn("emergency_stop", risk.mitigation)
+
+    def test_plan_task_dataclass(self):
+        """测试 PlanTask dataclass"""
+        from backend.app.services.plan_mode import PlanTask
+        task = PlanTask(
+            task_id="t-001",
+            title="实现运动控制接口",
+            description="定义运动控制 API 规范",
+            stage="coding",
+            estimated_minutes=120,
+            risk_level="high",
+            files_involved=["motion_control/motion_api.py"],
+            dependencies=[],
+            acceptance_criteria="通过单元测试",
+        )
+        self.assertEqual(task.title, "实现运动控制接口")
+        self.assertEqual(task.estimated_minutes, 120)
+        self.assertEqual(task.risk_level, "high")
+        self.assertEqual(len(task.files_involved), 1)
+
+    def test_plan_stage_dataclass(self):
+        """测试 PlanStage dataclass"""
+        from backend.app.services.plan_mode import PlanStage, PlanTask, PlanRisk
+        stage = PlanStage(
+            stage="coding",
+            tasks=[PlanTask(task_id="t-1", title="task1")],
+            risks=[PlanRisk(risk_id="r-1", description="risk1")],
+            alternatives=["alt-1", "alt-2"],
+        )
+        self.assertEqual(stage.stage, "coding")
+        self.assertEqual(len(stage.tasks), 1)
+        self.assertEqual(len(stage.risks), 1)
+        self.assertEqual(len(stage.alternatives), 2)
+
+    def test_plan_document_to_from_dict(self):
+        """测试 PlanDocument 序列化往返"""
+        from backend.app.services.plan_mode import PlanDocument, PlanStage, PlanTask
+        original = PlanDocument(
+            plan_id="p-001",
+            workflow_id="wf-001",
+            objective="实现运动控制",
+            stages=[
+                PlanStage(
+                    stage="coding",
+                    tasks=[PlanTask(task_id="t-1", title="实现API")],
+                ),
+                PlanStage(
+                    stage="testing",
+                    tasks=[PlanTask(task_id="t-2", title="编写测试")],
+                ),
+            ],
+            generated_at="2026-07-27T12:00:00Z",
+            status="pending",
+        )
+        # 序列化
+        data = original.to_dict()
+        self.assertEqual(data["plan_id"], "p-001")
+        self.assertEqual(len(data["stages"]), 2)
+        self.assertEqual(data["stages"][0]["tasks"][0]["title"], "实现API")
+        # 反序列化
+        restored = PlanDocument.from_dict(data)
+        self.assertEqual(restored.plan_id, original.plan_id)
+        self.assertEqual(len(restored.stages), 2)
+        self.assertEqual(restored.stages[1].tasks[0].task_id, "t-2")
+
+    def test_plan_document_to_from_json(self):
+        """测试 PlanDocument JSON 序列化"""
+        from backend.app.services.plan_mode import PlanDocument, PlanStage
+        original = PlanDocument(
+            plan_id="p-json-001",
+            workflow_id="wf-001",
+            objective="测试 JSON 序列化",
+            stages=[PlanStage(stage="planning", tasks=[])],
+        )
+        json_str = original.to_json()
+        self.assertIn("p-json-001", json_str)
+        restored = PlanDocument.from_json(json_str)
+        self.assertEqual(restored.plan_id, "p-json-001")
+
+    def test_plan_document_from_json_invalid(self):
+        """测试 PlanDocument 解析非法 JSON 不抛异常"""
+        from backend.app.services.plan_mode import PlanDocument
+        # 空字符串
+        plan = PlanDocument.from_json("")
+        self.assertEqual(plan.plan_id, "")
+        # 非法 JSON
+        plan = PlanDocument.from_json("{invalid json}")
+        self.assertEqual(plan.plan_id, "")
+
+    def test_plan_marker_constants(self):
+        """测试 Plan 持久化标记常量"""
+        from backend.app.services.plan_mode import PlanModeService
+        self.assertEqual(PlanModeService.PLAN_MARKER_PREFIX, "__PLAN__")
+        self.assertEqual(PlanModeService.PLAN_MARKER_SUFFIX, "__/PLAN__")
+
+    def test_plan_service_init(self):
+        """测试 PlanModeService 初始化（无需 DB）"""
+        from backend.app.services.plan_mode import PlanModeService
+        # 用 None session_factory 测试（不会立即访问 DB）
+        svc = PlanModeService(session_factory=None, executor=None)
+        self.assertIsNone(svc.session_factory)
+        self.assertIsNone(svc.executor)
+
+    def test_plan_prompt_building(self):
+        """测试 _build_plan_prompt 构造 LLM Prompt"""
+        from backend.app.services.plan_mode import PlanModeService
+        svc = PlanModeService(session_factory=None)
+        prompt = svc._build_plan_prompt(
+            objective="实现运动控制",
+            spec_doc="运动控制 API 规范",
+            architecture_doc="分层架构",
+        )
+        self.assertIsInstance(prompt, str)
+        self.assertIn("实现运动控制", prompt)
+        self.assertIn("运动控制 API 规范", prompt)
+        self.assertIn("分层架构", prompt)
+        # 应包含结构化输出要求
+        self.assertIn("stages", prompt.lower())
+        self.assertIn("tasks", prompt.lower())
+
+    def test_plan_prompt_building_with_empty_docs(self):
+        """测试空文档时的 Prompt 构造"""
+        from backend.app.services.plan_mode import PlanModeService
+        svc = PlanModeService(session_factory=None)
+        prompt = svc._build_plan_prompt(
+            objective="简化目标",
+            spec_doc="",
+            architecture_doc="",
+        )
+        self.assertIn("简化目标", prompt)
+        # 即使没有 spec/architecture，Prompt 也应能正常构造
+        self.assertGreater(len(prompt), 100)
+
+    def test_plan_extraction_from_error_message(self):
+        """测试从 error_message 标记段提取 Plan JSON"""
+        from backend.app.services.plan_mode import PlanModeService
+        svc = PlanModeService(session_factory=None)
+        # 模拟带 __PLAN__ 标记的 error_message
+        plan_json = '{"plan_id":"p-1","workflow_id":"wf-1","stages":[]}'
+        marked = f"前置错误说明\n{PlanModeService.PLAN_MARKER_PREFIX}{plan_json}{PlanModeService.PLAN_MARKER_SUFFIX}\n后续说明"
+        extracted = svc._extract_plan_json(marked)
+        self.assertEqual(extracted, plan_json)
+
+    def test_plan_extraction_empty(self):
+        """测试无标记时的提取返回空（None 或空字符串）"""
+        from backend.app.services.plan_mode import PlanModeService
+        svc = PlanModeService(session_factory=None)
+        # 空字符串 → falsy
+        self.assertFalse(svc._extract_plan_json(""))
+        # 无标记的普通文本 → falsy
+        self.assertFalse(svc._extract_plan_json("无标记的普通文本"))
+
+    def test_plan_document_to_dict_field_completeness(self):
+        """测试 PlanDocument 序列化字段完整性"""
+        from backend.app.services.plan_mode import PlanDocument, PlanStage, PlanTask, PlanRisk
+        doc = PlanDocument(
+            plan_id="p-fields-001",
+            workflow_id="wf-001",
+            objective="字段完整性测试",
+            stages=[
+                PlanStage(
+                    stage="coding",
+                    tasks=[PlanTask(task_id="t-1", title="task1", risk_level="high")],
+                    risks=[PlanRisk(risk_id="r-1", description="risk1", severity="medium")],
+                    alternatives=["alt-1"],
+                ),
+            ],
+            total_estimated_minutes=120,
+        )
+        data = doc.to_dict()
+        # 验证必含字段
+        required_top = ["plan_id", "workflow_id", "objective", "stages", "generated_at", "status", "total_estimated_minutes"]
+        for k in required_top:
+            self.assertIn(k, data)
+        # 验证 stage 内字段
+        stage_data = data["stages"][0]
+        self.assertIn("stage", stage_data)
+        self.assertIn("tasks", stage_data)
+        self.assertIn("risks", stage_data)
+        self.assertIn("alternatives", stage_data)
+        # 验证 task 字段
+        task_data = stage_data["tasks"][0]
+        self.assertEqual(task_data["risk_level"], "high")
+        # 验证 risk 字段
+        risk_data = stage_data["risks"][0]
+        self.assertEqual(risk_data["severity"], "medium")
+
+
+# ============================================================
 # 主入口
 # ============================================================
 def run_all_tests():
@@ -627,6 +838,7 @@ def run_all_tests():
     suite.addTests(loader.loadTestsFromTestCase(TestDualTriggerCompaction))
     suite.addTests(loader.loadTestsFromTestCase(TestMCPPermissions))
     suite.addTests(loader.loadTestsFromTestCase(TestSubAgentWorkspaceFields))
+    suite.addTests(loader.loadTestsFromTestCase(TestPlanModeService))
 
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)

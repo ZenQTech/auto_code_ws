@@ -169,6 +169,77 @@ for k in required:
     assert k in result, f\"missing {k}\"
 '"
 
+echo -e "${YELLOW}===== T12: Plan 模式 API 测试（v4.1.0 P0-4 新增）=====${NC}"
+
+# T12.1: Plan 模式端点存在
+check "Plan 模式端点列表 (P0-4)" \
+    "curl -sf $BASE_URL/openapi.json | python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+plan_paths = [p for p in data.get(\"paths\", {}) if \"/plan\" in p]
+# 应至少有 5 个 plan 端点（generate/get/confirm/modify/reject）
+required = [\"/api/workflow/{workflow_id}/plan/generate\",
+            \"/api/workflow/{workflow_id}/plan\",
+            \"/api/workflow/{workflow_id}/plan/confirm\",
+            \"/api/workflow/{workflow_id}/plan/modify\",
+            \"/api/workflow/{workflow_id}/plan/reject\"]
+for p in required:
+    assert p in plan_paths, f\"missing endpoint: {p}\"
+'"
+
+# T12.2: plan 端点 HTTP methods 完整（generate 是 POST, get 是 GET, confirm/modify/reject 是 POST）
+check "Plan 端点 HTTP methods 完整 (P0-4)" \
+    "curl -sf $BASE_URL/openapi.json | python3 -c '
+import json, sys
+data = json.load(sys.stdin)
+# generate 端点应有 POST
+assert \"post\" in data[\"paths\"][\"/api/workflow/{workflow_id}/plan/generate\"]
+# get 端点应有 GET
+assert \"get\" in data[\"paths\"][\"/api/workflow/{workflow_id}/plan\"]
+# confirm 端点应有 POST
+assert \"post\" in data[\"paths\"][\"/api/workflow/{workflow_id}/plan/confirm\"]
+# modify 端点应有 POST
+assert \"post\" in data[\"paths\"][\"/api/workflow/{workflow_id}/plan/modify\"]
+# reject 端点应有 POST
+assert \"post\" in data[\"paths\"][\"/api/workflow/{workflow_id}/plan/reject\"]
+'"
+
+# T12.3: 验证对不存在 workflow 调用 plan/generate 正确返回 404
+check "GET /api/workflow/{nonexist}/plan 返回 None" \
+    "curl -sf $BASE_URL/api/workflow/nonexist-workflow-12345/plan | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d[\"success\"]; assert d[\"plan\"] is None'"
+
+# T12.4: 验证对不存在 workflow 调用 plan/generate 返回 404
+check "POST /api/workflow/{nonexist}/plan/generate 返回 404" \
+    "curl -s -X POST $BASE_URL/api/workflow/nonexist-wf-67890/plan/generate -H 'Content-Type: application/json' -d '{\"objective\":\"test\"}' | python3 -c 'import json,sys; d=json.load(sys.stdin); assert \"detail\" in d'"
+
+# T12.5: 单元测试 PlanDocument 数据类 schema 完整性
+check "PlanDocument schema validation (P0-4)" \
+    "python3 -c '
+from backend.app.services.plan_mode import PlanDocument, PlanStage, PlanTask, PlanRisk
+doc = PlanDocument(plan_id=\"p-1\", workflow_id=\"wf-1\", objective=\"test\",
+                   stages=[PlanStage(stage=\"coding\", tasks=[PlanTask(task_id=\"t-1\", title=\"t1\")],
+                                     risks=[PlanRisk(risk_id=\"r-1\", description=\"r1\")],
+                                     alternatives=[\"alt1\"])])
+data = doc.to_dict()
+required = [\"plan_id\", \"workflow_id\", \"objective\", \"stages\", \"status\"]
+for k in required:
+    assert k in data, f\"missing {k}\"
+assert len(data[\"stages\"]) == 1
+assert data[\"stages\"][0][\"tasks\"][0][\"title\"] == \"t1\"
+'"
+
+# T12.6: PlanDocument 序列化往返验证
+check "PlanDocument 序列化往返 (P0-4)" \
+    "python3 -c '
+from backend.app.services.plan_mode import PlanDocument
+doc = PlanDocument(plan_id=\"p-roundtrip\", workflow_id=\"wf-r\", objective=\"obj\",
+                   stages=[])
+json_str = doc.to_json()
+restored = PlanDocument.from_json(json_str)
+assert restored.plan_id == \"p-roundtrip\"
+assert restored.workflow_id == \"wf-r\"
+'"
+
 echo ""
 echo "=================================================="
 echo -e "测试结果: ${GREEN}通过 $PASS${NC} / ${RED}失败 $FAIL${NC} (总计 $TOTAL)"
