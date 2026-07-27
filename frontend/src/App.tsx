@@ -294,6 +294,11 @@ export default function App() {
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
   /** 思考内容（实时累积） */
   const [thinkingContent, setThinkingContent] = useState('');
+  // v4.2.0 新增：分阶段推理状态（P1-4 补齐）
+  // 阶段：'analysis' | 'planning' | 'coding' | 'testing' | 'idle'
+  type ReasoningStage = 'analysis' | 'planning' | 'coding' | 'testing' | 'idle';
+  const [reasoningStage, setReasoningStage] = useState<ReasoningStage>('idle');
+  const [stageProgress, setStageProgress] = useState(0);
   /** 最新一条消息的 ID（用于触发呼吸高光动画） */
   const lastMessageIdRef = useRef<string | null>(null);
   /** v2.10.0：当前选中的项目名称（编程模式下使用） */
@@ -1073,6 +1078,13 @@ export default function App() {
         onGoalUpdate: (data: GoalData) => {
           setGoalData(data);
         },
+        // v4.2.0 新增：分阶段推理回调（P1-4 补齐）
+        // 后端在 workflow 阶段切换时发送 reasoning_stage 事件，
+        // 前端更新阶段状态供 ThinkingBlock 渲染进度条
+        onReasoningStage: (data) => {
+          setReasoningStage(data.stage as ReasoningStage);
+          setStageProgress(data.progress);
+        },
         onDone: () => {
           setStreamingStatus('done');
           setIsSending(false);
@@ -1396,6 +1408,19 @@ export default function App() {
   }, [showToast]);
 
   /**
+   * v4.2.0 新增：用户干预回调（P1-2 补齐）
+   * 触发时机：ThinkingBlock 渲染 ⏸ 干预按钮，用户点击后调用
+   * 行为：复用 handleStop 逻辑暂停流式生成 + 重置分阶段推理状态
+   * 用途：用户可在任意推理阶段中断 AI，输入修改建议
+   */
+  const handleIntervene = useCallback(() => {
+    handleStop();
+    setReasoningStage('idle');
+    setStageProgress(0);
+    showToast('已暂停 AI 思考，请输入修改建议', 'info');
+  }, [handleStop, showToast]);
+
+  /**
    * 确认执行计划
    * 运行步骤：
    *   1. 调用 confirmPlan API，透传 session_id
@@ -1610,6 +1635,11 @@ export default function App() {
           streamingStatus={streamingStatus}
           streamingMessageId={streamingMessageId}
           thinkingContent={thinkingContent}
+          // v4.2.0 新增：分阶段推理状态（P1-4 补齐）
+          reasoningStage={reasoningStage}
+          stageProgress={stageProgress}
+          // v4.2.0 新增：用户干预回调（P1-2 补齐）—— 暂停当前流式对话
+          onIntervene={handleIntervene}
           isSending={isSending}
           inputValue={inputValue}
           setInputValue={setInputValue}

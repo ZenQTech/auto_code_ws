@@ -130,6 +130,45 @@ check "GET /api/mcp/audit-log" \
 check "GET /api/mcp/audit-log (with filter)" \
     "curl -sf \"$BASE_URL/api/mcp/audit-log?tool_name=read_file&limit=5\" | python3 -c 'import json,sys; d=json.load(sys.stdin); assert d[\"success\"]'"
 
+echo -e "${YELLOW}===== T11: SubAgent workspace 字段 API 测试（v4.3.0 P2-1 新增）=====${NC}"
+
+# 验证 /api/agents 端点暴露 SubAgent workspace 字段
+# 即使没有 agent 也应返回 list，字段结构应支持 0 长度
+check "GET /api/agents returns list (P2-1)" \
+    "curl -sf $BASE_URL/api/agents | python3 -c 'import json,sys; d=json.load(sys.stdin); assert isinstance(d, list)'"
+
+# 验证每个 agent 字典包含 P2-1 字段（即使列表为空也要保证格式正确）
+# 由于端点可能返回空列表，使用空列表回退验证（验证 dict schema）
+check "GET /api/agents schema validation (P2-1)" \
+    "curl -sf $BASE_URL/api/agents | python3 -c '
+import json, sys
+agents = json.load(sys.stdin)
+# 字段集合（无论是否有 agent，验证 _agent_to_dict 输出格式）
+expected_fields = {\"id\", \"name\", \"avatar_seed\", \"status\", \"cli_path\", \"workspace\",
+                   \"branch_name\", \"worktree_id\", \"module_name\", \"file_count\",
+                   \"commit_count\", \"progress_percent\", \"max_concurrent\",
+                   \"current_tasks\", \"total_tokens\", \"total_api_calls\"}
+if len(agents) > 0:
+    agent = agents[0]
+    missing = expected_fields - set(agent.keys())
+    assert not missing, f\"missing fields: {missing}\"
+else:
+    # 无 agent 时跳过具体字段检查，但 API 端点必须可访问
+    pass
+'"
+
+# 通过内部 mock 验证 _agent_to_dict 端点输出 Schema（独立测试，不需要真实 agent）
+check "_agent_to_dict returns SubAgent workspace schema" \
+    "python3 -c '
+from cli_integration.agent_manager import AgentInfo, AgentStatus
+from backend.app.api.agents import _agent_to_dict
+agent = AgentInfo(name=\"test\", status=AgentStatus.ONLINE, workspace=\"/home/qizheng/auto_code_ws\")
+result = _agent_to_dict(agent)
+required = [\"branch_name\", \"worktree_id\", \"module_name\", \"file_count\", \"commit_count\", \"progress_percent\"]
+for k in required:
+    assert k in result, f\"missing {k}\"
+'"
+
 echo ""
 echo "=================================================="
 echo -e "测试结果: ${GREEN}通过 $PASS${NC} / ${RED}失败 $FAIL${NC} (总计 $TOTAL)"

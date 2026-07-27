@@ -415,6 +415,9 @@ class HermesService:
                         f"我将逐步分析您的需求，识别其中需要明确的关键信息点。"
                         f"请根据下方问题选择或补充信息："
                     )
+                    # v4.2.0 新增：分阶段推理 SSE 事件（P1-4 补齐）
+                    # 通知前端进入"需求分析"阶段，前端 ThinkingBlock 渲染阶段进度
+                    yield f"data: {json.dumps({'type': 'reasoning_stage', 'stage': 'analysis', 'stage_label': '需求分析', 'progress': 0.0, 'workflow_id': workflow.id}, ensure_ascii=False)}\n\n"
                     yield f"data: {json.dumps({'type': 'thinking', 'content': thinking_message}, ensure_ascii=False)}\n\n"
                     yield f"data: {json.dumps({'type': 'text', 'content': guide_message}, ensure_ascii=False)}\n\n"
                     yield f"data: {json.dumps({'type': 'workflow_started', 'workflow_id': workflow.id, 'stage': 'clarifying'}, ensure_ascii=False)}\n\n"
@@ -520,6 +523,22 @@ class HermesService:
                         f"阶段已变更: clarifying → {current_stage_after}，"
                         f"自动分派智能体..."
                     )
+                    # v4.2.0 新增：分阶段推理 SSE 事件（P1-4 补齐）
+                    # workflow_stage 映射到 reasoning_stage：
+                    #   designing → planning（方案规划）
+                    #   prompting → planning（提示词优化，属规划范畴）
+                    #   executing → coding（代码生成）
+                    #   reviewing → testing（测试验证）
+                    reasoning_stage_map = {
+                        "designing": ("planning", "方案规划"),
+                        "prompting": ("planning", "提示词优化"),
+                        "executing": ("coding", "代码生成"),
+                        "reviewing": ("testing", "测试验证"),
+                    }
+                    stage_info = reasoning_stage_map.get(current_stage_after)
+                    if stage_info:
+                        reasoning_stage, stage_label = stage_info
+                        yield f"data: {json.dumps({'type': 'reasoning_stage', 'stage': reasoning_stage, 'stage_label': stage_label, 'progress': 0.0, 'workflow_id': workflow_id}, ensure_ascii=False)}\n\n"
                     try:
                         dispatch_result = await self.dispatch_by_stage(
                             workflow_id=workflow_id,

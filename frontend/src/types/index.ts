@@ -37,6 +37,18 @@ export interface Agent {
   status: AgentStatus;
   cli_path: string;
   workspace: string;
+  /** v4.3.0 P2-1 新增：Git 分支名（SubAgent 独立工作区） */
+  branch_name?: string;
+  /** v4.3.0 P2-1 新增：Worktree 唯一 ID */
+  worktree_id?: string;
+  /** v4.3.0 P2-1 新增：当前处理的模块名 */
+  module_name?: string;
+  /** v4.3.0 P2-1 新增：workspace 内文件数 */
+  file_count?: number;
+  /** v4.3.0 P2-1 新增：workspace 提交数 */
+  commit_count?: number;
+  /** v4.3.0 P2-1 新增：当前任务进度 0-100 */
+  progress_percent?: number;
   max_concurrent: number;
   current_tasks: number;
   total_tokens: number;

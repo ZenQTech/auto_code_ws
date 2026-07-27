@@ -16,6 +16,9 @@
 # 修改记录：
 #   - 2026-07-24 | v5.8.0 | 健康检查间隔从 30s 提升至 90s（超时阈值 180s），
 #     解决 LLM 长调用（30-90s）期间被误判为离线的问题
+#   - 2026-07-27 | v5.9.0 | P2-1 SubAgent workspace 前端展示支持：
+#     AgentInfo 新增 branch_name / worktree_id / module_name / file_count /
+#     commit_count / progress_percent 字段，记录 SubAgent 独立工作区状态
 # ============================================================
 """
 
@@ -48,7 +51,13 @@ class AgentInfo:
       - avatar_seed: 头像生成种子
       - status: 当前状态
       - cli_path: CLI 可执行文件路径
-      - workspace: 工作空间路径
+      - workspace: 工作空间路径（worktree 路径或默认工作区）
+      - branch_name: Git 分支名（v4.3.0 新增 - P2-1 SubAgent workspace 前端展示）
+      - worktree_id: Worktree ID（v4.3.0 新增）
+      - module_name: 当前处理的模块名（v4.3.0 新增）
+      - file_count: workspace 中文件数量（v4.3.0 新增 - 由后台定期刷新）
+      - commit_count: workspace 提交数（v4.3.0 新增）
+      - progress_percent: 当前任务进度 0-100（v4.3.0 新增）
       - max_concurrent: 最大并发任务数
       - current_tasks: 当前执行中的任务数
       - total_tokens: 累计 Token 消耗
@@ -62,6 +71,13 @@ class AgentInfo:
     status: AgentStatus = AgentStatus.OFFLINE
     cli_path: str = "claude"
     workspace: str = ""
+    # v4.3.0 P2-1 新增：SubAgent workspace 详情字段
+    branch_name: str = ""
+    worktree_id: str = ""
+    module_name: str = ""
+    file_count: int = 0
+    commit_count: int = 0
+    progress_percent: float = 0.0
     max_concurrent: int = 5
     current_tasks: int = 0
     total_tokens: int = 0

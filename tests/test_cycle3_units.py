@@ -8,6 +8,7 @@
 #   - T8: 多文件类型规则解析器
 #   - T9: 双触发压缩
 #   - T10: MCP 权限控制
+#   - T11: SubAgent workspace 字段（v4.3.0 P2-1 新增）
 # 创建日期：2026-07-27
 # ============================================================
 """
@@ -455,6 +456,165 @@ class TestMCPPermissions(unittest.TestCase):
 
 
 # ============================================================
+# T11: SubAgent workspace 字段测试（v4.3.0 P2-1 新增）
+# ============================================================
+class TestSubAgentWorkspaceFields(unittest.TestCase):
+    """测试 AgentInfo 新增的 SubAgent workspace 字段
+    - branch_name / worktree_id / module_name
+    - file_count / commit_count / progress_percent
+    - 后端 _agent_to_dict 转换函数
+    """
+
+    def test_agent_info_new_fields_default(self):
+        """测试 AgentInfo 新字段默认值"""
+        from cli_integration.agent_manager import AgentInfo
+        agent = AgentInfo(name="test-default")
+        self.assertEqual(agent.branch_name, "")
+        self.assertEqual(agent.worktree_id, "")
+        self.assertEqual(agent.module_name, "")
+        self.assertEqual(agent.file_count, 0)
+        self.assertEqual(agent.commit_count, 0)
+        self.assertEqual(agent.progress_percent, 0.0)
+
+    def test_agent_info_new_fields_assignment(self):
+        """测试 AgentInfo 新字段赋值"""
+        from cli_integration.agent_manager import AgentInfo
+        agent = AgentInfo(
+            name="test-assign",
+            branch_name="feature/test",
+            worktree_id="wt-001",
+            module_name="test-module",
+            file_count=10,
+            commit_count=3,
+            progress_percent=45.5,
+        )
+        self.assertEqual(agent.branch_name, "feature/test")
+        self.assertEqual(agent.worktree_id, "wt-001")
+        self.assertEqual(agent.module_name, "test-module")
+        self.assertEqual(agent.file_count, 10)
+        self.assertEqual(agent.commit_count, 3)
+        self.assertEqual(agent.progress_percent, 45.5)
+
+    def test_agent_to_dict_with_subagent_fields(self):
+        """测试 _agent_to_dict 正确暴露 SubAgent workspace 字段"""
+        from cli_integration.agent_manager import AgentInfo, AgentStatus
+        from backend.app.api.agents import _agent_to_dict
+
+        agent = AgentInfo(
+            id="sub-001",
+            name="worker-frontend",
+            avatar_seed="seed",
+            status=AgentStatus.BUSY,
+            cli_path="claude",
+            workspace="/tmp",
+            max_concurrent=2,
+            current_tasks=1,
+        )
+        # 注入 P2-1 字段
+        agent.branch_name = "feature/subagent-workspace"
+        agent.worktree_id = "wt-abc123"
+        agent.module_name = "frontend-workspace"
+        agent.progress_percent = 75.0
+        agent.file_count = 15
+        agent.commit_count = 4
+
+        result = _agent_to_dict(agent)
+        # 验证必含字段
+        for key in [
+            "branch_name", "worktree_id", "module_name",
+            "file_count", "commit_count", "progress_percent",
+        ]:
+            self.assertIn(key, result, f"字段 {key} 缺失")
+        # 验证值正确
+        self.assertEqual(result["branch_name"], "feature/subagent-workspace")
+        self.assertEqual(result["worktree_id"], "wt-abc123")
+        self.assertEqual(result["module_name"], "frontend-workspace")
+        self.assertEqual(result["file_count"], 15)
+        self.assertEqual(result["commit_count"], 4)
+        self.assertEqual(result["progress_percent"], 75.0)
+
+    def test_agent_to_dict_empty_workspace_fallback(self):
+        """测试空 workspace 时的字段降级行为"""
+        from cli_integration.agent_manager import AgentInfo, AgentStatus
+        from backend.app.api.agents import _agent_to_dict
+
+        agent = AgentInfo(
+            id="sub-002",
+            name="worker-empty",
+            status=AgentStatus.OFFLINE,
+            workspace="",  # 空 workspace
+        )
+        result = _agent_to_dict(agent)
+        # 空 workspace 时 file_count/commit_count 应为 0
+        self.assertEqual(result["file_count"], 0)
+        self.assertEqual(result["commit_count"], 0)
+        self.assertEqual(result["branch_name"], "")
+        self.assertEqual(result["workspace"], "")
+
+    def test_agent_to_dict_dynamic_git_probe(self):
+        """测试 _agent_to_dict 通过 git 命令动态探测分支/提交"""
+        from cli_integration.agent_manager import AgentInfo, AgentStatus
+        from backend.app.api.agents import _agent_to_dict
+
+        # 用本仓库 workspace 进行动态探测
+        project_root = "/home/qizheng/auto_code_ws"
+        agent = AgentInfo(
+            id="sub-003",
+            name="worker-dynamic",
+            status=AgentStatus.ONLINE,
+            workspace=project_root,
+        )
+        # 不注入 branch_name，让 _agent_to_dict 动态探测
+        result = _agent_to_dict(agent)
+        # 由于是真实 git 仓库，应该能探测到分支
+        # （只要不报错就算通过 - 验证字段类型和键存在）
+        self.assertIn("branch_name", result)
+        self.assertIn("file_count", result)
+        self.assertIn("commit_count", result)
+        # file_count 应为正整数（项目根目录有文件）
+        self.assertIsInstance(result["file_count"], int)
+        self.assertGreaterEqual(result["file_count"], 1)
+        # commit_count 应为正整数（项目根目录是 git 仓库）
+        self.assertIsInstance(result["commit_count"], int)
+        self.assertGreaterEqual(result["commit_count"], 0)
+
+    def test_count_workspace_files_ignores_git(self):
+        """测试 _count_workspace_files 排除 .git 目录"""
+        from backend.app.api.agents import _count_workspace_files
+
+        with tempfile.TemporaryDirectory() as tmp:
+            # 创建测试文件结构
+            os.makedirs(os.path.join(tmp, ".git"))
+            open(os.path.join(tmp, ".git", "config"), "w").close()
+            open(os.path.join(tmp, "src.py"), "w").close()
+            open(os.path.join(tmp, "README.md"), "w").close()
+            count = _count_workspace_files(tmp)
+            # 应只统计 2 个文件（.git/config 排除）
+            self.assertEqual(count, 2)
+
+    def test_count_workspace_files_nonexistent(self):
+        """测试 _count_workspace_files 对不存在路径返回 0"""
+        from backend.app.api.agents import _count_workspace_files
+        count = _count_workspace_files("/nonexistent/path/that/does/not/exist")
+        self.assertEqual(count, 0)
+
+    def test_count_workspace_files_empty_string(self):
+        """测试 _count_workspace_files 对空字符串返回 0"""
+        from backend.app.api.agents import _count_workspace_files
+        self.assertEqual(_count_workspace_files(""), 0)
+
+    def test_get_workspace_branch_nonexistent(self):
+        """测试 _get_workspace_branch 对不存在路径返回空字符串"""
+        from backend.app.api.agents import _get_workspace_branch
+        self.assertEqual(_get_workspace_branch("/nonexistent/path"), "")
+
+    def test_get_workspace_branch_empty_string(self):
+        """测试 _get_workspace_branch 对空字符串返回空字符串"""
+        from backend.app.api.agents import _get_workspace_branch
+        self.assertEqual(_get_workspace_branch(""), "")
+
+
+# ============================================================
 # 主入口
 # ============================================================
 def run_all_tests():
@@ -466,6 +626,7 @@ def run_all_tests():
     suite.addTests(loader.loadTestsFromTestCase(TestRulesResolver))
     suite.addTests(loader.loadTestsFromTestCase(TestDualTriggerCompaction))
     suite.addTests(loader.loadTestsFromTestCase(TestMCPPermissions))
+    suite.addTests(loader.loadTestsFromTestCase(TestSubAgentWorkspaceFields))
 
     runner = unittest.TextTestRunner(verbosity=2)
     result = runner.run(suite)

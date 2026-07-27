@@ -19,6 +19,9 @@
  *     ChatMainArea+Modals+CodeViewer+AgentGrid+固定输入区）
  *   - 2026-07-27 | v6.10.1 | Phase 5 UI/UX 优化：工具栏增加渐变背景 + 分割线 +
  *     斜杠命令 kbd 边框 + 文件路径 badge 样式
+ *   - 2026-07-27 | v6.11.0 | P2-1 补齐 SubAgent workspace 前端展示：
+ *     在 AgentChatCard 网格上方插入 SubAgentWorkspacePanel，
+ *     展示各 SubAgent 的分支名/模块名/进度/文件数/提交数
  * ============================================================
  */
 
@@ -27,6 +30,7 @@ import BrandHeader from './BrandHeader';
 import WelcomeState from './WelcomeState';
 import MessageBubble from './MessageBubble';
 import ThinkingBlock from './ThinkingBlock';
+import type { ReasoningStage } from './ThinkingBlock';
 import ClarificationProgress from './ClarificationProgress';
 import ClarificationModal from './ClarificationModal';
 import ArchitectureDesignModal from './ArchitectureDesignModal';
@@ -35,6 +39,8 @@ import PipelineProgress from './PipelineProgress';
 import GoalProgress from './GoalProgress';
 import CodeViewer from './CodeViewer';
 import AgentChatCard from './AgentChatCard';
+/** v4.3.0 P2-1 新增：SubAgent workspace 前端展示面板 */
+import SubAgentWorkspacePanel from './SubAgentWorkspacePanel';
 import ModelSelector from './ModelSelector';
 import ReasoningIntensitySelector from './ReasoningIntensitySelector';
 import type { StreamingStatus } from './ChatMainArea';
@@ -108,6 +114,11 @@ export interface AppLayoutProps {
   streamingMessageId: string | null;
   thinkingContent: string;
   isSending: boolean;
+  // v4.2.0 新增：分阶段推理状态（P1-4 补齐）
+  reasoningStage?: ReasoningStage;
+  stageProgress?: number;
+  // v4.2.0 新增：用户干预回调（P1-2 补齐）
+  onIntervene?: () => void;
 
   // 输入区
   inputValue: string;
@@ -185,6 +196,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   streamingMessageId,
   thinkingContent,
   isSending,
+  // v4.2.0 新增：分阶段推理 + 用户干预（P1-2 / P1-4 补齐）
+  reasoningStage = 'idle',
+  stageProgress = 0,
+  onIntervene,
   inputValue,
   setInputValue,
   onSend,
@@ -269,6 +284,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
                   streamingMessageId={streamingMessageId}
                   streamingStatus={streamingStatus}
                   thinkingContent={thinkingContent}
+                  // v4.2.0 新增：分阶段推理 + 用户干预（P1-2 / P1-4 补齐）
+                  reasoningStage={reasoningStage}
+                  stageProgress={stageProgress}
+                  onIntervene={onIntervene}
                 />
               ))}
               {showClarifyModal && clarificationData && (
@@ -421,6 +440,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               streamingMessageId={streamingMessageId}
               streamingStatus={streamingStatus}
               thinkingContent={thinkingContent}
+              // v4.2.0 新增：分阶段推理 + 用户干预（P1-2 / P1-4 补齐）
+              reasoningStage={reasoningStage}
+              stageProgress={stageProgress}
+              onIntervene={onIntervene}
             />
           ))}
           {showClarifyModal && clarificationData && (
@@ -451,6 +474,19 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
           <div ref={messagesEndRef} />
         </div>
       </main>
+
+      {/* v4.3.0 P2-1 新增：SubAgent workspace 状态面板（AgentChatCard 网格上方） */}
+      {displayAgents.length > 0 && (
+        <div className="border-t border-surface-300 bg-surface-50/40 px-3 md:px-4 py-3 flex-shrink-0">
+          <div className="max-w-3xl mx-auto">
+            <SubAgentWorkspacePanel
+              agents={displayAgents}
+              loading={agentsLoading}
+              onRefresh={onAgentChanged}
+            />
+          </div>
+        </div>
+      )}
 
       {/* AgentChatCard 网格 */}
       {displayAgents.length > 0 && (
@@ -537,6 +573,10 @@ interface MessageRowProps {
   streamingMessageId: string | null;
   streamingStatus: StreamingStatus;
   thinkingContent: string;
+  /** v4.2.0 新增：分阶段推理状态 + 用户干预（P1-2 / P1-4 补齐） */
+  reasoningStage?: ReasoningStage;
+  stageProgress?: number;
+  onIntervene?: () => void;
 }
 
 const MessageRow: React.FC<MessageRowProps> = ({
@@ -545,6 +585,9 @@ const MessageRow: React.FC<MessageRowProps> = ({
   streamingMessageId,
   streamingStatus,
   thinkingContent,
+  reasoningStage = 'idle',
+  stageProgress = 0,
+  onIntervene,
 }) => {
   if (msg.error) {
     return (
@@ -648,6 +691,10 @@ const MessageRow: React.FC<MessageRowProps> = ({
             isStreaming={
               msg.id === streamingMessageId && streamingStatus === 'thinking'
             }
+            // v4.2.0 新增：分阶段推理 + 用户干预（P1-2 / P1-4 补齐）
+            stage={reasoningStage}
+            stageProgress={stageProgress}
+            onIntervene={onIntervene}
           />
         )}
 
