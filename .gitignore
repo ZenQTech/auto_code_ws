@@ -71,3 +71,6 @@ data/knowledge_base/
 *.pem
 *.key
 credentials.json
+
+# ---- Rollout JSONL 测试数据 (不提交) ----
+backend/data/rollouts/

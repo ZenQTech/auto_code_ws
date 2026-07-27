@@ -102,6 +102,8 @@ export interface AppLayoutProps {
   onOpenStreamList: () => void;
   /** v6.19.0 (Cycle 7 P0-8) 新增：打开 OAuth 2.1 + PKCE 配置面板 */
   onOpenOAuthConfig: () => void;
+  /** v6.20.0 (Cycle 7 P0-9) 新增：打开 Session Rollout JSONL 持久化面板 */
+  onOpenSessionRollout: () => void;
 
   // 工具栏
   onModelChange: (id: string) => void;
@@ -197,6 +199,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenCacheStats,
   onOpenStreamList,  // v6.18.0 (Cycle 6 P0-7-B) 透传 BrandHeader
   onOpenOAuthConfig,  // v6.19.0 (Cycle 7 P0-8) 透传 BrandHeader
+  onOpenSessionRollout,  // v6.20.0 (Cycle 7 P0-9) 透传 BrandHeader
   onModelChange,
   onReasoningIntensityChange,
   workflowStatusCurrentStage,
@@ -369,6 +372,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenCacheStats={onOpenCacheStats}
         onOpenStreamList={onOpenStreamList}
         onOpenOAuthConfig={onOpenOAuthConfig}
+        onOpenSessionRollout={onOpenSessionRollout}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

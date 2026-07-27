@@ -22,6 +22,7 @@
  *   - 2026-07-27 | v1.5.0 | Cycle 6 P0-7-A 新增 cacheStats 缓存统计
  *   - 2026-07-27 | v1.6.0 | Cycle 6 P0-7-B 新增 streamList 流式恢复网关
  *   - 2026-07-27 | v1.7.0 | Cycle 7 P0-8 新增 oauthConfig OAuth 2.1 + PKCE 配置
+ *   - 2026-07-27 | v1.8.0 | Cycle 7 P0-9 新增 sessionRollout JSONL 持久化面板
  * ============================================================
  */
 
@@ -85,6 +86,8 @@ export interface UseModalsResult {
   streamList: PanelController;
   /** v1.7.0 (Cycle 7 P0-8) 新增：OAuth 2.1 + PKCE 配置面板 */
   oauthConfig: PanelController;
+  /** v1.8.0 (Cycle 7 P0-9) 新增：Session Rollout JSONL 持久化面板 */
+  sessionRollout: PanelController;
 }
 
 /**
@@ -110,6 +113,7 @@ export function useModals(): UseModalsResult {
   const cacheStats = usePanelController(false);  // v1.5.0 (Cycle 6 P0-7-A) 新增
   const streamList = usePanelController(false);  // v1.6.0 (Cycle 6 P0-7-B) 新增
   const oauthConfig = usePanelController(false);  // v1.7.0 (Cycle 7 P0-8) 新增
+  const sessionRollout = usePanelController(false);  // v1.8.0 (Cycle 7 P0-9) 新增
 
   return {
     settings,
@@ -130,6 +134,7 @@ export function useModals(): UseModalsResult {
     cacheStats,  // v1.5.0 (Cycle 6 P0-7-A) 新增
     streamList,  // v1.6.0 (Cycle 6 P0-7-B) 新增
     oauthConfig,  // v1.7.0 (Cycle 7 P0-8) 新增
+    sessionRollout,  // v1.8.0 (Cycle 7 P0-9) 新增
   };
 }
 

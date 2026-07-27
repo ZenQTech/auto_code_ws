@@ -176,6 +176,7 @@ import CacheStatsPanel from './components/CacheStatsPanel';
 import StreamListPanel from './components/StreamListPanel';
 /** v1.7.0 (Cycle 7 P0-8) 新增：OAuth 2.1 + PKCE 配置弹窗 */
 import OAuthConfigModal from './components/OAuthConfigModal';
+import SessionRolloutPanel from './components/SessionRolloutPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -309,6 +310,7 @@ export default function App() {
     cacheStats: cacheStatsModal,  // v1.5.0 (Cycle 6 P0-7-A) 新增
     streamList: streamListModal,  // v1.6.0 (Cycle 6 P0-7-B) 新增
     oauthConfig: oauthConfigModal,  // v1.7.0 (Cycle 7 P0-8) 新增
+    sessionRollout: sessionRolloutModal,  // v1.8.0 (Cycle 7 P0-9) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -1715,6 +1717,7 @@ export default function App() {
           onOpenCacheStats={() => cacheStatsModal.onOpen()}
           onOpenStreamList={() => streamListModal.onOpen()}
           onOpenOAuthConfig={() => oauthConfigModal.onOpen()}
+          onOpenSessionRollout={() => sessionRolloutModal.onOpen()}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
           onReasoningIntensityChange={(i) => showToast(`推理强度已设为 ${i}`, 'info')}
           workflowStatusCurrentStage={workflowStatus?.current_stage ?? null}
@@ -2013,6 +2016,10 @@ export default function App() {
 
       {oauthConfigModal.open && (
         <OAuthConfigModal onClose={oauthConfigModal.onClose} />
+      )}
+
+      {sessionRolloutModal.open && (
+        <SessionRolloutPanel onClose={sessionRolloutModal.onClose} />
       )}
     </div>
       )}

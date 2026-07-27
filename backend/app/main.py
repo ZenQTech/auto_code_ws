@@ -425,6 +425,17 @@ async def lifespan(app: FastAPI):
     app.state.session_fork_resume_service = session_fork_resume_service
     logger.info("会话 fork/resume 服务已初始化")
 
+    # v5.4.0 (Cycle 7 P0-9) 新增：Session Rollout JSONL 服务初始化
+    from .services.session_rollout_service import SessionRolloutService
+    from pathlib import Path
+    rollout_base = Path(getattr(settings, "data_dir", "data")) / "rollouts"
+    session_rollout_service = SessionRolloutService(
+        session_factory=get_session_factory(),
+        base_dir=str(rollout_base),
+    )
+    app.state.session_rollout_service = session_rollout_service
+    logger.info(f"Session Rollout JSONL 服务已初始化: base_dir={rollout_base}")
+
     # v6.13.0 (Cycle 2 T4) 新增：Skills 插件系统服务初始化
     from .services.skills import SkillService
     skill_service = SkillService(session_factory=get_session_factory())
@@ -758,6 +769,19 @@ app.include_router(oauth_router, tags=["oauth-2.1-pkce"])
 #   - GET    /api/mcp/oauth/stats
 from .api.mcp_oauth_admin import router as mcp_oauth_admin_router
 app.include_router(mcp_oauth_admin_router, prefix="/api", tags=["mcp-oauth-admin"])
+
+# v5.4.0 (Cycle 7 P0-9) 新增：注册 Session Rollout JSONL API 路由
+#   - GET    /api/sessions/{id}/rollout        分页查询 rollout
+#   - GET    /api/sessions/{id}/rollout/info   rollout 状态信息
+#   - GET    /api/sessions/{id}/rollout/turn/{tid}  turn 上下文
+#   - POST   /api/sessions/{id}/fork-turn      基于 beforeTurnId 分叉（Codex v0.145.0）
+#   - GET    /api/sessions/{id}/export         导出 JSONL
+#   - POST   /api/sessions/{id}/import         导入 JSONL
+#   - DELETE /api/sessions/{id}/rollout        删除 rollout
+#   - POST   /api/sessions/{id}/rollout/turn   记录用户 turn
+#   - POST   /api/sessions/{id}/rollout/response  记录 AI response
+from .api.session_rollout import router as session_rollout_router
+app.include_router(session_rollout_router, prefix="/api", tags=["session-rollout"])
 
 # 注册全局异常处理器
 app.add_exception_handler(Exception, global_exception_handler)

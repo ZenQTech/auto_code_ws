@@ -91,6 +91,8 @@ export interface BrandHeaderProps {
   onOpenStreamList?: () => void;
   /** v2.6.0 (Cycle 7 P0-8) 新增：打开 OAuth 2.1 + PKCE 配置面板回调（可选） */
   onOpenOAuthConfig?: () => void;
+  /** v2.7.0 (Cycle 7 P0-9) 新增：打开 Session Rollout JSONL 持久化面板回调（可选） */
+  onOpenSessionRollout?: () => void;
 }
 
 /**
@@ -100,7 +102,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -265,6 +267,17 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M12 17.5v2.5" />
         </svg>
       );
+    case 'rollout':
+      // v2.7.0 (Cycle 7 P0-9) 新增：Session Rollout JSONL（卷轴+播放）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M4 5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" />
+          <line x1="8" y1="8" x2="16" y2="8" />
+          <line x1="8" y1="12" x2="16" y2="12" />
+          <line x1="8" y1="16" x2="13" y2="16" />
+          <path d="M16 18l2-1.5L16 15" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -307,6 +320,8 @@ export default function BrandHeader({
   onOpenStreamList,
   /** v2.6.0 (Cycle 7 P0-8) 新增 */
   onOpenOAuthConfig,
+  /** v2.7.0 (Cycle 7 P0-9) 新增 */
+  onOpenSessionRollout,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -713,6 +728,23 @@ export default function BrandHeader({
                 >
                   <Icon name="oauth" className="w-4 h-4 text-indigo-500" />
                   <span>🔐 OAuth 2.1 + PKCE</span>
+                </button>
+              )}
+
+              {/* v2.7.0 (Cycle 7 P0-9) 新增：Session Rollout JSONL（菜单项）
+               *  行为：点击调 onOpenSessionRollout() 弹出 SessionRolloutPanel
+               *       实现 Codex v0.136+ thread/fork JSONL 持久化格式
+               *  图标：rollout（卷轴+播放），强调持久化 + 历史回放 */}
+              {onOpenSessionRollout && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSessionRollout)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-blue-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="rollout" className="w-4 h-4 text-blue-500" />
+                  <span>📜 Session Rollout JSONL</span>
                 </button>
               )}
 
