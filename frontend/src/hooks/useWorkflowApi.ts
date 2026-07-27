@@ -398,3 +398,177 @@ export async function confirmPlan(
   });
 }
 
+// ============================================================
+// v6.14.0 (Cycle 4 P0-3) 新增：Plan Mode 模式 API
+// 完整链路：Plan → Execute → Rollback
+// ============================================================
+
+/** Plan 风险点 */
+export interface PlanRisk {
+  risk_id: string;
+  description: string;
+  severity: 'low' | 'medium' | 'high' | 'extreme';
+  mitigation: string;
+}
+
+/** Plan 单个任务 */
+export interface PlanTask {
+  task_id: string;
+  title: string;
+  description: string;
+  stage: string;
+  estimated_minutes: number;
+  risk_level: 'low' | 'medium' | 'high' | 'extreme';
+  files_involved: string[];
+  dependencies: string[];
+  acceptance_criteria: string;
+}
+
+/** Plan 单个阶段 */
+export interface PlanStage {
+  stage: string;
+  tasks: PlanTask[];
+  risks: PlanRisk[];
+  alternatives: string[];
+}
+
+/** 完整 Plan 文档 */
+export interface PlanDocument {
+  plan_id: string;
+  workflow_id: string;
+  objective: string;
+  stages: PlanStage[];
+  generated_at: string;
+  status: 'pending' | 'confirmed' | 'modified' | 'rejected';
+  user_modifications: string;
+  total_estimated_minutes: number;
+}
+
+/** Plan 生成请求参数 */
+export interface PlanGenerateParams {
+  workflowId: string;
+  objective?: string;
+  specDoc?: string;
+  architectureDoc?: string;
+}
+
+/** Plan 操作通用响应 */
+export interface PlanOperationResponse {
+  success: boolean;
+  plan: PlanDocument | null;
+  message: string;
+}
+
+/**
+ * 生成 Plan
+ * 作用：调用 POST /api/workflow/{workflow_id}/plan/generate
+ *      让 LLM 根据 spec/architecture 生成结构化 Plan
+ * 参数：
+ *   - params: { workflowId, objective?, specDoc?, architectureDoc? }
+ * 返回值：PlanOperationResponse，含 PlanDocument
+ */
+export async function generatePlan(
+  params: PlanGenerateParams
+): Promise<PlanOperationResponse> {
+  return apiFetch<PlanOperationResponse>(
+    `/workflow/${params.workflowId}/plan/generate`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        objective: params.objective || '',
+        spec_doc: params.specDoc || '',
+        architecture_doc: params.architectureDoc || '',
+      }),
+    }
+  );
+}
+
+/**
+ * 获取当前工作流的 Plan
+ * 作用：调用 GET /api/workflow/{workflow_id}/plan
+ *      从数据库恢复 Plan（用于 reload workflow 后展示）
+ * 参数：
+ *   - workflowId: string
+ * 返回值：PlanOperationResponse，plan 可能为 null（未生成时）
+ */
+export async function getPlan(workflowId: string): Promise<PlanOperationResponse> {
+  return apiFetch<PlanOperationResponse>(`/workflow/${workflowId}/plan`, {
+    method: 'GET',
+  });
+}
+
+/**
+ * 确认 Plan
+ * 作用：调用 POST /api/workflow/{workflow_id}/plan/confirm
+ *      用户确认后，plan_confirmed=True 推进到执行阶段
+ * 参数：
+ *   - workflowId: string
+ *   - planId: string
+ *   - userModifications?: string
+ * 返回值：PlanOperationResponse
+ */
+export async function confirmPlanApi(
+  workflowId: string,
+  planId: string,
+  userModifications: string = ''
+): Promise<PlanOperationResponse> {
+  return apiFetch<PlanOperationResponse>(
+    `/workflow/${workflowId}/plan/confirm`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        plan_id: planId,
+        user_modifications: userModifications,
+      }),
+    }
+  );
+}
+
+/**
+ * 修改 Plan
+ * 作用：调用 POST /api/workflow/{workflow_id}/plan/modify
+ *      用户可增删任务/阶段、调整顺序、修改内容
+ * 参数：
+ *   - workflowId: string
+ *   - plan: PlanDocument（修改后的）
+ *   - userModifications?: string
+ * 返回值：PlanOperationResponse
+ */
+export async function modifyPlanApi(
+  workflowId: string,
+  plan: PlanDocument,
+  userModifications: string = ''
+): Promise<PlanOperationResponse> {
+  return apiFetch<PlanOperationResponse>(
+    `/workflow/${workflowId}/plan/modify`,
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        plan: plan,
+        user_modifications: userModifications,
+      }),
+    }
+  );
+}
+
+/**
+ * 拒绝 Plan（触发重新生成）
+ * 作用：调用 POST /api/workflow/{workflow_id}/plan/reject
+ * 参数：
+ *   - workflowId: string
+ *   - reason: string
+ * 返回值：PlanOperationResponse
+ */
+export async function rejectPlanApi(
+  workflowId: string,
+  reason: string = ''
+): Promise<PlanOperationResponse> {
+  return apiFetch<PlanOperationResponse>(
+    `/workflow/${workflowId}/plan/reject`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    }
+  );
+}
+

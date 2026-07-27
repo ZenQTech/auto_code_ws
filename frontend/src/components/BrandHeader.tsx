@@ -77,6 +77,8 @@ export interface BrandHeaderProps {
   onOpenDualCompaction?: () => void;
   /** Cycle 3 v1.0.0 新增：打开多类型规则扫描面板回调（可选） */
   onOpenRules?: () => void;
+  /** v2.0.0 (Cycle 4 P0-3) 新增：打开 Plan 编辑器面板回调（可选） */
+  onOpenPlanEditor?: () => void;
 }
 
 /**
@@ -86,7 +88,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -207,6 +209,15 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M9 1v3M15 1v3M9 20v3M15 20v3M20 9h3M20 14h3M1 9h3M1 14h3" />
         </svg>
       );
+    case 'plan':
+      // v2.0.0 (Cycle 4 P0-3) 新增：Plan - 计划编辑（清单+复选框感）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+          <path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -235,6 +246,8 @@ export default function BrandHeader({
   onOpenCycle3,
   onOpenDualCompaction,
   onOpenRules,
+  /** v2.0.0 (Cycle 4 P0-3) 新增 */
+  onOpenPlanEditor,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -524,6 +537,30 @@ export default function BrandHeader({
                 >
                   <Icon name="cpu" className="w-4 h-4 text-teal-500" />
                   <span>📜 多类型规则扫描</span>
+                </button>
+              )}
+
+              {/* v2.0.0 (Cycle 4 P0-3) 新增：分组标题 - Cycle 4 计划模式 */}
+              {onOpenPlanEditor && (
+                <div className="px-4 pt-2 pb-1 text-[10px] uppercase tracking-wider text-surface-400 font-medium border-t border-surface-100 mt-1">
+                  Cycle 4 新功能
+                </div>
+              )}
+
+              {/* v2.0.0 (Cycle 4 P0-3) 新增：Plan 编辑器（菜单项）
+               *  行为：点击调 onOpenPlanEditor() 弹出 PlanEditorModal
+               *       Plan → Execute → Rollback 完整链路
+               *  图标：plan（清单+复选框），强调计划编辑+风险点+回滚 */}
+              {onOpenPlanEditor && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenPlanEditor)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-purple-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="plan" className="w-4 h-4 text-purple-500" />
+                  <span>📋 Plan 编辑器</span>
                 </button>
               )}
 

@@ -6,14 +6,14 @@
  * 包含：
  *   1. BrandHeader（豆包风格极简顶栏）
  *   2. Codex 风格工具栏（ModelSelector + ReasoningIntensitySelector + 斜杠命令提示 + 文件路径）
- *   3. ChatMainArea（消息流 + 浮动输入区 + 流式状态指示器）
+ *   3. ChatView（消息流 + 浮动输入区 + 流式状态指示器）
  *   4. 编程模式垂直分屏（CodeViewer 上 + 紧凑聊天区下）
  *   5. 子 CLI 实例状态网格（AgentChatCard）
  *   6. Loop Engineering 状态展示（ReviewReport + PipelineProgress + GoalProgress）
  *   7. 模态弹窗（ClarificationModal + ArchitectureDesignModal）
  *   8. 底部固定输入区（玻璃拟态）
  * 抽取日期：2026-07-27
- * 模块版本：v6.10.0 - P0-2 App.tsx 拆分第四阶段
+ * 模块版本：v6.12.0 - P0-2 App.tsx 拆分第六阶段
  * 修改记录：
  *   - 2026-07-27 | v6.10.0 | 从 App.tsx 抽离主对话舞台布局（BrandHeader+Toolbar+
  *     ChatMainArea+Modals+CodeViewer+AgentGrid+固定输入区）
@@ -22,28 +22,22 @@
  *   - 2026-07-27 | v6.11.0 | P2-1 补齐 SubAgent workspace 前端展示：
  *     在 AgentChatCard 网格上方插入 SubAgentWorkspacePanel，
  *     展示各 SubAgent 的分支名/模块名/进度/文件数/提交数
+ *   - 2026-07-27 | v6.12.0 | P0-2 拆分第六阶段：内联消息渲染 + MessageRow 抽离到 ChatView 组件
  * ============================================================
  */
 
 import React from 'react';
 import BrandHeader from './BrandHeader';
-import WelcomeState from './WelcomeState';
-import MessageBubble from './MessageBubble';
-import ThinkingBlock from './ThinkingBlock';
-import type { ReasoningStage } from './ThinkingBlock';
-import ClarificationProgress from './ClarificationProgress';
-import ClarificationModal from './ClarificationModal';
-import ArchitectureDesignModal from './ArchitectureDesignModal';
-import ReviewReport from './ReviewReport';
-import PipelineProgress from './PipelineProgress';
-import GoalProgress from './GoalProgress';
 import CodeViewer from './CodeViewer';
 import AgentChatCard from './AgentChatCard';
 /** v4.3.0 P2-1 新增：SubAgent workspace 前端展示面板 */
 import SubAgentWorkspacePanel from './SubAgentWorkspacePanel';
+/** v4.4.0 P0-2 新增：聊天视图组件（从本文件抽离） */
+import ChatView from './ChatView';
 import ModelSelector from './ModelSelector';
 import ReasoningIntensitySelector from './ReasoningIntensitySelector';
 import type { StreamingStatus } from './ChatMainArea';
+import type { ReasoningStage } from './ThinkingBlock';
 import type { Agent, ReviewData, PipelineData, GoalData } from '../types';
 import type { ChatMessage } from '../utils/messageFormatters';
 
@@ -94,6 +88,8 @@ export interface AppLayoutProps {
   onOpenDualCompaction: () => void;
   /** Cycle 3 v1.0.0 新增：打开多类型规则扫描面板 */
   onOpenRules: () => void;
+  /** v6.13.0 (Cycle 4 P0-3) 新增：打开 Plan 编辑器面板 */
+  onOpenPlanEditor: () => void;
 
   // 工具栏
   onModelChange: (id: string) => void;
@@ -182,6 +178,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenCycle3,
   onOpenDualCompaction,
   onOpenRules,
+  onOpenPlanEditor,
   onModelChange,
   onReasoningIntensityChange,
   workflowStatusCurrentStage,
@@ -252,72 +249,37 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
               项目：{selectedProject}
             </span>
           </div>
-          {/* 紧凑消息区 */}
-          <div className="flex-1 overflow-y-auto px-3 py-2">
-            {workflowStatusCurrentStage === 'clarifying' && (
-              <ClarificationProgress
-                roundNumber={clarificationData?.roundNumber || 1}
-                maxRounds={clarificationData?.maxRounds || 5}
-                isComplete={clarificationData?.isComplete || false}
-              />
-            )}
-            {reviewData && <ReviewReport reviewData={reviewData} />}
-            {pipelineData && <PipelineProgress pipelineData={pipelineData} />}
-            {goalData && <GoalProgress goalData={goalData} />}
-            <div className="space-y-3">
-              {messages.length === 0 && !detailLoading && (
-                <div className="text-xs text-surface-500 text-center py-4">
-                  输入消息开始对话
-                </div>
-              )}
-              {detailLoading && messages.length === 0 && (
-                <div className="space-y-2">
-                  <div className="skeleton h-10 w-3/4 rounded-lg" />
-                  <div className="skeleton h-10 w-2/3 ml-auto" />
-                </div>
-              )}
-              {messages.map((msg) => (
-                <MessageRow
-                  key={msg.id}
-                  msg={msg}
-                  lastMessageIdRef={lastMessageIdRef}
-                  streamingMessageId={streamingMessageId}
-                  streamingStatus={streamingStatus}
-                  thinkingContent={thinkingContent}
-                  // v4.2.0 新增：分阶段推理 + 用户干预（P1-2 / P1-4 补齐）
-                  reasoningStage={reasoningStage}
-                  stageProgress={stageProgress}
-                  onIntervene={onIntervene}
-                />
-              ))}
-              {showClarifyModal && clarificationData && (
-                <ClarificationModal
-                  key={clarificationData.roundNumber}
-                  summary={clarificationData.summary}
-                  questions={clarificationData.questions}
-                  roundNumber={clarificationData.roundNumber}
-                  maxRounds={clarificationData.maxRounds}
-                  isComplete={clarificationData.isComplete}
-                  workflowId={workflowIdRef.current || sessionDetailWorkflowId || workflowStatusWorkflowId || undefined}
-                  onSubmit={onSubmitClarification}
-                  onConfirm={onConfirmClarification}
-                  onContinueAdd={onContinueAddClarification}
-                />
-              )}
-              {showDesignModal && (
-                <ArchitectureDesignModal
-                  requirementV2={designModalData?.requirementV2 || ''}
-                  critiqueResult={designModalData?.critiqueResult || null}
-                  isLoading={isDesignLoading}
-                  iterationCount={designModalData?.iterationCount || 1}
-                  maxIterations={designModalData?.maxIterations || 3}
-                  onConfirm={onConfirmDesign}
-                  onReject={onRejectDesign}
-                />
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          </div>
+          {/* 紧凑消息区 - v6.12.0 P0-2: 抽离到 ChatView 组件 */}
+          <ChatView
+            mode="compact"
+            messages={messages}
+            detailLoading={detailLoading}
+            streamingStatus={streamingStatus}
+            streamingMessageId={streamingMessageId}
+            thinkingContent={thinkingContent}
+            isSending={isSending}
+            workflowStatusCurrentStage={workflowStatusCurrentStage}
+            clarificationData={clarificationData}
+            reviewData={reviewData}
+            pipelineData={pipelineData}
+            goalData={goalData}
+            reasoningStage={reasoningStage}
+            stageProgress={stageProgress}
+            onIntervene={onIntervene}
+            showClarifyModal={showClarifyModal}
+            showDesignModal={showDesignModal}
+            designModalData={designModalData}
+            isDesignLoading={isDesignLoading}
+            workflowId={workflowIdRef.current || sessionDetailWorkflowId || workflowStatusWorkflowId || undefined}
+            onSubmitClarification={onSubmitClarification}
+            onConfirmClarification={onConfirmClarification}
+            onContinueAddClarification={onContinueAddClarification}
+            onConfirmDesign={onConfirmDesign}
+            onRejectDesign={onRejectDesign}
+            onSelectWelcomePrompt={onSelectWelcomePrompt}
+            messagesEndRef={messagesEndRef}
+            lastMessageIdRef={lastMessageIdRef}
+          />
           {/* 紧凑输入区 */}
           <div className="flex-shrink-0 px-3 pb-2 pt-1 border-t border-surface-300/30">
             <div className="flex items-end gap-2">
@@ -382,6 +344,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenCycle3={onOpenCycle3}
         onOpenDualCompaction={onOpenDualCompaction}
         onOpenRules={onOpenRules}
+        onOpenPlanEditor={onOpenPlanEditor}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}
@@ -409,71 +372,37 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         </div>
       </div>
 
-      {/* 主消息区 */}
-      <main className="flex-1 overflow-y-auto px-3 md:px-4 py-6">
-        <div className="max-w-3xl mx-auto space-y-4">
-          {workflowStatusCurrentStage === 'clarifying' && (
-            <ClarificationProgress
-              roundNumber={clarificationData?.roundNumber || 1}
-              maxRounds={clarificationData?.maxRounds || 5}
-              isComplete={clarificationData?.isComplete || false}
-            />
-          )}
-          {reviewData && <ReviewReport reviewData={reviewData} />}
-          {pipelineData && <PipelineProgress pipelineData={pipelineData} />}
-          {goalData && <GoalProgress goalData={goalData} />}
-          {messages.length === 0 && !detailLoading && (
-            <WelcomeState onSelectPrompt={onSelectWelcomePrompt} />
-          )}
-          {detailLoading && messages.length === 0 && (
-            <div className="space-y-3">
-              <div className="skeleton h-16 w-3/4" />
-              <div className="skeleton h-16 w-2/3 ml-auto" />
-              <div className="skeleton h-16 w-4/5" />
-            </div>
-          )}
-          {messages.map((msg) => (
-            <MessageRow
-              key={msg.id}
-              msg={msg}
-              lastMessageIdRef={lastMessageIdRef}
-              streamingMessageId={streamingMessageId}
-              streamingStatus={streamingStatus}
-              thinkingContent={thinkingContent}
-              // v4.2.0 新增：分阶段推理 + 用户干预（P1-2 / P1-4 补齐）
-              reasoningStage={reasoningStage}
-              stageProgress={stageProgress}
-              onIntervene={onIntervene}
-            />
-          ))}
-          {showClarifyModal && clarificationData && (
-            <ClarificationModal
-              key={clarificationData.roundNumber}
-              summary={clarificationData.summary}
-              questions={clarificationData.questions}
-              roundNumber={clarificationData.roundNumber}
-              maxRounds={clarificationData.maxRounds}
-              isComplete={clarificationData.isComplete}
-              workflowId={workflowIdRef.current || sessionDetailWorkflowId || workflowStatusWorkflowId || undefined}
-              onSubmit={onSubmitClarification}
-              onConfirm={onConfirmClarification}
-              onContinueAdd={onContinueAddClarification}
-            />
-          )}
-          {showDesignModal && (
-            <ArchitectureDesignModal
-              requirementV2={designModalData?.requirementV2 || ''}
-              critiqueResult={designModalData?.critiqueResult || null}
-              isLoading={isDesignLoading}
-              iterationCount={designModalData?.iterationCount || 1}
-              maxIterations={designModalData?.maxIterations || 3}
-              onConfirm={onConfirmDesign}
-              onReject={onRejectDesign}
-            />
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-      </main>
+      {/* 主消息区 - v6.12.0 P0-2: 抽离到 ChatView 组件 */}
+      <ChatView
+        mode="normal"
+        messages={messages}
+        detailLoading={detailLoading}
+        streamingStatus={streamingStatus}
+        streamingMessageId={streamingMessageId}
+        thinkingContent={thinkingContent}
+        isSending={isSending}
+        workflowStatusCurrentStage={workflowStatusCurrentStage}
+        clarificationData={clarificationData}
+        reviewData={reviewData}
+        pipelineData={pipelineData}
+        goalData={goalData}
+        reasoningStage={reasoningStage}
+        stageProgress={stageProgress}
+        onIntervene={onIntervene}
+        showClarifyModal={showClarifyModal}
+        showDesignModal={showDesignModal}
+        designModalData={designModalData}
+        isDesignLoading={isDesignLoading}
+        workflowId={workflowIdRef.current || sessionDetailWorkflowId || workflowStatusWorkflowId || undefined}
+        onSubmitClarification={onSubmitClarification}
+        onConfirmClarification={onConfirmClarification}
+        onContinueAddClarification={onContinueAddClarification}
+        onConfirmDesign={onConfirmDesign}
+        onRejectDesign={onRejectDesign}
+        onSelectWelcomePrompt={onSelectWelcomePrompt}
+        messagesEndRef={messagesEndRef}
+        lastMessageIdRef={lastMessageIdRef}
+      />
 
       {/* v4.3.0 P2-1 新增：SubAgent workspace 状态面板（AgentChatCard 网格上方） */}
       {displayAgents.length > 0 && (
@@ -565,184 +494,8 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 };
 
 // ============================================================
-// MessageRow - 单条消息行（含 Hermes 头像 + 气泡 + 状态指示器）
+// MessageRow 已抽离到 ChatView 组件（v6.12.0 P0-2 拆分第六阶段）
+// 如需修改消息渲染，请编辑 ./ChatView.tsx
 // ============================================================
-interface MessageRowProps {
-  msg: ChatMessage;
-  lastMessageIdRef: React.MutableRefObject<string | null>;
-  streamingMessageId: string | null;
-  streamingStatus: StreamingStatus;
-  thinkingContent: string;
-  /** v4.2.0 新增：分阶段推理状态 + 用户干预（P1-2 / P1-4 补齐） */
-  reasoningStage?: ReasoningStage;
-  stageProgress?: number;
-  onIntervene?: () => void;
-}
-
-const MessageRow: React.FC<MessageRowProps> = ({
-  msg,
-  lastMessageIdRef,
-  streamingMessageId,
-  streamingStatus,
-  thinkingContent,
-  reasoningStage = 'idle',
-  stageProgress = 0,
-  onIntervene,
-}) => {
-  if (msg.error) {
-    return (
-      <div className="animate-msg-enter">
-        <MessageBubble role="assistant" content="" error={msg.error} />
-      </div>
-    );
-  }
-
-  return (
-    <div
-      className={`flex animate-msg-enter ${
-        msg.id === lastMessageIdRef.current ? 'msg-breath' : ''
-      } ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
-    >
-      {msg.role === 'hermes' && (
-        <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-hermes-500 to-hermes-600 flex items-center justify-center flex-shrink-0 mr-3 mt-1 shadow-md shadow-hermes-900/20">
-          <svg
-            className="w-4 h-4 text-white"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M13 10V3L4 14h7v7l9-11h-7z"
-            />
-          </svg>
-        </div>
-      )}
-      <div
-        className={`max-w-[85%] md:max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
-          msg.role === 'user'
-            ? 'bg-hermes-500 text-white rounded-br-md'
-            : 'bg-surface-200 text-surface-900 rounded-bl-md border border-surface-400/50'
-        }`}
-      >
-        {/* 状态指示器（仅流式消息） */}
-        {msg.role === 'hermes' && msg.id === streamingMessageId && streamingStatus && (
-          <div className="flex items-center gap-2 mb-2 pb-2 border-b border-surface-400/30">
-            {streamingStatus === 'thinking' && (
-              <>
-                <svg
-                  className="animate-spin w-3.5 h-3.5 text-hermes-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  />
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                  />
-                </svg>
-                <span className="text-xs text-hermes-400 font-medium">思考中...</span>
-              </>
-            )}
-            {streamingStatus === 'answering' && (
-              <>
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-hermes-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-hermes-500" />
-                </span>
-                <span className="text-xs text-hermes-400 font-medium">回答中...</span>
-              </>
-            )}
-            {streamingStatus === 'done' && (
-              <>
-                <svg
-                  className="w-3.5 h-3.5 text-emerald-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2.5}
-                    d="M5 13l4 4L19 7"
-                  />
-                </svg>
-                <span className="text-xs text-emerald-400 font-medium">回答完成</span>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* 思考过程折叠块 */}
-        {(msg.id === streamingMessageId || msg.thinking) && (
-          <ThinkingBlock
-            content={msg.id === streamingMessageId ? thinkingContent : msg.thinking || ''}
-            isStreaming={
-              msg.id === streamingMessageId && streamingStatus === 'thinking'
-            }
-            // v4.2.0 新增：分阶段推理 + 用户干预（P1-2 / P1-4 补齐）
-            stage={reasoningStage}
-            stageProgress={stageProgress}
-            onIntervene={onIntervene}
-          />
-        )}
-
-        {/* 消息正文 */}
-        {msg.content && (
-          <div className="whitespace-pre-wrap break-words">
-            {msg.content}
-            {msg.role === 'hermes' &&
-              msg.id === streamingMessageId &&
-              streamingStatus === 'answering' && (
-                <span className="inline-block w-0.5 h-4 bg-hermes-400 ml-0.5 align-text-bottom animate-pulse" />
-              )}
-          </div>
-        )}
-
-        {/* 空内容占位 */}
-        {!msg.content &&
-          msg.role === 'hermes' &&
-          msg.id === streamingMessageId &&
-          streamingStatus === 'thinking' && (
-            <div className="text-surface-500 italic text-xs">等待回复中...</div>
-          )}
-
-        <div
-          className={`text-xs mt-1.5 ${
-            msg.role === 'user' ? 'text-hermes-200' : 'text-surface-600'
-          }`}
-        >
-          {new Date(msg.timestamp).toLocaleTimeString()}
-        </div>
-      </div>
-      {msg.role === 'user' && (
-        <div className="w-8 h-8 rounded-full bg-surface-400 flex items-center justify-center flex-shrink-0 ml-3 mt-1">
-          <svg
-            className="w-4 h-4 text-surface-800"
-            fill="currentColor"
-            viewBox="0 0 20 20"
-          >
-            <path
-              fillRule="evenodd"
-              d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-              clipRule="evenodd"
-            />
-          </svg>
-        </div>
-      )}
-    </div>
-  );
-};
 
 export default AppLayout;

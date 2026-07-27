@@ -162,6 +162,8 @@ import Cycle3Panel from './components/Cycle3Panel';
 import DualCompactionPanel from './components/DualCompactionPanel';
 /** Cycle 3 v1.0.0 新增：多类型规则扫描面板 */
 import RulesPanel from './components/RulesPanel';
+/** v6.13.0 (Cycle 4 P0-3) 新增：Plan 编辑器模态弹窗 */
+import PlanEditorModal from './components/PlanEditorModal';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -288,6 +290,7 @@ export default function App() {
     usage: usageModal,
     fileExplorer: fileExplorerModal,
     loopV7: loopV7Modal,
+    planEditor: planEditorModal,
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -332,6 +335,10 @@ export default function App() {
   const showLoopV7Runner = loopV7Modal.open;
   const setShowLoopV7Runner = loopV7Modal.onOpen;
   const closeLoopV7Runner = loopV7Modal.onClose;
+  /** v6.13.0 (Cycle 4 P0-3) 别名：Plan 编辑器弹窗 */
+  const planEditorOpen = planEditorModal.open;
+  const setPlanEditorOpen = planEditorModal.onOpen;
+  const closePlanEditor = planEditorModal.onClose;
 
   /** 消息列表容器引用，用于自动滚动到底部 */
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -1675,6 +1682,7 @@ export default function App() {
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
+          onOpenPlanEditor={setPlanEditorOpen}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
           onReasoningIntensityChange={(i) => showToast(`推理强度已设为 ${i}`, 'info')}
           workflowStatusCurrentStage={workflowStatus?.current_stage ?? null}
@@ -1923,6 +1931,19 @@ export default function App() {
         >
           <RulesPanel onClose={closeRulesPanel} />
         </Cycle3Modal>
+      )}
+
+      {/* v6.13.0 (Cycle 4 P0-3) 新增：Plan 编辑器 - Plan→Execute→Rollback 完整链路 */}
+      {planEditorOpen && workflowIdRef.current && (
+        <PlanEditorModal
+          workflowId={workflowIdRef.current}
+          visible={planEditorOpen}
+          onConfirm={async () => {
+            showToast('✓ Plan 已确认，推进到执行阶段', 'success');
+            closePlanEditor();
+          }}
+          onClose={closePlanEditor}
+        />
       )}
     </div>
       )}
