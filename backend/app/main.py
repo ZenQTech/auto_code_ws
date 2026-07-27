@@ -745,6 +745,20 @@ app.include_router(cache_router, tags=["llm-cache"])
 from .api.streaming import router as streaming_router
 app.include_router(streaming_router, tags=["streaming-buffer"])
 
+# v5.3.0 (Cycle 7 P0-8) 新增：注册 OAuth 2.1 + PKCE API 路由（MCP 授权规范）
+#   - GET  /.well-known/oauth-authorization-server
+#   - POST /oauth/register / /oauth/token / /oauth/revoke
+#   - GET  /oauth/authorize
+from .api.oauth import router as oauth_router
+app.include_router(oauth_router, tags=["oauth-2.1-pkce"])
+
+# v5.3.0 (Cycle 7 P0-8) 新增：注册 MCP OAuth 管理 API 路由
+#   - GET    /api/mcp/oauth/clients
+#   - DELETE /api/mcp/oauth/clients/{id}
+#   - GET    /api/mcp/oauth/stats
+from .api.mcp_oauth_admin import router as mcp_oauth_admin_router
+app.include_router(mcp_oauth_admin_router, prefix="/api", tags=["mcp-oauth-admin"])
+
 # 注册全局异常处理器
 app.add_exception_handler(Exception, global_exception_handler)
 

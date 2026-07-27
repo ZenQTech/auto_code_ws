@@ -10,7 +10,7 @@
  * 输入参数：无
  * 输出结果：{ settings, mcp, compaction, skills, agentsMd, cycle3,
  *           dualCompaction, rules, usage, fileExplorer, loopV7,
- *           planEditor, hooks, subagentMemory, hookChain, cacheStats, streamList }
+ *           planEditor, hooks, subagentMemory, hookChain, cacheStats, streamList, oauthConfig }
  *           每个含 { open, onOpen, onClose, onToggle }
  * 修改记录：
  *   - 2026-07-27 | v1.0.0 | P0-2 App.tsx 拆分第五阶段：从 App.tsx 抽离
@@ -21,6 +21,7 @@
  *   - 2026-07-27 | v1.4.0 | Cycle 5 P0-6 新增 hookChain 链路查看器
  *   - 2026-07-27 | v1.5.0 | Cycle 6 P0-7-A 新增 cacheStats 缓存统计
  *   - 2026-07-27 | v1.6.0 | Cycle 6 P0-7-B 新增 streamList 流式恢复网关
+ *   - 2026-07-27 | v1.7.0 | Cycle 7 P0-8 新增 oauthConfig OAuth 2.1 + PKCE 配置
  * ============================================================
  */
 
@@ -82,6 +83,8 @@ export interface UseModalsResult {
   cacheStats: PanelController;
   /** v1.6.0 (Cycle 6 P0-7-B) 新增：流式恢复网关面板 */
   streamList: PanelController;
+  /** v1.7.0 (Cycle 7 P0-8) 新增：OAuth 2.1 + PKCE 配置面板 */
+  oauthConfig: PanelController;
 }
 
 /**
@@ -106,6 +109,7 @@ export function useModals(): UseModalsResult {
   const hookChain = usePanelController(false);  // v1.4.0 (Cycle 5 P0-6) 新增
   const cacheStats = usePanelController(false);  // v1.5.0 (Cycle 6 P0-7-A) 新增
   const streamList = usePanelController(false);  // v1.6.0 (Cycle 6 P0-7-B) 新增
+  const oauthConfig = usePanelController(false);  // v1.7.0 (Cycle 7 P0-8) 新增
 
   return {
     settings,
@@ -125,6 +129,7 @@ export function useModals(): UseModalsResult {
     hookChain,  // v1.4.0 (Cycle 5 P0-6) 新增
     cacheStats,  // v1.5.0 (Cycle 6 P0-7-A) 新增
     streamList,  // v1.6.0 (Cycle 6 P0-7-B) 新增
+    oauthConfig,  // v1.7.0 (Cycle 7 P0-8) 新增
   };
 }
 

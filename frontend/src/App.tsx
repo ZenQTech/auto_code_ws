@@ -174,6 +174,8 @@ import HookChainViewer from './components/HookChainViewer';
 import CacheStatsPanel from './components/CacheStatsPanel';
 /** v1.6.0 (Cycle 6 P0-7-B) 新增：流式恢复网关管理面板 */
 import StreamListPanel from './components/StreamListPanel';
+/** v1.7.0 (Cycle 7 P0-8) 新增：OAuth 2.1 + PKCE 配置弹窗 */
+import OAuthConfigModal from './components/OAuthConfigModal';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -306,6 +308,7 @@ export default function App() {
     hookChain: hookChainModal,  // v1.4.0 (Cycle 5 P0-6) 新增
     cacheStats: cacheStatsModal,  // v1.5.0 (Cycle 6 P0-7-A) 新增
     streamList: streamListModal,  // v1.6.0 (Cycle 6 P0-7-B) 新增
+    oauthConfig: oauthConfigModal,  // v1.7.0 (Cycle 7 P0-8) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -1711,6 +1714,7 @@ export default function App() {
           onOpenHookChain={() => hookChainModal.onOpen()}
           onOpenCacheStats={() => cacheStatsModal.onOpen()}
           onOpenStreamList={() => streamListModal.onOpen()}
+          onOpenOAuthConfig={() => oauthConfigModal.onOpen()}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
           onReasoningIntensityChange={(i) => showToast(`推理强度已设为 ${i}`, 'info')}
           workflowStatusCurrentStage={workflowStatus?.current_stage ?? null}
@@ -2005,6 +2009,10 @@ export default function App() {
         <Cycle3Modal onClose={streamListModal.onClose} maxWidth="max-w-6xl">
           <StreamListPanel onClose={streamListModal.onClose} />
         </Cycle3Modal>
+      )}
+
+      {oauthConfigModal.open && (
+        <OAuthConfigModal onClose={oauthConfigModal.onClose} />
       )}
     </div>
       )}

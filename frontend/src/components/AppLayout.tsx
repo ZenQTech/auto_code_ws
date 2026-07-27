@@ -100,6 +100,8 @@ export interface AppLayoutProps {
   onOpenCacheStats: () => void;
   /** v6.18.0 (Cycle 6 P0-7-B) 新增：打开流式恢复网关面板 */
   onOpenStreamList: () => void;
+  /** v6.19.0 (Cycle 7 P0-8) 新增：打开 OAuth 2.1 + PKCE 配置面板 */
+  onOpenOAuthConfig: () => void;
 
   // 工具栏
   onModelChange: (id: string) => void;
@@ -194,6 +196,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenHookChain,
   onOpenCacheStats,
   onOpenStreamList,  // v6.18.0 (Cycle 6 P0-7-B) 透传 BrandHeader
+  onOpenOAuthConfig,  // v6.19.0 (Cycle 7 P0-8) 透传 BrandHeader
   onModelChange,
   onReasoningIntensityChange,
   workflowStatusCurrentStage,
@@ -365,6 +368,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenHookChain={onOpenHookChain}
         onOpenCacheStats={onOpenCacheStats}
         onOpenStreamList={onOpenStreamList}
+        onOpenOAuthConfig={onOpenOAuthConfig}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

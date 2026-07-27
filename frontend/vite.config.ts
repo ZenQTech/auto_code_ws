@@ -11,6 +11,11 @@ export default defineConfig({
         target: 'ws://localhost:8000',
         ws: true,
       },
+      // v5.3.0 (Cycle 7 P0-8) 新增：OAuth 2.1 + PKCE 端点代理
+      //   - /.well-known/oauth-authorization-server (RFC 8414 metadata)
+      //   - /oauth/{register,authorize,token,revoke}
+      '/.well-known': 'http://localhost:8000',
+      '/oauth': 'http://localhost:8000',
     },
   },
   build: {

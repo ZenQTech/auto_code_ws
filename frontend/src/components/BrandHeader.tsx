@@ -89,6 +89,8 @@ export interface BrandHeaderProps {
   onOpenCacheStats?: () => void;
   /** v2.5.0 (Cycle 6 P0-7-B) 新增：打开流式恢复网关面板回调（可选） */
   onOpenStreamList?: () => void;
+  /** v2.6.0 (Cycle 7 P0-8) 新增：打开 OAuth 2.1 + PKCE 配置面板回调（可选） */
+  onOpenOAuthConfig?: () => void;
 }
 
 /**
@@ -98,7 +100,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -253,6 +255,16 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <circle cx="20" cy="6" r="2" fill="currentColor" />
         </svg>
       );
+    case 'oauth':
+      // v2.6.0 (Cycle 7 P0-8) 新增：OAuth 2.1 + PKCE（锁+钥匙）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="4" y="11" width="16" height="10" rx="2" />
+          <path d="M8 11V7a4 4 0 1 1 8 0v4" />
+          <circle cx="12" cy="16" r="1.5" fill="currentColor" />
+          <path d="M12 17.5v2.5" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -293,6 +305,8 @@ export default function BrandHeader({
   onOpenCacheStats,
   /** v2.5.0 (Cycle 6 P0-7-B) 新增 */
   onOpenStreamList,
+  /** v2.6.0 (Cycle 7 P0-8) 新增 */
+  onOpenOAuthConfig,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -682,6 +696,23 @@ export default function BrandHeader({
                 >
                   <Icon name="stream" className="w-4 h-4 text-blue-500" />
                   <span>🌊 流式恢复网关</span>
+                </button>
+              )}
+
+              {/* v2.6.0 (Cycle 7 P0-8) 新增：OAuth 2.1 + PKCE（菜单项）
+               *  行为：点击调 onOpenOAuthConfig() 弹出 OAuthConfigModal
+               *       符合 MCP Authorization Spec 2026-06-18 强制规范
+               *  图标：oauth（锁+钥匙），强调授权 + 安全 */}
+              {onOpenOAuthConfig && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenOAuthConfig)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-indigo-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="oauth" className="w-4 h-4 text-indigo-500" />
+                  <span>🔐 OAuth 2.1 + PKCE</span>
                 </button>
               )}
 
