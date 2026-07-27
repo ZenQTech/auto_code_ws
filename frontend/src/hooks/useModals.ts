@@ -74,6 +74,8 @@ export interface UseModalsResult {
   subagentMemory: PanelController;
   /** v1.4.0 (Cycle 5 P0-6) 新增：Hook 触发链路查看器 */
   hookChain: PanelController;
+  /** v1.5.0 (Cycle 6 P0-7-A) 新增：LLM 缓存统计面板 */
+  cacheStats: PanelController;
 }
 
 /**
@@ -96,6 +98,7 @@ export function useModals(): UseModalsResult {
   const hooks = usePanelController(false);  // v1.2.0 P0-4 新增
   const subagentMemory = usePanelController(false);  // v1.3.0 P0-4 新增
   const hookChain = usePanelController(false);  // v1.4.0 (Cycle 5 P0-6) 新增
+  const cacheStats = usePanelController(false);  // v1.5.0 (Cycle 6 P0-7-A) 新增
 
   return {
     settings,
@@ -113,6 +116,7 @@ export function useModals(): UseModalsResult {
     hooks,
     subagentMemory,
     hookChain,  // v1.4.0 (Cycle 5 P0-6) 新增
+    cacheStats,  // v1.5.0 (Cycle 6 P0-7-A) 新增
   };
 }
 

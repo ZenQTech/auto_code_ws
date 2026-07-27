@@ -96,6 +96,8 @@ export interface AppLayoutProps {
   onOpenSubagentMemory: () => void;
   /** v6.16.0 (Cycle 5 P0-6) 新增：打开 Hook 触发链路查看器面板 */
   onOpenHookChain: () => void;
+  /** v6.17.0 (Cycle 6 P0-7-A) 新增：打开 LLM 缓存统计面板 */
+  onOpenCacheStats: () => void;
 
   // 工具栏
   onModelChange: (id: string) => void;
@@ -188,6 +190,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenHooks,
   onOpenSubagentMemory,
   onOpenHookChain,
+  onOpenCacheStats,
   onModelChange,
   onReasoningIntensityChange,
   workflowStatusCurrentStage,
@@ -357,6 +360,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenHooks={onOpenHooks}
         onOpenSubagentMemory={onOpenSubagentMemory}
         onOpenHookChain={onOpenHookChain}
+        onOpenCacheStats={onOpenCacheStats}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

@@ -737,6 +737,14 @@ app.include_router(agents_md_router, prefix="/api", tags=["agents-md"])
 from .api.hooks import router as hooks_router
 app.include_router(hooks_router, prefix="/api/hooks", tags=["hooks"])
 
+# v5.1.0 (Cycle 6 P0-7-A) 新增：注册 LLM 缓存 API 路由（4 层缓存）
+from .api.cache import router as cache_router
+app.include_router(cache_router, tags=["llm-cache"])
+
+# v5.1.0 (Cycle 6 P0-7-B) 新增：注册流式恢复网关 API 路由（SQLite + SSE replay）
+from .api.streaming import router as streaming_router
+app.include_router(streaming_router, tags=["streaming-buffer"])
+
 # 注册全局异常处理器
 app.add_exception_handler(Exception, global_exception_handler)
 

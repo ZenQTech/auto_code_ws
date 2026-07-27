@@ -85,6 +85,8 @@ export interface BrandHeaderProps {
   onOpenSubagentMemory?: () => void;
   /** v2.3.0 (Cycle 5 P0-6) 新增：打开 Hook 触发链路查看器回调（可选） */
   onOpenHookChain?: () => void;
+  /** v2.4.0 (Cycle 6 P0-7-A) 新增：打开 LLM 缓存统计面板回调（可选） */
+  onOpenCacheStats?: () => void;
 }
 
 /**
@@ -94,7 +96,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -276,6 +278,8 @@ export default function BrandHeader({
   onOpenSubagentMemory,
   /** v2.3.0 (Cycle 5 P0-6) 新增 */
   onOpenHookChain,
+  /** v2.4.0 (Cycle 6 P0-7-A) 新增 */
+  onOpenCacheStats,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -637,6 +641,20 @@ export default function BrandHeader({
                 >
                   <Icon name="chain" className="w-4 h-4 text-cyan-500" />
                   <span>🔗 Hook 触发链路</span>
+                </button>
+              )}
+
+              {/* v2.4.0 (Cycle 6 P0-7-A) 新增：LLM 缓存统计 */}
+              {onOpenCacheStats && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCacheStats)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-emerald-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="cache" className="w-4 h-4 text-emerald-500" />
+                  <span>⚡ LLM 缓存统计</span>
                 </button>
               )}
 
