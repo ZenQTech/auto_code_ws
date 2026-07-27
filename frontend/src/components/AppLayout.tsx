@@ -98,6 +98,8 @@ export interface AppLayoutProps {
   onOpenHookChain: () => void;
   /** v6.17.0 (Cycle 6 P0-7-A) 新增：打开 LLM 缓存统计面板 */
   onOpenCacheStats: () => void;
+  /** v6.18.0 (Cycle 6 P0-7-B) 新增：打开流式恢复网关面板 */
+  onOpenStreamList: () => void;
 
   // 工具栏
   onModelChange: (id: string) => void;
@@ -191,6 +193,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenSubagentMemory,
   onOpenHookChain,
   onOpenCacheStats,
+  onOpenStreamList,  // v6.18.0 (Cycle 6 P0-7-B) 透传 BrandHeader
   onModelChange,
   onReasoningIntensityChange,
   workflowStatusCurrentStage,
@@ -361,6 +364,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenSubagentMemory={onOpenSubagentMemory}
         onOpenHookChain={onOpenHookChain}
         onOpenCacheStats={onOpenCacheStats}
+        onOpenStreamList={onOpenStreamList}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

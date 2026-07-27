@@ -87,6 +87,8 @@ export interface BrandHeaderProps {
   onOpenHookChain?: () => void;
   /** v2.4.0 (Cycle 6 P0-7-A) 新增：打开 LLM 缓存统计面板回调（可选） */
   onOpenCacheStats?: () => void;
+  /** v2.5.0 (Cycle 6 P0-7-B) 新增：打开流式恢复网关面板回调（可选） */
+  onOpenStreamList?: () => void;
 }
 
 /**
@@ -96,7 +98,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -242,6 +244,15 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
         </svg>
       );
+    case 'stream':
+      // v2.5.0 (Cycle 6 P0-7-B) 新增：Stream - 流式恢复网关（波浪线+断点）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M2 12c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2" />
+          <path d="M2 17c2 0 2-2 4-2s2 2 4 2 2-2 4-2 2 2 4 2 2-2 4-2" />
+          <circle cx="20" cy="6" r="2" fill="currentColor" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -280,6 +291,8 @@ export default function BrandHeader({
   onOpenHookChain,
   /** v2.4.0 (Cycle 6 P0-7-A) 新增 */
   onOpenCacheStats,
+  /** v2.5.0 (Cycle 6 P0-7-B) 新增 */
+  onOpenStreamList,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -655,6 +668,20 @@ export default function BrandHeader({
                 >
                   <Icon name="cache" className="w-4 h-4 text-emerald-500" />
                   <span>⚡ LLM 缓存统计</span>
+                </button>
+              )}
+
+              {/* v2.5.0 (Cycle 6 P0-7-B) 新增：流式恢复网关 */}
+              {onOpenStreamList && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenStreamList)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-blue-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="stream" className="w-4 h-4 text-blue-500" />
+                  <span>🌊 流式恢复网关</span>
                 </button>
               )}
 

@@ -10,13 +10,17 @@
  * 输入参数：无
  * 输出结果：{ settings, mcp, compaction, skills, agentsMd, cycle3,
  *           dualCompaction, rules, usage, fileExplorer, loopV7,
- *           planEditor, hooks }
+ *           planEditor, hooks, subagentMemory, hookChain, cacheStats, streamList }
  *           每个含 { open, onOpen, onClose, onToggle }
  * 修改记录：
  *   - 2026-07-27 | v1.0.0 | P0-2 App.tsx 拆分第五阶段：从 App.tsx 抽离
  *     8 个 panel state + usage + fileExplorer + loopV7
  *   - 2026-07-27 | v1.1.0 | P0-3 Plan Mode 深化：新增 planEditor 面板
  *   - 2026-07-27 | v1.2.0 | P0-4 Hook 事件完整化：新增 hooks 面板
+ *   - 2026-07-27 | v1.3.0 | P0-4 SubAgent 记忆：新增 subagentMemory 面板
+ *   - 2026-07-27 | v1.4.0 | Cycle 5 P0-6 新增 hookChain 链路查看器
+ *   - 2026-07-27 | v1.5.0 | Cycle 6 P0-7-A 新增 cacheStats 缓存统计
+ *   - 2026-07-27 | v1.6.0 | Cycle 6 P0-7-B 新增 streamList 流式恢复网关
  * ============================================================
  */
 
@@ -76,10 +80,12 @@ export interface UseModalsResult {
   hookChain: PanelController;
   /** v1.5.0 (Cycle 6 P0-7-A) 新增：LLM 缓存统计面板 */
   cacheStats: PanelController;
+  /** v1.6.0 (Cycle 6 P0-7-B) 新增：流式恢复网关面板 */
+  streamList: PanelController;
 }
 
 /**
- * useModals - 集中管理 14 个面板/弹窗的显隐状态
+ * useModals - 集中管理 16 个面板/弹窗的显隐状态
  * 返回值：包含每个面板 controller 的对象
  */
 export function useModals(): UseModalsResult {
@@ -99,6 +105,7 @@ export function useModals(): UseModalsResult {
   const subagentMemory = usePanelController(false);  // v1.3.0 P0-4 新增
   const hookChain = usePanelController(false);  // v1.4.0 (Cycle 5 P0-6) 新增
   const cacheStats = usePanelController(false);  // v1.5.0 (Cycle 6 P0-7-A) 新增
+  const streamList = usePanelController(false);  // v1.6.0 (Cycle 6 P0-7-B) 新增
 
   return {
     settings,
@@ -117,6 +124,7 @@ export function useModals(): UseModalsResult {
     subagentMemory,
     hookChain,  // v1.4.0 (Cycle 5 P0-6) 新增
     cacheStats,  // v1.5.0 (Cycle 6 P0-7-A) 新增
+    streamList,  // v1.6.0 (Cycle 6 P0-7-B) 新增
   };
 }
 

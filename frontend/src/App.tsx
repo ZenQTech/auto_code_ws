@@ -172,6 +172,8 @@ import SubAgentMemoryViewer from './components/SubAgentMemoryViewer';
 import HookChainViewer from './components/HookChainViewer';
 /** v1.5.0 (Cycle 6 P0-7-A) 新增：LLM 缓存统计面板 */
 import CacheStatsPanel from './components/CacheStatsPanel';
+/** v1.6.0 (Cycle 6 P0-7-B) 新增：流式恢复网关管理面板 */
+import StreamListPanel from './components/StreamListPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -303,6 +305,7 @@ export default function App() {
     subagentMemory: subagentMemoryModal,
     hookChain: hookChainModal,  // v1.4.0 (Cycle 5 P0-6) 新增
     cacheStats: cacheStatsModal,  // v1.5.0 (Cycle 6 P0-7-A) 新增
+    streamList: streamListModal,  // v1.6.0 (Cycle 6 P0-7-B) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -1707,6 +1710,7 @@ export default function App() {
           onOpenSubagentMemory={setSubagentMemoryPanelOpen}
           onOpenHookChain={() => hookChainModal.onOpen()}
           onOpenCacheStats={() => cacheStatsModal.onOpen()}
+          onOpenStreamList={() => streamListModal.onOpen()}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
           onReasoningIntensityChange={(i) => showToast(`推理强度已设为 ${i}`, 'info')}
           workflowStatusCurrentStage={workflowStatus?.current_stage ?? null}
@@ -1994,6 +1998,12 @@ export default function App() {
       {cacheStatsModal.open && (
         <Cycle3Modal onClose={cacheStatsModal.onClose} maxWidth="max-w-4xl">
           <CacheStatsPanel onClose={cacheStatsModal.onClose} />
+        </Cycle3Modal>
+      )}
+
+      {streamListModal.open && (
+        <Cycle3Modal onClose={streamListModal.onClose} maxWidth="max-w-6xl">
+          <StreamListPanel onClose={streamListModal.onClose} />
         </Cycle3Modal>
       )}
     </div>
