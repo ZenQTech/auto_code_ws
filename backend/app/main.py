@@ -29,6 +29,8 @@
 #     开发需求自动路由到 WorkflowEngine 启动 SOP 工作流
 #   - 2026-06-30 | v2.4.2 | 新增静态资源 no-store 缓存头，避免浏览器继续加载旧
 #     index-Bic32m5_.js 等历史 bundle 导致前端逻辑不生效
+#   - 2026-07-27 | v5.5.0 | Cycle 7 P0-10 新增：注册 Multi-Agent v2 path-based
+#     addressing 路由（spawn_agent/wait_agent/close_agent/send_message/followup_task）
 #   - 2026-07-01 | v2.5.0 | 新增 ArchitectureWorkflowService 初始化，注入
 #     hermes_service / workflow_engine / git_manager，注册到 app.state
 #   - 2026-07-24 | v5.9.0 | Module B 后端性能优化：
@@ -782,6 +784,20 @@ app.include_router(mcp_oauth_admin_router, prefix="/api", tags=["mcp-oauth-admin
 #   - POST   /api/sessions/{id}/rollout/response  记录 AI response
 from .api.session_rollout import router as session_rollout_router
 app.include_router(session_rollout_router, prefix="/api", tags=["session-rollout"])
+
+# 注册 Multi-Agent v2 path-based addressing 路由（Cycle 7 P0-10）
+#   - POST   /api/multi-agents/spawn           spawn_agent
+#   - POST   /api/multi-agents/wait            wait_agent
+#   - POST   /api/multi-agents/close           close_agent
+#   - POST   /api/multi-agents/send-message    send_message
+#   - POST   /api/multi-agents/followup        followup_task
+#   - GET    /api/multi-agents/list            list_agents
+#   - GET    /api/multi-agents/tree            get_tree
+#   - GET    /api/multi-agents/stats           get_stats
+#   - GET    /api/multi-agents/messages        get_messages
+#   - POST   /api/multi-agents/auto-cleanup    turn-end cleanup
+from .api.multi_agents import router as multi_agents_router
+app.include_router(multi_agents_router, prefix="/api", tags=["multi-agents-v2"])
 
 # 注册全局异常处理器
 app.add_exception_handler(Exception, global_exception_handler)

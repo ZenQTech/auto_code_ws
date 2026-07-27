@@ -23,6 +23,7 @@
  *     在 AgentChatCard 网格上方插入 SubAgentWorkspacePanel，
  *     展示各 SubAgent 的分支名/模块名/进度/文件数/提交数
  *   - 2026-07-27 | v6.12.0 | P0-2 拆分第六阶段：内联消息渲染 + MessageRow 抽离到 ChatView 组件
+ *   - 2026-07-27 | v6.13.0 | Cycle 7 P0-10 新增 onOpenMultiAgentTree 回调 + 透传 BrandHeader
  * ============================================================
  */
 
@@ -104,6 +105,8 @@ export interface AppLayoutProps {
   onOpenOAuthConfig: () => void;
   /** v6.20.0 (Cycle 7 P0-9) 新增：打开 Session Rollout JSONL 持久化面板 */
   onOpenSessionRollout: () => void;
+  /** v6.21.0 (Cycle 7 P0-10) 新增：打开 Multi-Agent v2 Path Tree 面板 */
+  onOpenMultiAgentTree: () => void;
 
   // 工具栏
   onModelChange: (id: string) => void;
@@ -200,6 +203,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenStreamList,  // v6.18.0 (Cycle 6 P0-7-B) 透传 BrandHeader
   onOpenOAuthConfig,  // v6.19.0 (Cycle 7 P0-8) 透传 BrandHeader
   onOpenSessionRollout,  // v6.20.0 (Cycle 7 P0-9) 透传 BrandHeader
+  onOpenMultiAgentTree,  // v6.21.0 (Cycle 7 P0-10) 透传 BrandHeader
   onModelChange,
   onReasoningIntensityChange,
   workflowStatusCurrentStage,
@@ -373,6 +377,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenStreamList={onOpenStreamList}
         onOpenOAuthConfig={onOpenOAuthConfig}
         onOpenSessionRollout={onOpenSessionRollout}
+        onOpenMultiAgentTree={onOpenMultiAgentTree}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

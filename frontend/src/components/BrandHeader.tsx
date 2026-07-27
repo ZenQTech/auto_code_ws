@@ -36,6 +36,9 @@
 #     新增 onOpenCycle3 / onOpenDualCompaction / onOpenRules 回调
 #     新增 shield (盾牌) + cpu (CPU) 内联 SVG 图标
 #     新增"Cycle 3 新功能"分组（带顶部分割线）
+#   - 2026-07-27 | v2.8.0 | Cycle 7 P0-10 新增：菜单项 Multi-Agent v2 Path Tree
+#     新增 onOpenMultiAgentTree 回调 + tree（树状）图标
+#     对应 Codex v0.121+ path-based addressing + TRAE "对话流节点自动折叠"
 # ============================================================
  */
 
@@ -93,6 +96,8 @@ export interface BrandHeaderProps {
   onOpenOAuthConfig?: () => void;
   /** v2.7.0 (Cycle 7 P0-9) 新增：打开 Session Rollout JSONL 持久化面板回调（可选） */
   onOpenSessionRollout?: () => void;
+  /** v2.8.0 (Cycle 7 P0-10) 新增：打开 Multi-Agent v2 Path Tree 面板回调（可选） */
+  onOpenMultiAgentTree?: () => void;
 }
 
 /**
@@ -102,7 +107,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -278,6 +283,20 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M16 18l2-1.5L16 15" />
         </svg>
       );
+    case 'tree':
+      // v2.8.0 (Cycle 7 P0-10) 新增：Multi-Agent v2 Path Tree（树状层级）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M5 3v18" />
+          <path d="M5 7h6" />
+          <path d="M5 12h8" />
+          <path d="M5 17h10" />
+          <circle cx="5" cy="3" r="1.5" fill="currentColor" />
+          <circle cx="11" cy="7" r="1.5" fill="currentColor" />
+          <circle cx="13" cy="12" r="1.5" fill="currentColor" />
+          <circle cx="15" cy="17" r="1.5" fill="currentColor" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -322,6 +341,8 @@ export default function BrandHeader({
   onOpenOAuthConfig,
   /** v2.7.0 (Cycle 7 P0-9) 新增 */
   onOpenSessionRollout,
+  /** v2.8.0 (Cycle 7 P0-10) 新增 */
+  onOpenMultiAgentTree,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -745,6 +766,23 @@ export default function BrandHeader({
                 >
                   <Icon name="rollout" className="w-4 h-4 text-blue-500" />
                   <span>📜 Session Rollout JSONL</span>
+                </button>
+              )}
+
+              {/* v2.8.0 (Cycle 7 P0-10) 新增：Multi-Agent v2 Path Tree（菜单项）
+               *  行为：点击调 onOpenMultiAgentTree() 弹出 MultiAgentTreePanel
+               *       实现 Codex v0.121+ path-based addressing 多智能体编排
+               *  图标：tree（树状层级），强调 path-based addressing + spawn/wait/close */}
+              {onOpenMultiAgentTree && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMultiAgentTree)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-emerald-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="tree" className="w-4 h-4 text-emerald-500" />
+                  <span>🌳 Multi-Agent v2 Path Tree</span>
                 </button>
               )}
 
