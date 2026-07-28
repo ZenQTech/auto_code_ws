@@ -243,7 +243,7 @@ RESPONSE=$(curl -s -X POST "$BASE_URL/api/loop-commands/triage" \
         \"requirement\":\"test\",
         \"project_path\":\"/tmp/forbidden\"
     }")
-assert_contains "invalid project_path rejected" "$RESPONSE" '"detail"\|whitelist\|not allowed'
+assert_contains "invalid project_path rejected" "$RESPONSE" 'whitelist'
 
 # 8.2 空 requirement
 RESPONSE=$(curl -s -X POST "$BASE_URL/api/loop-commands/triage" \
