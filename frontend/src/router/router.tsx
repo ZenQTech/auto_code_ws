@@ -41,6 +41,8 @@ const DiffViewPage = lazy(() => import('../pages/DiffViewPage'));
 const MemoryPage = lazy(() => import('../pages/MemoryPage'));
 // v1.0.0 (Cycle 10 P1-10) 新增：Verification Loop 独立访问页面
 const VerificationPage = lazy(() => import('../pages/VerificationPage'));
+// v1.0.0 (Cycle 11 P2-2) 新增：Doctor 环境诊断系统独立访问页面
+const DoctorPage = lazy(() => import('../pages/DoctorPage'));
 
 // ============================================================
 // Suspense 包装器: 懒加载页面统一显示 loading
@@ -90,6 +92,8 @@ export const AppRouter: React.FC = () => {
           <Route path="memory" element={lazyPage(MemoryPage)} />
           {/* v1.0.0 (Cycle 10 P1-10) 新增：Verification Loop 独立访问路由 */}
           <Route path="verification" element={lazyPage(VerificationPage)} />
+          {/* v1.0.0 (Cycle 11 P2-2) 新增：Doctor 环境诊断系统独立访问路由 */}
+          <Route path="doctor" element={lazyPage(DoctorPage)} />
 
           {/* 模式选择 - 保留独立路由 */}
           <Route path="select-mode" element={lazyPage(ModeSelectorPage)} />

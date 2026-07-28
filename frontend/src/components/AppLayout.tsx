@@ -83,6 +83,8 @@ export interface AppLayoutProps {
   onOpenMemory: () => void;
   /** v1.0.0 (Cycle 10 P1-10) 新增：跳转 Verification Loop 页面（独立路由 /verification） */
   onOpenVerification: () => void;
+  /** v1.0.0 (Cycle 11 P2-2) 新增：跳转 Doctor 环境诊断页面（独立路由 /doctor） */
+  onOpenDoctor: () => void;
   /** v6.14.0 Cycle 2 新增：打开 MCP 工具面板 */
   onOpenMCP: () => void;
   /** v6.14.0 Cycle 2 新增：打开会话压缩面板 */
@@ -209,6 +211,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenDiffView,
   onOpenMemory,
   onOpenVerification,
+  onOpenDoctor,
   onOpenMCP,
   onOpenCompaction,
   onOpenSkills,
@@ -391,6 +394,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenDiffView={onOpenDiffView}
         onOpenMemory={onOpenMemory}
         onOpenVerification={onOpenVerification}
+        onOpenDoctor={onOpenDoctor}
         onOpenMCP={onOpenMCP}
         onOpenCompaction={onOpenCompaction}
         onOpenSkills={onOpenSkills}

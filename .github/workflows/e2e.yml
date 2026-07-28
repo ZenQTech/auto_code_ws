@@ -1,0 +1,108 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'backend/app/core/e2e/**'
+      - 'backend/app/api/e2e.py'
+      - 'tests/test_e2e_*.sh'
+      - '.github/workflows/e2e.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'backend/app/core/e2e/**'
+      - 'backend/app/api/e2e.py'
+      - 'tests/test_e2e_*.sh'
+      - '.github/workflows/e2e.yml'
+
+jobs:
+  e2e-tests:
+    name: Playwright E2E Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Python dependencies
+        run: |
+          cd backend
+          pip install -r requirements.txt
+          pip install pytest pytest-asyncio httpx
+
+      - name: Install Frontend dependencies
+        run: |
+          cd frontend
+          npm ci
+
+      - name: Start Backend
+        run: |
+          cd backend
+          nohup python -m uvicorn app.main:app --host 0.0.0.0 --port 8765 &
+          sleep 15
+          curl -f http://localhost:8765/health || (echo "Backend not ready" && exit 1)
+
+      - name: Build Frontend
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Run E2E Unit Tests
+        run: |
+          cd backend
+          python -m pytest ../tests/test_e2e_units.py -v
+
+      - name: Run E2E Tests
+        run: |
+          chmod +x ../tests/test_e2e_playwright.sh
+          bash ../tests/test_e2e_playwright.sh
+
+      - name: Generate Reports
+        if: always()
+        run: |
+          mkdir -p e2e-reports
+          curl -X POST http://localhost:8765/api/e2e/run \
+            -H "Content-Type: application/json" \
+            -d '{"parallel": false, "formats": ["html", "json", "markdown"]}' \
+            > e2e-reports/latest.json
+          cp -r tests/e2e_reports/* e2e-reports/ 2>/dev/null || true
+
+      - name: Upload E2E Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-reports
+          path: |
+            backend/e2e-reports/
+            backend/tests/e2e_reports/
+          retention-days: 30
+
+      - name: Show E2E Summary
+        if: always()
+        run: |
+          echo "## E2E Test Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f e2e-reports/latest.json ]; then
+            python3 -c "
+import json
+with open('e2e-reports/latest.json') as f:
+    data = json.load(f)
+    print(f\"Total: {data.get('total_scenarios', 0)}\")
+    print(f\"Passed: {data.get('passed', 0)}\")
+    print(f\"Failed: {data.get('failed', 0)}\")
+    print(f\"Error: {data.get('error', 0)}\")
+    print(f\"Pass Rate: {data.get('pass_rate', 0):.1%}\")
+" >> $GITHUB_STEP_SUMMARY
+          fi

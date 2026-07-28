@@ -1,0 +1,98 @@
+{
+  "report_id": "e2e_20260728_054648_eb8de6",
+  "timestamp": "2026-07-28T05:46:48.220750+00:00",
+  "duration_ms": 2493,
+  "total_scenarios": 1,
+  "passed": 1,
+  "failed": 0,
+  "error": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "scenario_id": "sc_doctor_diagnosis",
+      "scenario_name": "doctor_diagnosis",
+      "status": "passed",
+      "start_time": "2026-07-28T05:46:48.220782+00:00",
+      "end_time": "2026-07-28T05:46:50.713807+00:00",
+      "duration_ms": 2493,
+      "description": "验证 Doctor 环境诊断：6 大类、修复建议、历史报告",
+      "steps": [
+        {
+          "name": "doctor_health",
+          "status": "passed",
+          "start_time": "2026-07-28T05:46:48.221027+00:00",
+          "end_time": "2026-07-28T05:46:48.223908+00:00",
+          "duration_ms": 2,
+          "message": "doctor healthy, 6 categories",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "list_categories",
+          "status": "passed",
+          "start_time": "2026-07-28T05:46:48.223927+00:00",
+          "end_time": "2026-07-28T05:46:49.487186+00:00",
+          "duration_ms": 1263,
+          "message": "all 6 categories present",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "run_environment_check",
+          "status": "passed",
+          "start_time": "2026-07-28T05:46:49.487215+00:00",
+          "end_time": "2026-07-28T05:46:49.502950+00:00",
+          "duration_ms": 15,
+          "message": "environment: 10 checks, status=error",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "run_full_diagnosis",
+          "status": "passed",
+          "start_time": "2026-07-28T05:46:49.502972+00:00",
+          "end_time": "2026-07-28T05:46:50.709822+00:00",
+          "duration_ms": 1206,
+          "message": "full diagnosis done: {'ok': 21, 'warning': 14, 'error': 1, 'skipped': 7, 'total': 43}",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "get_fix_suggestion",
+          "status": "passed",
+          "start_time": "2026-07-28T05:46:50.709844+00:00",
+          "end_time": "2026-07-28T05:46:50.711267+00:00",
+          "duration_ms": 1,
+          "message": "fix: 设置 ANTHROPIC_API_KEY 环境变量",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "view_history",
+          "status": "passed",
+          "start_time": "2026-07-28T05:46:50.711282+00:00",
+          "end_time": "2026-07-28T05:46:50.712478+00:00",
+          "duration_ms": 1,
+          "message": "history: 12 reports",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "list_all_fixes",
+          "status": "passed",
+          "start_time": "2026-07-28T05:46:50.712490+00:00",
+          "end_time": "2026-07-28T05:46:50.713774+00:00",
+          "duration_ms": 1,
+          "message": "total fixes: 43",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    }
+  ],
+  "metadata": {}
+}

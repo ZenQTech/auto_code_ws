@@ -63,6 +63,10 @@
 #     + 性能基线管理（基线对比 + 5% 退化告警）
 #     + Webhook 触发（git push / pull_request）
 #     + 报告生成（Markdown / JSON / HTML）
+#   - 2026-07-28 | v6.15.0 | Cycle 11 P2-2 新增：注册 doctor 路由
+#     （/api/doctor）实现 6 大类环境诊断（environment/workspace/llm/database/mcp/dependencies）
+#     + 4 种输出模式（summary/json/all/no-color）
+#     + 修复建议生成器（40+ 模板）+ 历史报告存储（保留最近 50 份）
 # ============================================================
 """
 
@@ -885,6 +889,18 @@ app.include_router(memory_router, prefix="/api/memory", tags=["memory"])
 # 报告生成（Markdown / JSON / HTML 三种格式）
 from .api.verification import router as verification_router
 app.include_router(verification_router, prefix="/api/verification", tags=["verification"])
+
+# Cycle 11 P3-1 /import 跨平台配置迁移
+from .api.import_api import router as import_router
+app.include_router(import_router, prefix="/api/import", tags=["import"])
+
+# Cycle 11 P2-2 doctor 环境诊断系统
+from .api.doctor import router as doctor_router
+app.include_router(doctor_router, prefix="/api/doctor", tags=["doctor"])
+
+# Cycle 11 P2-1 Playwright 风格 E2E 自动化框架
+from .api.e2e import router as e2e_router
+app.include_router(e2e_router, prefix="/api/e2e", tags=["e2e"])
 
 # 启动时初始化 Custom Models 服务 + Bearer Token 后台刷新任务
 @app.on_event("startup")

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>E2E Report - e2e_20260728_060843_6c1c6c</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: #f5f5f5;
+    color: #333;
+  }
+  .container { max-width: 1200px; margin: 0 auto; background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  h1 { color: #1a1a1a; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; }
+  .summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 20px 0; }
+  .stat { background: #f9fafb; padding: 16px; border-radius: 6px; text-align: center; }
+  .stat-value { font-size: 28px; font-weight: 700; }
+  .stat-label { font-size: 12px; color: #6b7280; text-transform: uppercase; margin-top: 4px; }
+  .stat.passed .stat-value { color: #10b981; }
+  .stat.failed .stat-value { color: #ef4444; }
+  .stat.error .stat-value { color: #f97316; }
+  .stat.skipped .stat-value { color: #6b7280; }
+  .scenario { border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+  .scenario-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #fafafa; }
+  .status-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; color: white; }
+  .status-passed { background: #10b981; }
+  .status-failed { background: #ef4444; }
+  .status-error { background: #f97316; }
+  .status-skipped { background: #6b7280; }
+  .scenario-name { font-weight: 600; }
+  .scenario-id { color: #9ca3af; font-size: 12px; }
+  .scenario-duration { margin-left: auto; color: #6b7280; font-size: 13px; }
+  .error { background: #fef2f2; color: #b91c1c; padding: 8px 16px; font-family: monospace; font-size: 13px; }
+  .steps { list-style: none; padding: 0; margin: 0; }
+  .step { display: flex; align-items: center; gap: 12px; padding: 6px 16px; font-size: 13px; border-top: 1px solid #f3f4f6; }
+  .step-name { flex: 1; }
+  .step-status { font-size: 11px; padding: 1px 6px; border-radius: 3px; color: white; background: #6b7280; }
+  .step-passed .step-status { background: #10b981; }
+  .step-failed .step-status { background: #ef4444; }
+  .step-error .step-status { background: #f97316; }
+  .step-duration { color: #9ca3af; font-size: 12px; }
+  .step-msg { color: #6b7280; font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 E2E Test Report</h1>
+    <p><strong>Report ID:</strong> e2e_20260728_060843_6c1c6c</p>
+    <p><strong>Generated:</strong> 2026-07-28T06:08:43.694605+00:00</p>
+    <p><strong>Duration:</strong> 1297ms (1.30s)</p>
+    <p><strong>Pass Rate:</strong> <span style="color: #10b981">100.0%</span></p>
+
+    <div class="summary">
+      <div class="stat passed"><div class="stat-value">1</div><div class="stat-label">Passed</div></div>
+      <div class="stat failed"><div class="stat-value">0</div><div class="stat-label">Failed</div></div>
+      <div class="stat error"><div class="stat-value">0</div><div class="stat-label">Error</div></div>
+      <div class="stat skipped"><div class="stat-value">0</div><div class="stat-label">Skipped</div></div>
+      <div class="stat"><div class="stat-value">1</div><div class="stat-label">Total</div></div>
+    </div>
+
+    <h2>Scenarios</h2>
+    <div class="scenario scenario-passed"><div class="scenario-header"><span class="status-badge status-passed">PASSED</span><span class="scenario-name">app_startup</span><span class="scenario-id">(sc_app_startup)</span><span class="scenario-duration">1297ms</span></div><ul class="steps"><li class="step step-passed"><span class="step-name">backend_health_check</span><span class="step-status">passed</span><span class="step-duration">2ms</span><span class="step-msg">backend healthy, 8 scenarios loaded</span></li><li class="step step-passed"><span class="step-name">navigate_/memory</span><span class="step-status">passed</span><span class="step-duration">0ms</span><span class="step-msg">navigated to http://localhost:5173/memory, title=Memory System</span></li><li class="step step-passed"><span class="step-name">navigate_/verification</span><span class="step-status">passed</span><span class="step-duration">0ms</span><span class="step-msg">navigated to http://localhost:5173/verification, title=Verification Loop</span></li><li class="step step-passed"><span class="step-name">navigate_/doctor</span><span class="step-status">passed</span><span class="step-duration">0ms</span><span class="step-msg">navigated to http://localhost:5173/doctor, title=Doctor</span></li><li class="step step-passed"><span class="step-name">navigate_/diff-view</span><span class="step-status">passed</span><span class="step-duration">0ms</span><span class="step-msg">navigated to http://localhost:5173/diff-view, title=Diff View</span></li><li class="step step-passed"><span class="step-name">verify_doctor_endpoints</span><span class="step-status">passed</span><span class="step-duration">1291ms</span><span class="step-msg">verified 2 doctor API endpoints</span></li><li class="step step-passed"><span class="step-name">capture_visual_baseline</span><span class="step-status">passed</span><span class="step-duration">3ms</span><span class="step-msg">captured visual baseline (76 bytes)</span></li><li class="step step-passed"><span class="step-name">verify_fallback_redirect</span><span class="step-status">passed</span><span class="step-duration">0ms</span><span class="step-msg">fallback navigation OK</span></li></ul></div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>E2E Report - e2e_20260728_053429_bf70d0</title>
+<style>
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    margin: 0;
+    padding: 20px;
+    background: #f5f5f5;
+    color: #333;
+  }
+  .container { max-width: 1200px; margin: 0 auto; background: white; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+  h1 { color: #1a1a1a; border-bottom: 2px solid #3b82f6; padding-bottom: 8px; }
+  .summary { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; margin: 20px 0; }
+  .stat { background: #f9fafb; padding: 16px; border-radius: 6px; text-align: center; }
+  .stat-value { font-size: 28px; font-weight: 700; }
+  .stat-label { font-size: 12px; color: #6b7280; text-transform: uppercase; margin-top: 4px; }
+  .stat.passed .stat-value { color: #10b981; }
+  .stat.failed .stat-value { color: #ef4444; }
+  .stat.error .stat-value { color: #f97316; }
+  .stat.skipped .stat-value { color: #6b7280; }
+  .scenario { border: 1px solid #e5e7eb; border-radius: 6px; margin-bottom: 12px; overflow: hidden; }
+  .scenario-header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; background: #fafafa; }
+  .status-badge { padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 700; color: white; }
+  .status-passed { background: #10b981; }
+  .status-failed { background: #ef4444; }
+  .status-error { background: #f97316; }
+  .status-skipped { background: #6b7280; }
+  .scenario-name { font-weight: 600; }
+  .scenario-id { color: #9ca3af; font-size: 12px; }
+  .scenario-duration { margin-left: auto; color: #6b7280; font-size: 13px; }
+  .error { background: #fef2f2; color: #b91c1c; padding: 8px 16px; font-family: monospace; font-size: 13px; }
+  .steps { list-style: none; padding: 0; margin: 0; }
+  .step { display: flex; align-items: center; gap: 12px; padding: 6px 16px; font-size: 13px; border-top: 1px solid #f3f4f6; }
+  .step-name { flex: 1; }
+  .step-status { font-size: 11px; padding: 1px 6px; border-radius: 3px; color: white; background: #6b7280; }
+  .step-passed .step-status { background: #10b981; }
+  .step-failed .step-status { background: #ef4444; }
+  .step-error .step-status { background: #f97316; }
+  .step-duration { color: #9ca3af; font-size: 12px; }
+  .step-msg { color: #6b7280; font-size: 12px; }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 E2E Test Report</h1>
+    <p><strong>Report ID:</strong> e2e_20260728_053429_bf70d0</p>
+    <p><strong>Generated:</strong> 2026-07-28T05:34:29.111427+00:00</p>
+    <p><strong>Duration:</strong> 4714ms (4.71s)</p>
+    <p><strong>Pass Rate:</strong> <span style="color: #ef4444">12.5%</span></p>
+
+    <div class="summary">
+      <div class="stat passed"><div class="stat-value">2</div><div class="stat-label">Passed</div></div>
+      <div class="stat failed"><div class="stat-value">2</div><div class="stat-label">Failed</div></div>
+      <div class="stat error"><div class="stat-value">4</div><div class="stat-label">Error</div></div>
+      <div class="stat skipped"><div class="stat-value">0</div><div class="stat-label">Skipped</div></div>
+      <div class="stat"><div class="stat-value">16</div><div class="stat-label">Total</div></div>
+    </div>
+
+    <h2>Scenarios</h2>
+    <div class="scenario scenario-passed"><div class="scenario-header"><span class="status-badge status-passed">PASSED</span><span class="scenario-name">app_startup</span><span class="scenario-id">(sc_app_startup)</span><span class="scenario-duration">1287ms</span></div><ul class="steps"><li class="step step-passed"><span class="step-name">backend_health_check</span><span class="step-status">passed</span><span class="step-duration">2ms</span><span class="step-msg">backend healthy, 8 scenarios loaded</span></li><li class="step step-passed"><span class="step-name">navigate_/memory</span><span class="step-status">passed</span><span class="step-duration">0ms</span><span class="step-msg">navigated to http://localhost:5173/memory, title=Memory System</span></li><li class="step step-passed"><span class="step-name">navigate_/verification</span><span class="step-status">passed</span><span class="step-duration">0ms</span><span class="step-msg">navigated to http://localhost:5173/verification, title=Verification Loop</span></li><li class="step step-passed"><span class="step-name">navigate_/doctor</span><span class="step-status">passed</span><span class="step-duration">0ms</span><span class="step-msg">navigated to http://localhost:5173/doctor, title=Doctor</span></li><li class="step step-passed"><span class="step-name">navigate_/diff-view</span><span class="step-status">passed</span><span class="step-duration">0ms</span><span class="step-msg">navigated to http://localhost:5173/diff-view, title=Diff View</span></li><li class="step step-passed"><span class="step-name">verify_doctor_endpoints</span><span class="step-status">passed</span><span class="step-duration">1282ms</span><span class="step-msg">verified 2 doctor API endpoints</span></li><li class="step step-passed"><span class="step-name">capture_visual_baseline</span><span class="step-status">passed</span><span class="step-duration">2ms</span><span class="step-msg">captured visual baseline (76 bytes)</span></li><li class="step step-passed"><span class="step-name">verify_fallback_redirect</span><span class="step-status">passed</span><span class="step-duration">0ms</span><span class="step-msg">fallback navigation OK</span></li></ul></div><div class="scenario scenario-failed"><div class="scenario-header"><span class="status-badge status-failed">FAILED</span><span class="scenario-name">mode_switch</span><span class="scenario-id">(sc_mode_switch)</span><span class="scenario-duration">133ms</span></div><div class="error">⚠️ backend unhealthy</div><ul class="steps"><li class="step step-failed"><span class="step-name">backend_health</span><span class="step-status">failed</span><span class="step-duration">133ms</span><span class="step-msg"> | Error: backend unhealthy</span></li></ul></div><div class="scenario scenario-error"><div class="scenario-header"><span class="status-badge status-error">ERROR</span><span class="scenario-name">session_management</span><span class="scenario-id">(sc_session_management)</span><span class="scenario-duration">142ms</span></div><div class="error">⚠️ BaseScenario.assert_true() missing 1 required positional argument: &#39;message&#39;</div><ul class="steps"><li class="step step-error"><span class="step-name">health_check</span><span class="step-status">error</span><span class="step-duration">141ms</span><span class="step-msg"> | Error: BaseScenario.assert_true() missing 1 required positional argument: &#39;message&#39;</span></li></ul></div><div class="scenario scenario-error"><div class="scenario-header"><span class="status-badge status-error">ERROR</span><span class="scenario-name">message_streaming</span><span class="scenario-id">(sc_message_streaming)</span><span class="scenario-duration">125ms</span></div><div class="error">⚠️ BaseScenario.assert_true() missing 1 required positional argument: &#39;message&#39;</div><ul class="steps"><li class="step step-error"><span class="step-name">health_check</span><span class="step-status">error</span><span class="step-duration">124ms</span><span class="step-msg"> | Error: BaseScenario.assert_true() missing 1 required positional argument: &#39;message&#39;</span></li></ul></div><div class="scenario scenario-error"><div class="scenario-header"><span class="status-badge status-error">ERROR</span><span class="scenario-name">clarification</span><span class="scenario-id">(sc_clarification)</span><span class="scenario-duration">131ms</span></div><div class="error">⚠️ BaseScenario.assert_true() missing 1 required positional argument: &#39;message&#39;</div><ul class="steps"><li class="step step-error"><span class="step-name">health_check</span><span class="step-status">error</span><span class="step-duration">130ms</span><span class="step-msg"> | Error: BaseScenario.assert_true() missing 1 required positional argument: &#39;message&#39;</span></li></ul></div><div class="scenario scenario-error"><div class="scenario-header"><span class="status-badge status-error">ERROR</span><span class="scenario-name">architecture_design</span><span class="scenario-id">(sc_architecture_design)</span><span class="scenario-duration">121ms</span></div><div class="error">⚠️ BaseScenario.assert_true() missing 1 required positional argument: &#39;message&#39;</div><ul class="steps"><li class="step step-error"><span class="step-name">health_check</span><span class="step-status">error</span><span class="step-duration">121ms</span><span class="step-msg"> | Error: BaseScenario.assert_true() missing 1 required positional argument: &#39;message&#39;</span></li></ul></div><div class="scenario scenario-passed"><div class="scenario-header"><span class="status-badge status-passed">PASSED</span><span class="scenario-name">doctor_diagnosis</span><span class="scenario-id">(sc_doctor_diagnosis)</span><span class="scenario-duration">2634ms</span></div><ul class="steps"><li class="step step-passed"><span class="step-name">doctor_health</span><span class="step-status">passed</span><span class="step-duration">1ms</span><span class="step-msg">doctor healthy, 6 categories</span></li><li class="step step-passed"><span class="step-name">list_categories</span><span class="step-status">passed</span><span class="step-duration">1336ms</span><span class="step-msg">all 6 categories present</span></li><li class="step step-passed"><span class="step-name">run_environment_check</span><span class="step-status">passed</span><span class="step-duration">29ms</span><span class="step-msg">environment: 10 checks, status=error</span></li><li class="step step-passed"><span class="step-name">run_full_diagnosis</span><span class="step-status">passed</span><span class="step-duration">1262ms</span><span class="step-msg">full diagnosis done: {&#39;ok&#39;: 21, &#39;warning&#39;: 14, &#39;error&#39;: 1, &#39;skipped&#39;: 7, &#39;total&#39;: 43}</span></li><li class="step step-passed"><span class="step-name">get_fix_suggestion</span><span class="step-status">passed</span><span class="step-duration">1ms</span><span class="step-msg">fix: 设置 ANTHROPIC_API_KEY 环境变量</span></li><li class="step step-passed"><span class="step-name">view_history</span><span class="step-status">passed</span><span class="step-duration">1ms</span><span class="step-msg">history: 5 reports</span></li><li class="step step-passed"><span class="step-name">list_all_fixes</span><span class="step-status">passed</span><span class="step-duration">1ms</span><span class="step-msg">total fixes: 43</span></li></ul></div><div class="scenario scenario-failed"><div class="scenario-header"><span class="status-badge status-failed">FAILED</span><span class="scenario-name">e2e_regression</span><span class="scenario-id">(sc_e2e_regression)</span><span class="scenario-duration">137ms</span></div><div class="error">⚠️ create failed: {&#39;id&#39;: &#39;a7e89532-1f92-4327-a213-f3b560039d49&#39;, &#39;title&#39;: &#39;E2E Regression&#39;, &#39;created_at&#39;: &#39;2026-07-28T05:34:33.816322&#39;, &#39;last_active_at&#39;: &#39;2026-07-28T05:34:33.816325&#39;, &#39;user_first_message&#39;: &#39;&#39;, &#39;message_count&#39;: 0, &#39;status&#39;: &#39;active&#39;, &#39;deleted_at&#39;: None, &#39;mode&#39;: &#39;chat&#39;, &#39;workflow_id&#39;: None, &#39;workflow_stage&#39;: None}</div><ul class="steps"><li class="step step-passed"><span class="step-name">full_health_check</span><span class="step-status">passed</span><span class="step-duration">116ms</span><span class="step-msg">2/4 endpoints healthy</span></li><li class="step step-failed"><span class="step-name">create_session</span><span class="step-status">failed</span><span class="step-duration">21ms</span><span class="step-msg"> | Error: create failed: {&#39;id&#39;: &#39;a7e89532-1f92-4327-a213-f3b560039d49&#39;, &#39;title&#39;: &#39;E2E Regression&#39;, &#39;created_at&#39;: &#39;2026-07-28T05:34:33.816322&#39;, &#39;last_active_at&#39;: &#39;2026-07-28T05:34:33.816325&#39;, &#39;user_first_message&#39;: &#39;&#39;, &#39;message_count&#39;: 0, &#39;status&#39;: &#39;active&#39;, &#39;deleted_at&#39;: None, &#39;mode&#39;: &#39;chat&#39;, &#39;workflow_id&#39;: None, &#39;workflow_stage&#39;: None}</span></li></ul></div>
+  </div>
+</body>
+</html>

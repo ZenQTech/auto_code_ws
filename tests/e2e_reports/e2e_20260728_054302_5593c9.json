@@ -1,0 +1,173 @@
+{
+  "report_id": "e2e_20260728_054302_5593c9",
+  "timestamp": "2026-07-28T05:43:02.536500+00:00",
+  "duration_ms": 1320,
+  "total_scenarios": 4,
+  "passed": 2,
+  "failed": 0,
+  "error": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "scenario_id": "sc_app_startup",
+      "scenario_name": "app_startup",
+      "status": "passed",
+      "start_time": "2026-07-28T05:43:02.536525+00:00",
+      "end_time": "2026-07-28T05:43:03.750410+00:00",
+      "duration_ms": 1213,
+      "description": "验证应用根路径加载与 4 个独立页面路由（/memory, /verification, /doctor, /diff-view）",
+      "steps": [
+        {
+          "name": "backend_health_check",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:02.536625+00:00",
+          "end_time": "2026-07-28T05:43:02.539571+00:00",
+          "duration_ms": 2,
+          "message": "backend healthy, 8 scenarios loaded",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/memory",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:02.539587+00:00",
+          "end_time": "2026-07-28T05:43:02.539593+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/memory, title=Memory System",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/verification",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:02.539598+00:00",
+          "end_time": "2026-07-28T05:43:02.539601+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/verification, title=Verification Loop",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/doctor",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:02.539604+00:00",
+          "end_time": "2026-07-28T05:43:02.539607+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/doctor, title=Doctor",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/diff-view",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:02.539610+00:00",
+          "end_time": "2026-07-28T05:43:02.539612+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/diff-view, title=Diff View",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_doctor_endpoints",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:02.539615+00:00",
+          "end_time": "2026-07-28T05:43:03.748342+00:00",
+          "duration_ms": 1208,
+          "message": "verified 2 doctor API endpoints",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "capture_visual_baseline",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:03.748374+00:00",
+          "end_time": "2026-07-28T05:43:03.750365+00:00",
+          "duration_ms": 1,
+          "message": "captured visual baseline (76 bytes)",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_fallback_redirect",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:03.750386+00:00",
+          "end_time": "2026-07-28T05:43:03.750392+00:00",
+          "duration_ms": 0,
+          "message": "fallback navigation OK",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_mode_switch",
+      "scenario_name": "mode_switch",
+      "status": "passed",
+      "start_time": "2026-07-28T05:43:03.750425+00:00",
+      "end_time": "2026-07-28T05:43:03.856591+00:00",
+      "duration_ms": 106,
+      "description": "验证 ModeSelector 显示、Chat/Coding 模式切换、localStorage 持久化",
+      "steps": [
+        {
+          "name": "backend_health",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:03.750541+00:00",
+          "end_time": "2026-07-28T05:43:03.856531+00:00",
+          "duration_ms": 105,
+          "message": "backend healthy: status=healthy",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_to_root",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:03.856555+00:00",
+          "end_time": "2026-07-28T05:43:03.856562+00:00",
+          "duration_ms": 0,
+          "message": "navigated to root",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "select_chat_mode",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:03.856566+00:00",
+          "end_time": "2026-07-28T05:43:03.856570+00:00",
+          "duration_ms": 0,
+          "message": "chat mode selected and stored",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "switch_to_coding_mode",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:03.856573+00:00",
+          "end_time": "2026-07-28T05:43:03.856575+00:00",
+          "duration_ms": 0,
+          "message": "coding mode selected and stored",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_localStorage_persistence",
+          "status": "passed",
+          "start_time": "2026-07-28T05:43:03.856578+00:00",
+          "end_time": "2026-07-28T05:43:03.856583+00:00",
+          "duration_ms": 0,
+          "message": "localStorage persistence verified",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    }
+  ],
+  "metadata": {}
+}

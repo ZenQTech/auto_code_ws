@@ -1,0 +1,361 @@
+{
+  "report_id": "e2e_20260728_053429_bf70d0",
+  "timestamp": "2026-07-28T05:34:29.111427+00:00",
+  "duration_ms": 4714,
+  "total_scenarios": 16,
+  "passed": 2,
+  "failed": 2,
+  "error": 4,
+  "skipped": 0,
+  "results": [
+    {
+      "scenario_id": "sc_app_startup",
+      "scenario_name": "app_startup",
+      "status": "passed",
+      "start_time": "2026-07-28T05:34:29.111553+00:00",
+      "end_time": "2026-07-28T05:34:30.399393+00:00",
+      "duration_ms": 1287,
+      "description": "验证应用根路径加载与 4 个独立页面路由（/memory, /verification, /doctor, /diff-view）",
+      "steps": [
+        {
+          "name": "backend_health_check",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:29.111718+00:00",
+          "end_time": "2026-07-28T05:34:29.114507+00:00",
+          "duration_ms": 2,
+          "message": "backend healthy, 8 scenarios loaded",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/memory",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:29.114539+00:00",
+          "end_time": "2026-07-28T05:34:29.114549+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/memory, title=Memory System",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/verification",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:29.114554+00:00",
+          "end_time": "2026-07-28T05:34:29.114557+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/verification, title=Verification Loop",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/doctor",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:29.114562+00:00",
+          "end_time": "2026-07-28T05:34:29.114565+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/doctor, title=Doctor",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/diff-view",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:29.114569+00:00",
+          "end_time": "2026-07-28T05:34:29.114572+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/diff-view, title=Diff View",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_doctor_endpoints",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:29.114575+00:00",
+          "end_time": "2026-07-28T05:34:30.397028+00:00",
+          "duration_ms": 1282,
+          "message": "verified 2 doctor API endpoints",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "capture_visual_baseline",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:30.397051+00:00",
+          "end_time": "2026-07-28T05:34:30.399286+00:00",
+          "duration_ms": 2,
+          "message": "captured visual baseline (76 bytes)",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_fallback_redirect",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:30.399303+00:00",
+          "end_time": "2026-07-28T05:34:30.399309+00:00",
+          "duration_ms": 0,
+          "message": "fallback navigation OK",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_mode_switch",
+      "scenario_name": "mode_switch",
+      "status": "failed",
+      "start_time": "2026-07-28T05:34:30.399403+00:00",
+      "end_time": "2026-07-28T05:34:30.533289+00:00",
+      "duration_ms": 133,
+      "description": "验证 ModeSelector 显示、Chat/Coding 模式切换、localStorage 持久化",
+      "steps": [
+        {
+          "name": "backend_health",
+          "status": "failed",
+          "start_time": "2026-07-28T05:34:30.399575+00:00",
+          "end_time": "2026-07-28T05:34:30.533146+00:00",
+          "duration_ms": 133,
+          "message": "",
+          "error": "backend unhealthy",
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": "backend unhealthy",
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_session_management",
+      "scenario_name": "session_management",
+      "status": "error",
+      "start_time": "2026-07-28T05:34:30.533301+00:00",
+      "end_time": "2026-07-28T05:34:30.675860+00:00",
+      "duration_ms": 142,
+      "description": "验证 Session 创建、列表、切换、删除、localStorage 持久化",
+      "steps": [
+        {
+          "name": "health_check",
+          "status": "error",
+          "start_time": "2026-07-28T05:34:30.533513+00:00",
+          "end_time": "2026-07-28T05:34:30.675378+00:00",
+          "duration_ms": 141,
+          "message": "",
+          "error": "BaseScenario.assert_true() missing 1 required positional argument: 'message'",
+          "screenshot": null
+        }
+      ],
+      "screenshots": [
+        "/home/qizheng/auto_code_ws/tests/e2e_reports/sc_session_management/screenshots/failure_1785216870675.png"
+      ],
+      "error": "BaseScenario.assert_true() missing 1 required positional argument: 'message'",
+      "error_stack": "Traceback (most recent call last):\n  File \"/home/qizheng/auto_code_ws/backend/app/core/e2e/runner.py\", line 144, in run_scenario\n    run_result = scenario.run(ctx)\n  File \"/home/qizheng/auto_code_ws/backend/app/core/e2e/scenarios/s3_session_management.py\", line 31, in run\n    self.assert_true(r.get(\"status\") == \"ok\" or r.get(\"success\"))\nTypeError: BaseScenario.assert_true() missing 1 required positional argument: 'message'\n",
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_message_streaming",
+      "scenario_name": "message_streaming",
+      "status": "error",
+      "start_time": "2026-07-28T05:34:30.675875+00:00",
+      "end_time": "2026-07-28T05:34:30.801316+00:00",
+      "duration_ms": 125,
+      "description": "验证消息输入、SSE 流式 API 调用、流式响应处理",
+      "steps": [
+        {
+          "name": "health_check",
+          "status": "error",
+          "start_time": "2026-07-28T05:34:30.676036+00:00",
+          "end_time": "2026-07-28T05:34:30.800615+00:00",
+          "duration_ms": 124,
+          "message": "",
+          "error": "BaseScenario.assert_true() missing 1 required positional argument: 'message'",
+          "screenshot": null
+        }
+      ],
+      "screenshots": [
+        "/home/qizheng/auto_code_ws/tests/e2e_reports/sc_message_streaming/screenshots/failure_1785216870801.png"
+      ],
+      "error": "BaseScenario.assert_true() missing 1 required positional argument: 'message'",
+      "error_stack": "Traceback (most recent call last):\n  File \"/home/qizheng/auto_code_ws/backend/app/core/e2e/runner.py\", line 144, in run_scenario\n    run_result = scenario.run(ctx)\n  File \"/home/qizheng/auto_code_ws/backend/app/core/e2e/scenarios/s4_message_streaming.py\", line 31, in run\n    self.assert_true(r.get(\"status\") == \"ok\" or r.get(\"success\"))\nTypeError: BaseScenario.assert_true() missing 1 required positional argument: 'message'\n",
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_clarification",
+      "scenario_name": "clarification",
+      "status": "error",
+      "start_time": "2026-07-28T05:34:30.801334+00:00",
+      "end_time": "2026-07-28T05:34:30.932446+00:00",
+      "duration_ms": 131,
+      "description": "验证需求澄清端点、结构化问题、回答提交、澄清完成",
+      "steps": [
+        {
+          "name": "health_check",
+          "status": "error",
+          "start_time": "2026-07-28T05:34:30.801558+00:00",
+          "end_time": "2026-07-28T05:34:30.932021+00:00",
+          "duration_ms": 130,
+          "message": "",
+          "error": "BaseScenario.assert_true() missing 1 required positional argument: 'message'",
+          "screenshot": null
+        }
+      ],
+      "screenshots": [
+        "/home/qizheng/auto_code_ws/tests/e2e_reports/sc_clarification/screenshots/failure_1785216870932.png"
+      ],
+      "error": "BaseScenario.assert_true() missing 1 required positional argument: 'message'",
+      "error_stack": "Traceback (most recent call last):\n  File \"/home/qizheng/auto_code_ws/backend/app/core/e2e/runner.py\", line 144, in run_scenario\n    run_result = scenario.run(ctx)\n  File \"/home/qizheng/auto_code_ws/backend/app/core/e2e/scenarios/s5_clarification.py\", line 31, in run\n    self.assert_true(r.get(\"status\") == \"ok\" or r.get(\"success\"))\nTypeError: BaseScenario.assert_true() missing 1 required positional argument: 'message'\n",
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_architecture_design",
+      "scenario_name": "architecture_design",
+      "status": "error",
+      "start_time": "2026-07-28T05:34:30.932462+00:00",
+      "end_time": "2026-07-28T05:34:31.054238+00:00",
+      "duration_ms": 121,
+      "description": "验证架构设计阶段触发、requirementV2 接收、Modal 确认/拒绝",
+      "steps": [
+        {
+          "name": "health_check",
+          "status": "error",
+          "start_time": "2026-07-28T05:34:30.932624+00:00",
+          "end_time": "2026-07-28T05:34:31.053830+00:00",
+          "duration_ms": 121,
+          "message": "",
+          "error": "BaseScenario.assert_true() missing 1 required positional argument: 'message'",
+          "screenshot": null
+        }
+      ],
+      "screenshots": [
+        "/home/qizheng/auto_code_ws/tests/e2e_reports/sc_architecture_design/screenshots/failure_1785216871054.png"
+      ],
+      "error": "BaseScenario.assert_true() missing 1 required positional argument: 'message'",
+      "error_stack": "Traceback (most recent call last):\n  File \"/home/qizheng/auto_code_ws/backend/app/core/e2e/runner.py\", line 144, in run_scenario\n    run_result = scenario.run(ctx)\n  File \"/home/qizheng/auto_code_ws/backend/app/core/e2e/scenarios/s6_architecture_design.py\", line 31, in run\n    self.assert_true(r.get(\"status\") == \"ok\" or r.get(\"success\"))\nTypeError: BaseScenario.assert_true() missing 1 required positional argument: 'message'\n",
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_doctor_diagnosis",
+      "scenario_name": "doctor_diagnosis",
+      "status": "passed",
+      "start_time": "2026-07-28T05:34:31.054254+00:00",
+      "end_time": "2026-07-28T05:34:33.688510+00:00",
+      "duration_ms": 2634,
+      "description": "验证 Doctor 环境诊断：6 大类、修复建议、历史报告",
+      "steps": [
+        {
+          "name": "doctor_health",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:31.054395+00:00",
+          "end_time": "2026-07-28T05:34:31.055838+00:00",
+          "duration_ms": 1,
+          "message": "doctor healthy, 6 categories",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "list_categories",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:31.055851+00:00",
+          "end_time": "2026-07-28T05:34:32.392158+00:00",
+          "duration_ms": 1336,
+          "message": "all 6 categories present",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "run_environment_check",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:32.392183+00:00",
+          "end_time": "2026-07-28T05:34:32.421968+00:00",
+          "duration_ms": 29,
+          "message": "environment: 10 checks, status=error",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "run_full_diagnosis",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:32.422006+00:00",
+          "end_time": "2026-07-28T05:34:33.684106+00:00",
+          "duration_ms": 1262,
+          "message": "full diagnosis done: {'ok': 21, 'warning': 14, 'error': 1, 'skipped': 7, 'total': 43}",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "get_fix_suggestion",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:33.684129+00:00",
+          "end_time": "2026-07-28T05:34:33.685660+00:00",
+          "duration_ms": 1,
+          "message": "fix: 设置 ANTHROPIC_API_KEY 环境变量",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "view_history",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:33.685674+00:00",
+          "end_time": "2026-07-28T05:34:33.686971+00:00",
+          "duration_ms": 1,
+          "message": "history: 5 reports",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "list_all_fixes",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:33.686981+00:00",
+          "end_time": "2026-07-28T05:34:33.688396+00:00",
+          "duration_ms": 1,
+          "message": "total fixes: 43",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_e2e_regression",
+      "scenario_name": "e2e_regression",
+      "status": "failed",
+      "start_time": "2026-07-28T05:34:33.688521+00:00",
+      "end_time": "2026-07-28T05:34:33.826160+00:00",
+      "duration_ms": 137,
+      "description": "端到端回归：用户输入 → 需求澄清 → 架构设计 → 任务派发 → 验证",
+      "steps": [
+        {
+          "name": "full_health_check",
+          "status": "passed",
+          "start_time": "2026-07-28T05:34:33.688708+00:00",
+          "end_time": "2026-07-28T05:34:33.804844+00:00",
+          "duration_ms": 116,
+          "message": "2/4 endpoints healthy",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "create_session",
+          "status": "failed",
+          "start_time": "2026-07-28T05:34:33.804862+00:00",
+          "end_time": "2026-07-28T05:34:33.826034+00:00",
+          "duration_ms": 21,
+          "message": "",
+          "error": "create failed: {'id': 'a7e89532-1f92-4327-a213-f3b560039d49', 'title': 'E2E Regression', 'created_at': '2026-07-28T05:34:33.816322', 'last_active_at': '2026-07-28T05:34:33.816325', 'user_first_message': '', 'message_count': 0, 'status': 'active', 'deleted_at': None, 'mode': 'chat', 'workflow_id': None, 'workflow_stage': None}",
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": "create failed: {'id': 'a7e89532-1f92-4327-a213-f3b560039d49', 'title': 'E2E Regression', 'created_at': '2026-07-28T05:34:33.816322', 'last_active_at': '2026-07-28T05:34:33.816325', 'user_first_message': '', 'message_count': 0, 'status': 'active', 'deleted_at': None, 'mode': 'chat', 'workflow_id': None, 'workflow_stage': None}",
+      "error_stack": null,
+      "metadata": {}
+    }
+  ],
+  "metadata": {}
+}

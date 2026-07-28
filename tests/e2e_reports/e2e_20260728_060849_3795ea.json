@@ -1,0 +1,108 @@
+{
+  "report_id": "e2e_20260728_060849_3795ea",
+  "timestamp": "2026-07-28T06:08:49.754507+00:00",
+  "duration_ms": 1285,
+  "total_scenarios": 2,
+  "passed": 1,
+  "failed": 0,
+  "error": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "scenario_id": "sc_app_startup",
+      "scenario_name": "app_startup",
+      "status": "passed",
+      "start_time": "2026-07-28T06:08:49.754658+00:00",
+      "end_time": "2026-07-28T06:08:51.040454+00:00",
+      "duration_ms": 1285,
+      "description": "验证应用根路径加载与 4 个独立页面路由（/memory, /verification, /doctor, /diff-view）",
+      "steps": [
+        {
+          "name": "backend_health_check",
+          "status": "passed",
+          "start_time": "2026-07-28T06:08:49.754840+00:00",
+          "end_time": "2026-07-28T06:08:49.756515+00:00",
+          "duration_ms": 1,
+          "message": "backend healthy, 8 scenarios loaded",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/memory",
+          "status": "passed",
+          "start_time": "2026-07-28T06:08:49.756530+00:00",
+          "end_time": "2026-07-28T06:08:49.756536+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/memory, title=Memory System",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/verification",
+          "status": "passed",
+          "start_time": "2026-07-28T06:08:49.756540+00:00",
+          "end_time": "2026-07-28T06:08:49.756543+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/verification, title=Verification Loop",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/doctor",
+          "status": "passed",
+          "start_time": "2026-07-28T06:08:49.756547+00:00",
+          "end_time": "2026-07-28T06:08:49.756550+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/doctor, title=Doctor",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/diff-view",
+          "status": "passed",
+          "start_time": "2026-07-28T06:08:49.756554+00:00",
+          "end_time": "2026-07-28T06:08:49.756558+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/diff-view, title=Diff View",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_doctor_endpoints",
+          "status": "passed",
+          "start_time": "2026-07-28T06:08:49.756561+00:00",
+          "end_time": "2026-07-28T06:08:51.038114+00:00",
+          "duration_ms": 1281,
+          "message": "verified 2 doctor API endpoints",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "capture_visual_baseline",
+          "status": "passed",
+          "start_time": "2026-07-28T06:08:51.038138+00:00",
+          "end_time": "2026-07-28T06:08:51.040333+00:00",
+          "duration_ms": 2,
+          "message": "captured visual baseline (76 bytes)",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_fallback_redirect",
+          "status": "passed",
+          "start_time": "2026-07-28T06:08:51.040362+00:00",
+          "end_time": "2026-07-28T06:08:51.040370+00:00",
+          "duration_ms": 0,
+          "message": "fallback navigation OK",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    }
+  ],
+  "metadata": {}
+}

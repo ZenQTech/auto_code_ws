@@ -1,0 +1,633 @@
+{
+  "report_id": "e2e_20260728_061011_5fbc59",
+  "timestamp": "2026-07-28T06:10:11.607028+00:00",
+  "duration_ms": 9447,
+  "total_scenarios": 8,
+  "passed": 8,
+  "failed": 0,
+  "error": 0,
+  "skipped": 0,
+  "results": [
+    {
+      "scenario_id": "sc_app_startup",
+      "scenario_name": "app_startup",
+      "status": "passed",
+      "start_time": "2026-07-28T06:10:11.607084+00:00",
+      "end_time": "2026-07-28T06:10:12.857801+00:00",
+      "duration_ms": 1250,
+      "description": "验证应用根路径加载与 4 个独立页面路由（/memory, /verification, /doctor, /diff-view）",
+      "steps": [
+        {
+          "name": "backend_health_check",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:11.607273+00:00",
+          "end_time": "2026-07-28T06:10:11.611198+00:00",
+          "duration_ms": 3,
+          "message": "backend healthy, 8 scenarios loaded",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/memory",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:11.611221+00:00",
+          "end_time": "2026-07-28T06:10:11.611236+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/memory, title=Memory System",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/verification",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:11.611245+00:00",
+          "end_time": "2026-07-28T06:10:11.611251+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/verification, title=Verification Loop",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/doctor",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:11.611258+00:00",
+          "end_time": "2026-07-28T06:10:11.611263+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/doctor, title=Doctor",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_/diff-view",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:11.611269+00:00",
+          "end_time": "2026-07-28T06:10:11.611275+00:00",
+          "duration_ms": 0,
+          "message": "navigated to http://localhost:5173/diff-view, title=Diff View",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_doctor_endpoints",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:11.611281+00:00",
+          "end_time": "2026-07-28T06:10:12.855901+00:00",
+          "duration_ms": 1244,
+          "message": "verified 2 doctor API endpoints",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "capture_visual_baseline",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:12.855926+00:00",
+          "end_time": "2026-07-28T06:10:12.857760+00:00",
+          "duration_ms": 1,
+          "message": "captured visual baseline (76 bytes)",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_fallback_redirect",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:12.857779+00:00",
+          "end_time": "2026-07-28T06:10:12.857787+00:00",
+          "duration_ms": 0,
+          "message": "fallback navigation OK",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_mode_switch",
+      "scenario_name": "mode_switch",
+      "status": "passed",
+      "start_time": "2026-07-28T06:10:12.857812+00:00",
+      "end_time": "2026-07-28T06:10:12.989206+00:00",
+      "duration_ms": 131,
+      "description": "验证 ModeSelector 显示、Chat/Coding 模式切换、localStorage 持久化",
+      "steps": [
+        {
+          "name": "backend_health",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:12.857939+00:00",
+          "end_time": "2026-07-28T06:10:12.989137+00:00",
+          "duration_ms": 131,
+          "message": "backend healthy: status=healthy",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "navigate_to_root",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:12.989167+00:00",
+          "end_time": "2026-07-28T06:10:12.989176+00:00",
+          "duration_ms": 0,
+          "message": "navigated to root",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "select_chat_mode",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:12.989182+00:00",
+          "end_time": "2026-07-28T06:10:12.989187+00:00",
+          "duration_ms": 0,
+          "message": "chat mode selected and stored",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "switch_to_coding_mode",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:12.989190+00:00",
+          "end_time": "2026-07-28T06:10:12.989192+00:00",
+          "duration_ms": 0,
+          "message": "coding mode selected and stored",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_localStorage_persistence",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:12.989195+00:00",
+          "end_time": "2026-07-28T06:10:12.989199+00:00",
+          "duration_ms": 0,
+          "message": "localStorage persistence verified",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_session_management",
+      "scenario_name": "session_management",
+      "status": "passed",
+      "start_time": "2026-07-28T06:10:12.989229+00:00",
+      "end_time": "2026-07-28T06:10:13.142626+00:00",
+      "duration_ms": 153,
+      "description": "验证 Session 创建、列表、切换、删除、localStorage 持久化",
+      "steps": [
+        {
+          "name": "health_check",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:12.989350+00:00",
+          "end_time": "2026-07-28T06:10:13.099758+00:00",
+          "duration_ms": 110,
+          "message": "backend healthy: status=healthy",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "list_sessions",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:13.099785+00:00",
+          "end_time": "2026-07-28T06:10:13.105511+00:00",
+          "duration_ms": 5,
+          "message": "listed 14 sessions",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "create_session",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:13.105534+00:00",
+          "end_time": "2026-07-28T06:10:13.129799+00:00",
+          "duration_ms": 24,
+          "message": "created session cfdd8ea6-f7e2-4870-b2f6-b34559e04d1e",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "get_session_detail",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:13.129829+00:00",
+          "end_time": "2026-07-28T06:10:13.134686+00:00",
+          "duration_ms": 4,
+          "message": "got session detail for cfdd8ea6-f7e2-4870-b2f6-b34559e04d1e",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "delete_session",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:13.134714+00:00",
+          "end_time": "2026-07-28T06:10:13.142602+00:00",
+          "duration_ms": 7,
+          "message": "deleted session cfdd8ea6-f7e2-4870-b2f6-b34559e04d1e",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_message_streaming",
+      "scenario_name": "message_streaming",
+      "status": "passed",
+      "start_time": "2026-07-28T06:10:13.142639+00:00",
+      "end_time": "2026-07-28T06:10:18.152797+00:00",
+      "duration_ms": 5010,
+      "description": "验证消息输入、SSE 流式 API 调用、流式响应处理",
+      "steps": [
+        {
+          "name": "health_check",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:13.142750+00:00",
+          "end_time": "2026-07-28T06:10:13.259789+00:00",
+          "duration_ms": 117,
+          "message": "backend healthy: status=healthy",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "create_test_session",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:13.259811+00:00",
+          "end_time": "2026-07-28T06:10:13.267562+00:00",
+          "duration_ms": 7,
+          "message": "created session ce585a0c-94ab-427b-9ae5-65be3a5c9f69",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_chat_api",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:13.267579+00:00",
+          "end_time": "2026-07-28T06:10:18.150732+00:00",
+          "duration_ms": 4883,
+          "message": "chat API responded: dict",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "simulate_message_input",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.150754+00:00",
+          "end_time": "2026-07-28T06:10:18.150761+00:00",
+          "duration_ms": 0,
+          "message": "message input simulated",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_thinking_api",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.150765+00:00",
+          "end_time": "2026-07-28T06:10:18.152779+00:00",
+          "duration_ms": 2,
+          "message": "thinking API not available (acceptable)",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_clarification",
+      "scenario_name": "clarification",
+      "status": "passed",
+      "start_time": "2026-07-28T06:10:18.152808+00:00",
+      "end_time": "2026-07-28T06:10:18.287118+00:00",
+      "duration_ms": 134,
+      "description": "验证需求澄清端点、结构化问题、回答提交、澄清完成",
+      "steps": [
+        {
+          "name": "health_check",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.152921+00:00",
+          "end_time": "2026-07-28T06:10:18.277415+00:00",
+          "duration_ms": 124,
+          "message": "backend healthy: status=healthy",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "create_session",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.277442+00:00",
+          "end_time": "2026-07-28T06:10:18.285671+00:00",
+          "duration_ms": 8,
+          "message": "created session 6a94faeb-0876-4bfa-b37f-f09dec426dd9",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "check_clarify_endpoint",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.285692+00:00",
+          "end_time": "2026-07-28T06:10:18.287083+00:00",
+          "duration_ms": 1,
+          "message": "clarify endpoint check: ApiError",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "open_clarification_modal",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.287096+00:00",
+          "end_time": "2026-07-28T06:10:18.287103+00:00",
+          "duration_ms": 0,
+          "message": "clarification modal simulated",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "submit_clarification_answer",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.287107+00:00",
+          "end_time": "2026-07-28T06:10:18.287110+00:00",
+          "duration_ms": 0,
+          "message": "clarification answer submitted",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_architecture_design",
+      "scenario_name": "architecture_design",
+      "status": "passed",
+      "start_time": "2026-07-28T06:10:18.287131+00:00",
+      "end_time": "2026-07-28T06:10:18.396033+00:00",
+      "duration_ms": 108,
+      "description": "验证架构设计阶段触发、requirementV2 接收、Modal 确认/拒绝",
+      "steps": [
+        {
+          "name": "health_check",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.287249+00:00",
+          "end_time": "2026-07-28T06:10:18.394487+00:00",
+          "duration_ms": 107,
+          "message": "backend healthy: status=healthy",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "check_design_api",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.394512+00:00",
+          "end_time": "2026-07-28T06:10:18.395995+00:00",
+          "duration_ms": 1,
+          "message": "design endpoint check: ApiError",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "open_design_modal",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.396009+00:00",
+          "end_time": "2026-07-28T06:10:18.396014+00:00",
+          "duration_ms": 0,
+          "message": "design modal opened",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "confirm_design",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.396018+00:00",
+          "end_time": "2026-07-28T06:10:18.396020+00:00",
+          "duration_ms": 0,
+          "message": "design confirmed",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "simulate_reject_design",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.396023+00:00",
+          "end_time": "2026-07-28T06:10:18.396026+00:00",
+          "duration_ms": 0,
+          "message": "design rejection simulated",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_doctor_diagnosis",
+      "scenario_name": "doctor_diagnosis",
+      "status": "passed",
+      "start_time": "2026-07-28T06:10:18.396056+00:00",
+      "end_time": "2026-07-28T06:10:20.919929+00:00",
+      "duration_ms": 2523,
+      "description": "验证 Doctor 环境诊断：6 大类、修复建议、历史报告",
+      "steps": [
+        {
+          "name": "doctor_health",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.396187+00:00",
+          "end_time": "2026-07-28T06:10:18.397304+00:00",
+          "duration_ms": 1,
+          "message": "doctor healthy, 6 categories",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "list_categories",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:18.397315+00:00",
+          "end_time": "2026-07-28T06:10:19.643504+00:00",
+          "duration_ms": 1246,
+          "message": "all 6 categories present",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "run_environment_check",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:19.643531+00:00",
+          "end_time": "2026-07-28T06:10:19.658225+00:00",
+          "duration_ms": 14,
+          "message": "environment: 10 checks, status=error",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "run_full_diagnosis",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:19.658246+00:00",
+          "end_time": "2026-07-28T06:10:20.915810+00:00",
+          "duration_ms": 1257,
+          "message": "full diagnosis done: {'ok': 21, 'warning': 14, 'error': 1, 'skipped': 7, 'total': 43}",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "get_fix_suggestion",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:20.915835+00:00",
+          "end_time": "2026-07-28T06:10:20.917227+00:00",
+          "duration_ms": 1,
+          "message": "fix: 设置 ANTHROPIC_API_KEY 环境变量",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "view_history",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:20.917242+00:00",
+          "end_time": "2026-07-28T06:10:20.918501+00:00",
+          "duration_ms": 1,
+          "message": "history: 16 reports",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "list_all_fixes",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:20.918512+00:00",
+          "end_time": "2026-07-28T06:10:20.919886+00:00",
+          "duration_ms": 1,
+          "message": "total fixes: 43",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    },
+    {
+      "scenario_id": "sc_e2e_regression",
+      "scenario_name": "e2e_regression",
+      "status": "passed",
+      "start_time": "2026-07-28T06:10:20.919947+00:00",
+      "end_time": "2026-07-28T06:10:21.054485+00:00",
+      "duration_ms": 134,
+      "description": "端到端回归：用户输入 → 需求澄清 → 架构设计 → 任务派发 → 验证",
+      "steps": [
+        {
+          "name": "full_health_check",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:20.920075+00:00",
+          "end_time": "2026-07-28T06:10:21.037464+00:00",
+          "duration_ms": 117,
+          "message": "4/4 endpoints healthy",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "create_session",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:21.037484+00:00",
+          "end_time": "2026-07-28T06:10:21.050736+00:00",
+          "duration_ms": 13,
+          "message": "session 4c0078a8-599c-4289-b981-be0e47db0aa6",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "simulate_requirement_input",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:21.050757+00:00",
+          "end_time": "2026-07-28T06:10:21.050763+00:00",
+          "duration_ms": 0,
+          "message": "requirement input simulated",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "trigger_clarification",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:21.050767+00:00",
+          "end_time": "2026-07-28T06:10:21.050770+00:00",
+          "duration_ms": 0,
+          "message": "clarification stage entered",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "trigger_architecture_design",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:21.050773+00:00",
+          "end_time": "2026-07-28T06:10:21.050775+00:00",
+          "duration_ms": 0,
+          "message": "design stage entered",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "trigger_task_dispatch",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:21.050778+00:00",
+          "end_time": "2026-07-28T06:10:21.050781+00:00",
+          "duration_ms": 0,
+          "message": "dispatch stage entered",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_subagent_workspace",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:21.050784+00:00",
+          "end_time": "2026-07-28T06:10:21.052480+00:00",
+          "duration_ms": 1,
+          "message": "subagents API check: ApiError",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "trigger_verification",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:21.052492+00:00",
+          "end_time": "2026-07-28T06:10:21.053528+00:00",
+          "duration_ms": 1,
+          "message": "verification triggered",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "run_doctor_check",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:21.053537+00:00",
+          "end_time": "2026-07-28T06:10:21.054466+00:00",
+          "duration_ms": 0,
+          "message": "doctor check passed",
+          "error": null,
+          "screenshot": null
+        },
+        {
+          "name": "verify_global_state",
+          "status": "passed",
+          "start_time": "2026-07-28T06:10:21.054474+00:00",
+          "end_time": "2026-07-28T06:10:21.054477+00:00",
+          "duration_ms": 0,
+          "message": "global state consistent",
+          "error": null,
+          "screenshot": null
+        }
+      ],
+      "screenshots": [],
+      "error": null,
+      "error_stack": null,
+      "metadata": {}
+    }
+  ],
+  "metadata": {}
+}

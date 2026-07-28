@@ -14,6 +14,8 @@
 #   - 2026-06-24 | v4.1.3 | 新增 config 路由注册（全局配置中心 API）
 #   - 2026-07-24 | v1.3.0 | Module E 新增 models / reasoning / review / fix
 #     四个路由注册（Codex 核心特性：模型选择 / 推理强度 / /review / /fix）
+#   - 2026-07-28 | v6.17.0 | Cycle 11 P2-1 新增 e2e 路由注册
+#     （Playwright E2E 自动化：health/scenarios/run/reports/baselines/compare）
 # ============================================================
 """
 
@@ -72,3 +74,6 @@ api_router.include_router(fix_router, prefix="/fix", tags=["代码自动修复"]
 # v1.4.0 P0-4 Cycle 4：SubAgent 记忆继承与独立 Context
 from .subagent_memory import router as subagent_memory_router
 api_router.include_router(subagent_memory_router, prefix="/agents", tags=["SubAgent 记忆"])
+# v6.17.0 Cycle 11 P2-1：Playwright E2E 自动化
+from .e2e import router as e2e_router
+api_router.include_router(e2e_router, prefix="/e2e", tags=["E2E 自动化"])

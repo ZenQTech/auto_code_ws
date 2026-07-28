@@ -953,6 +953,17 @@ export default function App() {
   }, [navigate]);
 
   /**
+   * v1.0.0 (Cycle 11 P2-2) 新增：Doctor 环境诊断入口
+   */
+  const handleOpenDoctor = useCallback(() => {
+    try {
+      navigate('/doctor');
+    } catch (e) {
+      window.location.href = '/doctor';
+    }
+  }, [navigate]);
+
+  /**
    * 删除会话
    * 运行步骤：
    *   1. 二次确认
@@ -1871,6 +1882,7 @@ export default function App() {
           onOpenDiffView={handleOpenDiffView}
           onOpenMemory={handleOpenMemory}
           onOpenVerification={handleOpenVerification}
+          onOpenDoctor={handleOpenDoctor}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}

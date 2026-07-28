@@ -72,6 +72,8 @@ export interface BrandHeaderProps {
   onOpenMemory?: () => void;
   /** v1.0.0 (Cycle 10 P1-10) 新增：Verification Loop 入口回调 */
   onOpenVerification?: () => void;
+  /** v1.0.0 (Cycle 11 P2-2) 新增：Doctor 环境诊断入口回调 */
+  onOpenDoctor?: () => void;
   /** v1.6.0 新增：打开 MCP 工具面板回调（可选，提供则菜单显示"MCP 工具"项） */
   onOpenMCP?: () => void;
   /** v1.6.0 新增：打开会话压缩面板回调（可选，提供则菜单显示"会话压缩"项） */
@@ -352,6 +354,7 @@ export default function BrandHeader({
   onOpenDiffView,
   onOpenMemory,
   onOpenVerification,
+  onOpenDoctor,
   onOpenMCP,
   onOpenCompaction,
   onOpenSkills,
@@ -597,6 +600,22 @@ export default function BrandHeader({
                 >
                   <Icon name="folder" className="w-4 h-4" />
                   <span>🔁 Verification Loop</span>
+                </button>
+              )}
+
+              {/* v1.0.0 (Cycle 11 P2-2) 新增：Doctor 环境诊断入口
+               *  行为：点击跳转 /doctor 路由打开环境诊断页面
+               *  图标：folder，强调健康检查与自动修复建议 */}
+              {onOpenDoctor && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenDoctor)}
+                  className="w-full px-4 py-2 text-left text-sm text-rose-700
+                             hover:bg-rose-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <Icon name="folder" className="w-4 h-4" />
+                  <span>🩺 Doctor 环境诊断</span>
                 </button>
               )}
 
