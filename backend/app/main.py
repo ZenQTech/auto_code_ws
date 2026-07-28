@@ -827,6 +827,10 @@ app.include_router(custom_commands_router, tags=["custom-commands"])
 from .api.custom_models import router as custom_models_router
 app.include_router(custom_models_router)
 
+# v1.0.0 Cycle 8 P1-4：/loop 命令集 (Loop Engineering triage/plan/execute/verify)
+from .api.loop_commands import router as loop_commands_router
+app.include_router(loop_commands_router, prefix="/api", tags=["loop-commands"])
+
 # 启动时初始化 Custom Models 服务 + Bearer Token 后台刷新任务
 @app.on_event("startup")
 async def _init_custom_models():

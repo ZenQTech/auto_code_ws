@@ -330,7 +330,14 @@ def handler_show_git_diff(
 def handler_run_loop(
     command: SlashCommand, args: List[str], context: ExecutionContext
 ) -> ExecutionResult:
-    """Loop Engineering 控制"""
+    """Loop Engineering 控制（v1.1.0 Cycle 8 P1-4 增强版）
+
+    支持子命令:
+      - triage: 分析 tasks.md 任务优先级
+      - plan: 生成 spec + branch
+      - execute: 执行 task + git commit
+      - verify: 验证任务
+    """
     if not args:
         return ExecutionResult(
             command=command.name,
@@ -345,16 +352,50 @@ def handler_run_loop(
         return ExecutionResult(
             command=command.name,
             status=ExecutionStatus.FAILED,
-            message=f"无效的 loop action: {action}",
+            message=f"无效的 loop action: {action}，可选: {', '.join(valid_actions)}",
             error=f"Invalid action: {action}",
         )
 
-    return ExecutionResult(
-        command=command.name,
-        status=ExecutionStatus.SUCCESS,
-        message=f"Loop Engineering: {action} 已触发",
-        data={"action": "run_loop", "loop_action": action},
-    )
+    # 集成 loop_commands 服务
+    try:
+        from .loop_commands import (
+            TriageService, PlanService, ExecuteService, VerifyService,
+        )
+
+        project_path = context.metadata.get("project_path") if context.metadata else None
+        if not project_path:
+            project_path = "."  # 默认当前目录
+
+        # 根据 action 路由到对应服务
+        if action == "triage":
+            service = TriageService(project_path)
+            result = service.analyze()
+        elif action == "plan":
+            service = PlanService(project_path)
+            result = service.execute(max_iterations=3)
+        elif action == "execute":
+            service = ExecuteService(project_path)
+            result = service.execute(task_id=None)
+        elif action == "verify":
+            service = VerifyService(project_path)
+            result = service.verify()
+        else:
+            result = {}
+
+        return ExecutionResult(
+            command=command.name,
+            status=ExecutionStatus.SUCCESS,
+            message=f"Loop Engineering: {action} 已执行",
+            data={"action": "run_loop", "loop_action": action, "result": result},
+        )
+    except Exception as e:
+        logger.error(f"Loop {action} failed: {e}")
+        return ExecutionResult(
+            command=command.name,
+            status=ExecutionStatus.FAILED,
+            message=f"Loop Engineering: {action} 执行失败: {e}",
+            error=str(e),
+        )
 
 
 # ============================================================
