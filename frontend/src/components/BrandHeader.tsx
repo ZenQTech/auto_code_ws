@@ -102,6 +102,8 @@ export interface BrandHeaderProps {
   onOpenTraceRule?: () => void;
   /** v2.10.0 (Cycle 8 P0-12) 新增：打开 Slash Commands 帮助面板回调（可选） */
   onOpenSlashCommand?: () => void;
+  /** v2.11.0 (Cycle 8 P0-14) 新增：打开 Custom Models 管理面板回调（可选） */
+  onOpenCustomModels?: () => void;
 }
 
 /**
@@ -111,7 +113,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -309,6 +311,17 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M9 12l2 2 4-4" />
         </svg>
       );
+    case 'brain-network':
+      // v2.11.0 (Cycle 8 P0-14) 新增：Custom Models（大脑+网络节点, 表达多模型）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <circle cx="6" cy="6" r="2.5" />
+          <circle cx="18" cy="6" r="2.5" />
+          <circle cx="12" cy="18" r="2.5" />
+          <circle cx="12" cy="12" r="3" />
+          <path d="M8 8l3 3M16 8l-3 3M12 15v-1" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -359,6 +372,8 @@ export default function BrandHeader({
   onOpenTraceRule,
   /** v2.10.0 (Cycle 8 P0-12) 新增 */
   onOpenSlashCommand,
+  /** v2.11.0 (Cycle 8 P0-14) 新增 */
+  onOpenCustomModels,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -833,6 +848,24 @@ export default function BrandHeader({
                 >
                   <Icon name="zap" className="w-4 h-4 text-violet-500" />
                   <span>⚡ Slash Commands 帮助</span>
+                </button>
+              )}
+
+              {/* v2.11.0 (Cycle 8 P0-14) 新增：Custom Models 管理（菜单项）
+               *  行为：点击调 onOpenCustomModels() 弹出 CustomModelsPanel
+               *       支持 OpenAI/Anthropic/Azure/Custom 四种 Provider
+               *       集成 Bearer Token 自动刷新 + Fernet API Key 加密
+               *  图标：brain-network（大脑+网络节点），表达多模型接入 */}
+              {onOpenCustomModels && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCustomModels)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-emerald-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="brain-network" className="w-4 h-4 text-emerald-500" />
+                  <span>🧠 Custom Models 管理</span>
                 </button>
               )}
 

@@ -113,6 +113,8 @@ export interface AppLayoutProps {
   onOpenTraceRule: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：打开 Slash Commands 帮助面板 */
   onOpenSlashCommand: () => void;
+  /** v6.24.0 (Cycle 8 P0-14) 新增：Custom Models 管理面板回调 */
+  onOpenCustomModels: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -216,6 +218,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenMultiAgentTree,  // v6.21.0 (Cycle 7 P0-10) 透传 BrandHeader
   onOpenTraceRule,  // v6.22.0 (Cycle 7 P0-11) 透传 BrandHeader
   onOpenSlashCommand,  // v6.23.0 (Cycle 8 P0-12) 透传 BrandHeader
+  onOpenCustomModels,  // v6.24.0 (Cycle 8 P0-14) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -394,6 +397,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenMultiAgentTree={onOpenMultiAgentTree}
         onOpenTraceRule={onOpenTraceRule}
         onOpenSlashCommand={onOpenSlashCommand}
+        onOpenCustomModels={onOpenCustomModels}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

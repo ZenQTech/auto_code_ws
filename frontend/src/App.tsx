@@ -184,6 +184,7 @@ import MultiAgentTreePanel from './components/MultiAgentTreePanel';
 import RulePanel from './components/RulePanel';
 /** v5.7.0 (Cycle 8 P0-12) 新增：Slash Commands 帮助面板 */
 import SlashCommandHelp from './components/SlashCommandHelp';
+import CustomModelsPanel from './components/CustomModelsPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -321,6 +322,7 @@ export default function App() {
     multiAgentTree: multiAgentTreeModal,  // v1.9.0 (Cycle 7 P0-10) 新增
     traceRule: traceRuleModal,  // v2.0.0 (Cycle 7 P0-11) 新增
     slashCommand: slashCommandModal,  // v2.1.0 (Cycle 8 P0-12) 新增
+    customModels: customModelsModal,  // v2.2.0 (Cycle 8 P0-14) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -1829,6 +1831,7 @@ export default function App() {
           onOpenMultiAgentTree={() => multiAgentTreeModal.onOpen()}
           onOpenTraceRule={() => traceRuleModal.onOpen()}
           onOpenSlashCommand={() => slashCommandModal.onOpen()}
+          onOpenCustomModels={() => customModelsModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -2149,6 +2152,10 @@ export default function App() {
 
       {slashCommandModal.open && (
         <SlashCommandHelp onClose={slashCommandModal.onClose} />
+      )}
+
+      {customModelsModal.open && (
+        <CustomModelsPanel onClose={customModelsModal.onClose} />
       )}
     </div>
       )}

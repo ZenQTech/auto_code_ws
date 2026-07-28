@@ -11,7 +11,7 @@
  * 输出结果：{ settings, mcp, compaction, skills, agentsMd, cycle3,
  *           dualCompaction, rules, usage, fileExplorer, loopV7,
  *           planEditor, hooks, subagentMemory, hookChain, cacheStats, streamList, oauthConfig,
- *           sessionRollout, multiAgentTree, traceRule, slashCommand }
+ *           sessionRollout, multiAgentTree, traceRule, slashCommand, customModels }
  *           每个含 { open, onOpen, onClose, onToggle }
  * 修改记录：
  *   - 2026-07-27 | v1.0.0 | P0-2 App.tsx 拆分第五阶段：从 App.tsx 抽离
@@ -27,6 +27,7 @@
  *   - 2026-07-27 | v1.9.0 | Cycle 7 P0-10 新增 multiAgentTree Multi-Agent v2 Path Tree 面板
  *   - 2026-07-27 | v2.0.0 | Cycle 7 P0-11 新增 traceRule TRACE 规则管理面板
  *   - 2026-07-27 | v2.1.0 | Cycle 8 P0-12 新增 slashCommand Slash Commands 帮助面板
+ *   - 2026-07-27 | v2.2.0 | Cycle 8 P0-14 新增 customModels 自定义模型管理面板
  * ============================================================
  */
 
@@ -98,10 +99,12 @@ export interface UseModalsResult {
   traceRule: PanelController;
   /** v2.1.0 (Cycle 8 P0-12) 新增：Slash Commands 帮助面板 */
   slashCommand: PanelController;
+  /** v2.2.0 (Cycle 8 P0-14) 新增：Custom Models 管理面板 */
+  customModels: PanelController;
 }
 
 /**
- * useModals - 集中管理 17 个面板/弹窗的显隐状态
+ * useModals - 集中管理 18 个面板/弹窗的显隐状态
  * 返回值：包含每个面板 controller 的对象
  */
 export function useModals(): UseModalsResult {
@@ -127,6 +130,7 @@ export function useModals(): UseModalsResult {
   const multiAgentTree = usePanelController(false);  // v1.9.0 (Cycle 7 P0-10) 新增
   const traceRule = usePanelController(false);  // v2.0.0 (Cycle 7 P0-11) 新增
   const slashCommand = usePanelController(false);  // v2.1.0 (Cycle 8 P0-12) 新增
+  const customModels = usePanelController(false);  // v2.2.0 (Cycle 8 P0-14) 新增
 
   return {
     settings,
@@ -151,6 +155,7 @@ export function useModals(): UseModalsResult {
     multiAgentTree,  // v1.9.0 (Cycle 7 P0-10) 新增
     traceRule,  // v2.0.0 (Cycle 7 P0-11) 新增
     slashCommand,  // v2.1.0 (Cycle 8 P0-12) 新增
+    customModels,  // v2.2.0 (Cycle 8 P0-14) 新增
   };
 }
 

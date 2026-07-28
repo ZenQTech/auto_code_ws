@@ -823,7 +823,32 @@ app.include_router(slash_commands_router, prefix="/api/slash-commands", tags=["s
 from .api.custom_commands import router as custom_commands_router
 app.include_router(custom_commands_router, tags=["custom-commands"])
 
-# 启动时自动扫描 .trae/commands/ 目录
+# v1.0.0 Cycle 8 P0-14：Custom Models + Bearer Token Auto-Refresh
+from .api.custom_models import router as custom_models_router
+app.include_router(custom_models_router)
+
+# 启动时初始化 Custom Models 服务 + Bearer Token 后台刷新任务
+@app.on_event("startup")
+async def _init_custom_models():
+    """应用启动时初始化自定义模型服务并启动后台 Token 刷新任务"""
+    try:
+        from app.services.custom_models.service import CustomModelsService
+        from app.services.custom_models.bearer_token_refresher import BearerTokenRefresher
+        # 触发单例实例化
+        service = CustomModelsService.get_instance()
+        refresher = BearerTokenRefresher.get_instance()
+        # 启动后台 Token 刷新任务（每 60s 检查一次）
+        await refresher.start_background_check(interval_seconds=60)
+        import logging
+        logging.getLogger(__name__).info(
+            f"Custom Models 已初始化 (providers={len(service.list_providers())}, "
+            f"refresh_running={refresher.get_status()['background_running']})"
+        )
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"启动时初始化 Custom Models 失败: {e}")
+
+
 @app.on_event("startup")
 async def _init_custom_commands():
     """应用启动时扫描自定义命令目录"""
