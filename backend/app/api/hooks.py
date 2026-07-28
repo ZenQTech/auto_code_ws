@@ -22,7 +22,7 @@ import logging
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
-from fastapi import APIRouter, HTTPException, Body
+from fastapi import APIRouter, HTTPException, Body, Query
 from pydantic import BaseModel, Field
 
 from backend.app.services.hooks_registry import (
@@ -545,3 +545,126 @@ async def fire_business_event(request: FireEventRequest):
     except Exception as e:
         logger.error(f"业务事件触发失败: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail=str(e))
+
+
+# ============================================================
+# v1.2.0 Cycle 9 P0-18 新增：.trae/hooks/ 目录加载 API
+# ============================================================
+class TraeHooksLoadRequest(BaseModel):
+    """TRAE hooks 目录加载请求"""
+
+    project_path: str = Field(..., description="项目根目录绝对路径")
+    clear_existing: bool = Field(
+        default=False, description="是否先清空已有 hooks"
+    )
+
+
+@router.post("/trae-hooks/load")
+async def load_trae_hooks(req: TraeHooksLoadRequest) -> Dict[str, Any]:
+    """从 .trae/hooks/ 目录加载 shell 命令式 hooks
+
+    目录结构示例：
+        .trae/hooks/
+        ├── pre-tool/security-check.sh
+        ├── post-tool/log-execution.sh
+        └── session-start/load-context.sh
+
+    每个 .sh 文件可使用 frontmatter 定义 matcher / timeout /
+    block_on_error / env 等元数据。
+    """
+    import os
+
+    # 路径白名单校验
+    abs_path = os.path.abspath(req.project_path)
+    allowed = [
+        "/home/qizheng/auto_code_ws",
+        "/home/qizheng/auto_code_data",
+        "/tmp/test-projects",
+        "/tmp",
+    ]
+    if not any(abs_path == a or abs_path.startswith(a + "/") for a in allowed):
+        raise HTTPException(
+            status_code=403, detail=f"Project path not in whitelist: {abs_path}"
+        )
+    if not os.path.isdir(abs_path):
+        raise HTTPException(
+            status_code=404, detail=f"Project path not found: {abs_path}"
+        )
+
+    try:
+        from backend.app.services.hooks_registry import (
+            get_hooks_registry,
+        )
+
+        registry = get_hooks_registry()
+        count = registry.load_from_directory(abs_path, req.clear_existing)
+
+        # 列出本次加载的 hooks
+        from backend.app.services.trae_hooks_loader import TraeHooksLoader
+
+        loader = TraeHooksLoader(abs_path)
+        configs = loader.load()
+        hooks_detail = [c.to_dict() for c in configs]
+
+        return {
+            "success": True,
+            "action": "load_trae_hooks",
+            "project_path": abs_path,
+            "loaded": count,
+            "hooks": hooks_detail,
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"load_trae_hooks failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/trae-hooks/list")
+async def list_trae_hooks(
+    project_path: str = Query(..., description="项目根目录绝对路径"),
+) -> Dict[str, Any]:
+    """列出项目 .trae/hooks/ 目录下的所有可加载 hook（不实际注册）"""
+    import os
+
+    abs_path = os.path.abspath(project_path)
+    allowed = [
+        "/home/qizheng/auto_code_ws",
+        "/home/qizheng/auto_code_data",
+        "/tmp/test-projects",
+        "/tmp",
+    ]
+    if not any(abs_path == a or abs_path.startswith(a + "/") for a in allowed):
+        raise HTTPException(
+            status_code=403, detail=f"Project path not in whitelist: {abs_path}"
+        )
+
+    try:
+        from backend.app.services.trae_hooks_loader import TraeHooksLoader
+
+        loader = TraeHooksLoader(abs_path)
+        configs = loader.load()
+        return {
+            "success": True,
+            "action": "list_trae_hooks",
+            "project_path": abs_path,
+            "exists": loader.hooks_dir_exists,
+            "count": len(configs),
+            "hooks": [c.to_dict() for c in configs],
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"list_trae_hooks failed: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/trae-hooks/supported-events")
+async def supported_events() -> Dict[str, Any]:
+    """返回支持的 .trae/hooks/ 事件目录名列表"""
+    from backend.app.services.trae_hooks_loader import EVENT_DIR_MAP
+
+    return {
+        "success": True,
+        "event_dirs": EVENT_DIR_MAP,
+    }

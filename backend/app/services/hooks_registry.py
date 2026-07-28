@@ -187,13 +187,16 @@ class HookConfig:
       - event: HookEventType 事件类型
       - matcher: 匹配模式（正则表达式，可选）
           - 工具类事件：匹配 tool_name
-          - 用户类事件：匹配用户消息前缀
+          - 用户类事件：匹配用户输入
           - 空字符串 = 全部匹配
       - hooks: 该 matcher 下挂载的 hook 列表
+      - block_on_error: v1.2.0 Cycle 9 P0-18 新增：任何 hook 失败时是否阻塞
+                       失败包括 exit_code != 0 与异常
     """
     event: str  # HookEventType value
     matcher: str = ""
     hooks: List[HookDefinition] = field(default_factory=list)
+    block_on_error: bool = False  # v1.2.0 Cycle 9 P0-18 新增
 
     def matches(self, payload: Dict[str, Any]) -> bool:
         """
@@ -221,6 +224,7 @@ class HookConfig:
             "event": self.event,
             "matcher": self.matcher,
             "hooks": [h.to_dict() for h in self.hooks],
+            "block_on_error": self.block_on_error,  # v1.2.0 Cycle 9 P0-18 新增
         }
 
     @classmethod
@@ -229,6 +233,7 @@ class HookConfig:
             event=data.get("event", ""),
             matcher=data.get("matcher", ""),
             hooks=[HookDefinition.from_dict(h) for h in data.get("hooks", [])],
+            block_on_error=bool(data.get("block_on_error", False)),  # v1.2.0
         )
 
 
@@ -332,6 +337,32 @@ class HooksRegistry:
         """添加单个 hook 配置"""
         self._configs.append(config)
 
+    def load_from_directory(
+        self,
+        project_path: Union[str, Path],
+        clear_existing: bool = False,
+    ) -> int:
+        """v1.2.0 Cycle 9 P0-18 新增：从 .trae/hooks/ 目录加载
+
+        Args:
+            project_path: 项目根目录
+            clear_existing: 是否先清空已有配置
+
+        Returns:
+            加载的 hook 配置数量
+        """
+        # 局部导入避免循环依赖
+        from .trae_hooks_loader import TraeHooksLoader
+
+        if clear_existing:
+            self._configs.clear()
+
+        loader = TraeHooksLoader(project_path)
+        configs = loader.load()
+        for cfg in configs:
+            self._configs.append(cfg)
+        return len(configs)
+
     def clear(self) -> None:
         """清空所有配置"""
         self._configs.clear()
@@ -393,6 +424,16 @@ class HooksRegistry:
                     logger.warning(
                         f"Hook 阻塞（exit=2）: event={event}, "
                         f"command={hook_def.command[:50]}"
+                    )
+                    return results
+
+                # v1.2.0 Cycle 9 P0-18 新增：block_on_error 检查
+                # 任一 hook 失败（非 0 退出或异常）时停止后续 hook
+                if config.block_on_error and not action.is_success:
+                    logger.warning(
+                        f"Hook 失败且配置 block_on_error: event={event}, "
+                        f"hook={action.hook_name}, exit={action.exit_code}, "
+                        f"error={action.error}"
                     )
                     return results
 

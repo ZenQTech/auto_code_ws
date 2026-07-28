@@ -1,266 +1,944 @@
 /**
  * # ============================================================
- * # MemoryPanel 记忆库面板组件
+ * MemoryPanel - 智能体长期记忆管理面板 (v1.0.0 - Cycle 10 P1-8)
  * # ============================================================
- * # 核心作用：提供代码片段搜索功能，展示搜索结果（含相似度
- * #           评分）和记忆库统计信息
- * # 运行流程：
- * #   1. 组件挂载时通过 useMemoryStats() 拉取统计信息
- * #   2. 用户在搜索框中输入关键词
- * #   3. 调用 useMemorySearch().search(query) 执行搜索
- * #   4. 渲染搜索结果列表（含相似度评分、语言、标签）
- * #   5. 渲染记忆库统计信息（片段数、标签数、语言分布）
- * # 输入参数：无（通过 useMemorySearch / useMemoryStats hooks 获取数据）
- * # 输出结果：记忆库面板 UI
- * # 修改记录：
- * #   - 2026-06-24 | v1.0.0 | 初始创建，实现记忆库面板
- * # ============================================================
+ * 核心作用：可视化展示 Memory System（Dual-Track Persistent Memory）
+ *           整合 EntityList + RelationGraph + ObservationTimeline + Search
+ * 运行流程：
+ *   1. 挂载时拉取统计 + 图谱 + 实体列表
+ *   2. 用户搜索/创建/删除/更新时调用对应 API
+ *   3. 点击实体切换详情面板（observations + relations）
+ *   4. memory-kernel / self-improvement / memory-recall 一键演示按钮
+ * 输入参数：
+ *   - onClose?: 关闭回调（可选，注入到 AppLayout 模式时不传）
+ *   - standalone?: 是否独立页面模式（true 时全屏）
+ * 输出结果：完整的 React 组件
+ * 创建日期：2026-07-28
+ * 模块版本：v1.0.0
+ * ============================================================
  */
 
-import { useState, useCallback } from 'react';
-import { useMemorySearch, useMemoryStats } from '../hooks/useApi';
+import { useEffect, useMemo, useState, useCallback } from 'react';
+import {
+  addObservation,
+  createEntity,
+  createRelation,
+  deleteEntity,
+  deleteObservation,
+  deleteRelation,
+  fetchGraph,
+  fetchHealth,
+  fetchStats,
+  getEntity,
+  listEntities,
+  listRelations,
+  searchMemory,
+  updateEntity,
+  type EntityTypeName,
+  type MemoryEntity,
+  type MemoryGraph,
+  type MemoryRelation,
+  type MemorySearchResult,
+  type MemoryStats,
+  type RelationTypeName,
+} from '../hooks/useMemoryApi';
 
-/**
- * 格式化字节大小
- * 作用：将字节数转换为易读的 KB/MB 格式
- * @param bytes - 字节数
- * @returns 格式化后的字符串
- */
-function formatBytes(bytes: number): string {
-  if (bytes >= 1048576) return (bytes / 1048576).toFixed(1) + ' MB';
-  if (bytes >= 1024) return (bytes / 1024).toFixed(1) + ' KB';
-  return bytes + ' B';
+// ============================================================
+// 常量
+// ============================================================
+
+const ENTITY_TYPES: EntityTypeName[] = [
+  'project',
+  'pattern',
+  'preference',
+  'profile',
+  'fact',
+];
+
+const RELATION_TYPES: RelationTypeName[] = [
+  'depends_on',
+  'uses',
+  'solves',
+  'conflicts',
+  'extends',
+  'related_to',
+];
+
+const ENTITY_COLORS: Record<string, string> = {
+  project: '#3b82f6',     // 蓝
+  pattern: '#10b981',     // 绿
+  preference: '#f59e0b',  // 黄
+  profile: '#a855f7',     // 紫
+  fact: '#6b7280',        // 灰
+};
+
+const RELATION_COLORS: Record<string, string> = {
+  depends_on: '#ef4444',
+  uses: '#3b82f6',
+  solves: '#10b981',
+  conflicts: '#f97316',
+  extends: '#a855f7',
+  related_to: '#6b7280',
+};
+
+// ============================================================
+// 工具函数
+// ============================================================
+
+const formatDate = (iso: string) => {
+  if (!iso) return '';
+  try {
+    const d = new Date(iso);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')} ${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+  } catch {
+    return iso;
+  }
+};
+
+const todayDate = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+// ============================================================
+// 子组件：EntityCard
+// ============================================================
+
+interface EntityCardProps {
+  entity: MemoryEntity;
+  selected: boolean;
+  onClick: () => void;
 }
 
-/**
- * 根据相似度评分返回颜色类名
- * 作用：将相似度评分（0-1）映射为对应的颜色
- * >=0.8 绿色高匹配，>=0.5 黄色中匹配，<0.5 灰色低匹配
- * @param score - 相似度评分（0-1）
- * @returns Tailwind 颜色类名
- */
-function getSimilarityColor(score: number): string {
-  if (score >= 0.8) return 'text-emerald-400 bg-emerald-500/20';
-  if (score >= 0.5) return 'text-yellow-400 bg-yellow-500/20';
-  return 'text-surface-500 bg-surface-300/50';
+const EntityCard: React.FC<EntityCardProps> = ({ entity, selected, onClick }) => {
+  const color = ENTITY_COLORS[entity.entity_type] || '#6b7280';
+  return (
+    <div
+      onClick={onClick}
+      className={`p-3 rounded-lg border cursor-pointer transition-all ${
+        selected
+          ? 'border-hermes-500 bg-hermes-50 shadow-md'
+          : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <span
+              className="inline-block w-2 h-2 rounded-full flex-shrink-0"
+              style={{ backgroundColor: color }}
+            />
+            <span className="font-mono text-sm font-semibold truncate" title={entity.name}>
+              {entity.name}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 text-xs text-gray-500">
+            <span
+              className="px-1.5 py-0.5 rounded text-white"
+              style={{ backgroundColor: color }}
+            >
+              {entity.entity_type}
+            </span>
+            {entity.project && entity.project !== '_global' && (
+              <span className="text-gray-400">@ {entity.project}</span>
+            )}
+          </div>
+        </div>
+        <div className="text-xs text-gray-400 text-right flex-shrink-0">
+          {entity.observations?.length || 0} obs
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// 子组件：EntityDetail
+// ============================================================
+
+interface EntityDetailProps {
+  entity: MemoryEntity;
+  relations: MemoryRelation[];
+  onAddObservation: (content: string) => Promise<void>;
+  onDeleteObservation: (id: string) => Promise<void>;
+  onAddRelation: (target: string, relType: RelationTypeName) => Promise<void>;
+  onDeleteRelation: (id: string) => Promise<void>;
+  onDelete: () => Promise<void>;
+  onUpdate: (metadata: Record<string, any>) => Promise<void>;
+  allEntities: MemoryEntity[];
 }
 
-export default function MemoryPanel() {
-  /** 搜索输入框内容 */
-  const [query, setQuery] = useState('');
-  /** 记忆库搜索结果 */
-  const { results, loading: searchLoading, search } = useMemorySearch();
-  /** 记忆库统计信息 */
-  const { stats, loading: statsLoading } = useMemoryStats();
+const EntityDetail: React.FC<EntityDetailProps> = ({
+  entity,
+  relations,
+  onAddObservation,
+  onDeleteObservation,
+  onAddRelation,
+  onDeleteRelation,
+  onDelete,
+  onUpdate,
+  allEntities,
+}) => {
+  const [newObs, setNewObs] = useState('');
+  const [newRelTarget, setNewRelTarget] = useState('');
+  const [newRelType, setNewRelType] = useState<RelationTypeName>('uses');
+  const [metadataText, setMetadataText] = useState(
+    JSON.stringify(entity.metadata || {}, null, 2)
+  );
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  /**
-   * 处理搜索提交
-   * 作用：在用户按下回车键或点击搜索按钮时触发搜索
-   */
-  const handleSearch = useCallback(() => {
-    if (query.trim()) {
-      search(query.trim());
+  const handleAddObs = async () => {
+    if (!newObs.trim()) return;
+    setIsSubmitting(true);
+    try {
+      const content = newObs.startsWith('[') ? newObs : `[${todayDate()}] ${newObs}`;
+      await onAddObservation(content);
+      setNewObs('');
+    } finally {
+      setIsSubmitting(false);
     }
-  }, [query, search]);
+  };
 
-  /**
-   * 处理键盘事件
-   * 作用：监听回车键触发搜索
-   * @param e - 键盘事件
-   */
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSearch();
+  const handleAddRel = async () => {
+    if (!newRelTarget.trim()) return;
+    setIsSubmitting(true);
+    try {
+      await onAddRelation(newRelTarget, newRelType);
+      setNewRelTarget('');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleUpdateMeta = async () => {
+    setIsSubmitting(true);
+    try {
+      const parsed = JSON.parse(metadataText);
+      await onUpdate(parsed);
+    } catch (e) {
+      alert('metadata 必须是合法 JSON');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const otherEntities = allEntities.filter((e) => e.name !== entity.name);
+
+  return (
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-start justify-between">
+        <div>
+          <h2 className="text-xl font-bold font-mono">{entity.name}</h2>
+          <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+            <span
+              className="px-2 py-0.5 rounded text-white text-xs"
+              style={{ backgroundColor: ENTITY_COLORS[entity.entity_type] || '#6b7280' }}
+            >
+              {entity.entity_type}
+            </span>
+            <span>{entity.project}</span>
+            <span>·</span>
+            <span>创建 {formatDate(entity.created_at)}</span>
+            <span>·</span>
+            <span>更新 {formatDate(entity.updated_at)}</span>
+          </div>
+        </div>
+        <button
+          onClick={onDelete}
+          className="px-3 py-1 text-sm bg-red-50 text-red-600 rounded hover:bg-red-100"
+        >
+          删除
+        </button>
+      </div>
+
+      {/* Observations */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold mb-2 text-gray-700">
+          观察记录 ({entity.observations?.length || 0})
+        </h3>
+        <div className="space-y-2 mb-3 max-h-64 overflow-y-auto">
+          {entity.observations && entity.observations.length > 0 ? (
+            entity.observations.map((obs) => (
+              <div
+                key={obs.id}
+                className="flex items-start justify-between gap-2 p-2 bg-gray-50 rounded"
+              >
+                <div className="flex-1 text-sm">
+                  <div className="text-gray-700">{obs.content}</div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {obs.source} · confidence {obs.confidence.toFixed(1)} · {formatDate(obs.created_at)}
+                  </div>
+                </div>
+                <button
+                  onClick={() => onDeleteObservation(obs.id)}
+                  className="text-xs text-red-500 hover:underline flex-shrink-0"
+                >
+                  删除
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="text-sm text-gray-400">暂无观察记录</div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <input
+            type="text"
+            value={newObs}
+            onChange={(e) => setNewObs(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleAddObs()}
+            placeholder="[2026-07-28] 内容（自动加日期）"
+            className="flex-1 px-3 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-hermes-500"
+          />
+          <button
+            onClick={handleAddObs}
+            disabled={isSubmitting || !newObs.trim()}
+            className="px-3 py-1.5 text-sm bg-hermes-500 text-white rounded hover:bg-hermes-600 disabled:opacity-50"
+          >
+            添加
+          </button>
+        </div>
+      </div>
+
+      {/* Relations */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold mb-2 text-gray-700">
+          实体关系 ({relations.length})
+        </h3>
+        <div className="space-y-1 mb-3">
+          {relations.length > 0 ? (
+            relations.map((rel) => (
+              <div
+                key={rel.id}
+                className="flex items-center justify-between gap-2 p-2 bg-gray-50 rounded text-sm"
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className="px-1.5 py-0.5 rounded text-white text-xs"
+                    style={{ backgroundColor: RELATION_COLORS[rel.relation_type] || '#6b7280' }}
+                  >
+                    {rel.relation_type}
+                  </span>
+                  <span className="font-mono">
+                    {rel.source === entity.name ? (
+                      <>→ <span className="text-hermes-600">{rel.target}</span></>
+                    ) : (
+                      <><span className="text-hermes-600">{rel.source}</span> →</>
+                    )}
+                  </span>
+                  <span className="text-xs text-gray-400">w={rel.weight.toFixed(1)}</span>
+                </div>
+                <button
+                  onClick={() => onDeleteRelation(rel.id)}
+                  className="text-xs text-red-500 hover:underline"
+                >
+                  删除
+                </button>
+              </div>
+            ))
+          ) : (
+            <div className="text-sm text-gray-400">暂无关系</div>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <select
+            value={newRelType}
+            onChange={(e) => setNewRelType(e.target.value as RelationTypeName)}
+            className="px-2 py-1.5 text-sm border border-gray-300 rounded"
+          >
+            {RELATION_TYPES.map((t) => (
+              <option key={t} value={t}>{t}</option>
+            ))}
+          </select>
+          <select
+            value={newRelTarget}
+            onChange={(e) => setNewRelTarget(e.target.value)}
+            className="flex-1 px-2 py-1.5 text-sm border border-gray-300 rounded font-mono"
+          >
+            <option value="">选择目标实体...</option>
+            {otherEntities.map((e) => (
+              <option key={e.name} value={e.name}>
+                {e.name} ({e.entity_type})
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleAddRel}
+            disabled={isSubmitting || !newRelTarget}
+            className="px-3 py-1.5 text-sm bg-hermes-500 text-white rounded hover:bg-hermes-600 disabled:opacity-50"
+          >
+            添加
+          </button>
+        </div>
+      </div>
+
+      {/* Metadata */}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <h3 className="text-sm font-semibold mb-2 text-gray-700">元数据 (metadata)</h3>
+        <textarea
+          value={metadataText}
+          onChange={(e) => setMetadataText(e.target.value)}
+          rows={4}
+          className="w-full px-3 py-2 text-sm font-mono border border-gray-300 rounded focus:outline-none focus:border-hermes-500"
+        />
+        <button
+          onClick={handleUpdateMeta}
+          disabled={isSubmitting}
+          className="mt-2 px-3 py-1.5 text-sm bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+        >
+          更新 metadata
+        </button>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// 子组件：GraphView
+// ============================================================
+
+interface GraphViewProps {
+  graph: MemoryGraph;
+  selectedEntity: string | null;
+  onSelectEntity: (name: string) => void;
+}
+
+const GraphView: React.FC<GraphViewProps> = ({ graph, selectedEntity, onSelectEntity }) => {
+  // 简单的网格布局：实体均匀分布，关系用 SVG 曲线连接
+  const positions = useMemo(() => {
+    const w = 600;
+    const h = 400;
+    const n = graph.entities.length;
+    if (n === 0) return [];
+    const cols = Math.ceil(Math.sqrt(n * (w / h)));
+    const rows = Math.ceil(n / cols);
+    return graph.entities.map((e, i) => {
+      const r = Math.floor(i / cols);
+      const c = i % cols;
+      return {
+        name: e.name,
+        x: ((c + 0.5) * w) / cols,
+        y: ((r + 0.5) * h) / rows,
+        type: e.entity_type,
+      };
+    });
+  }, [graph.entities]);
+
+  const getPos = (name: string) => positions.find((p) => p.name === name);
+
+  return (
+    <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <h3 className="text-sm font-semibold mb-2 text-gray-700">
+        知识图谱 ({graph.entities.length} 实体 / {graph.relations.length} 关系)
+      </h3>
+      <div className="relative bg-gray-50 rounded" style={{ height: 400 }}>
+        <svg
+          width="100%"
+          height="100%"
+          viewBox="0 0 600 400"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          {/* 关系连线 */}
+          {graph.relations.map((rel) => {
+            const s = getPos(rel.source);
+            const t = getPos(rel.target);
+            if (!s || !t) return null;
+            const color = RELATION_COLORS[rel.relation_type] || '#6b7280';
+            return (
+              <g key={rel.id}>
+                <line
+                  x1={s.x}
+                  y1={s.y}
+                  x2={t.x}
+                  y2={t.y}
+                  stroke={color}
+                  strokeWidth="1.5"
+                  strokeOpacity="0.6"
+                />
+                <text
+                  x={(s.x + t.x) / 2}
+                  y={(s.y + t.y) / 2 - 4}
+                  fontSize="9"
+                  fill={color}
+                  textAnchor="middle"
+                  className="font-mono"
+                >
+                  {rel.relation_type}
+                </text>
+              </g>
+            );
+          })}
+          {/* 实体节点 */}
+          {positions.map((p) => {
+            const color = ENTITY_COLORS[p.type] || '#6b7280';
+            const isSelected = selectedEntity === p.name;
+            return (
+              <g
+                key={p.name}
+                style={{ cursor: 'pointer' }}
+                onClick={() => onSelectEntity(p.name)}
+              >
+                <circle
+                  cx={p.x}
+                  cy={p.y}
+                  r={isSelected ? 12 : 8}
+                  fill={color}
+                  stroke={isSelected ? '#1f2937' : 'white'}
+                  strokeWidth={isSelected ? 2 : 1.5}
+                />
+                <text
+                  x={p.x}
+                  y={p.y + 22}
+                  fontSize="10"
+                  fill="#1f2937"
+                  textAnchor="middle"
+                  className="font-mono"
+                >
+                  {p.name.length > 18 ? p.name.slice(0, 16) + '...' : p.name}
+                </text>
+              </g>
+            );
+          })}
+        </svg>
+        {graph.entities.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
+            暂无实体
+          </div>
+        )}
+      </div>
+      <div className="mt-2 flex flex-wrap gap-2 text-xs">
+        {Object.entries(ENTITY_COLORS).map(([type, color]) => (
+          <span key={type} className="flex items-center gap-1">
+            <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
+            <span className="text-gray-600">{type}</span>
+          </span>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// 主组件：MemoryPanel
+// ============================================================
+
+interface MemoryPanelProps {
+  onClose?: () => void;
+  standalone?: boolean;
+}
+
+export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = false }) => {
+  const [stats, setStats] = useState<MemoryStats | null>(null);
+  const [graph, setGraph] = useState<MemoryGraph>({ entities: [], relations: [], observations: [] });
+  const [entities, setEntities] = useState<MemoryEntity[]>([]);
+  const [selectedEntityName, setSelectedEntityName] = useState<string | null>(null);
+  const [selectedEntity, setSelectedEntity] = useState<MemoryEntity | null>(null);
+  const [selectedRelations, setSelectedRelations] = useState<MemoryRelation[]>([]);
+  const [filterType, setFilterType] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<MemorySearchResult[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [showCreate, setShowCreate] = useState(false);
+  const [newEntity, setNewEntity] = useState({
+    name: '',
+    entity_type: 'project' as EntityTypeName,
+    project: '_global',
+  });
+  const [version, setVersion] = useState<string>('');
+
+  // ============================================================
+  // 数据加载
+  // ============================================================
+
+  const refresh = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [statsRes, graphRes, entitiesRes, healthRes] = await Promise.all([
+        fetchStats(),
+        fetchGraph(),
+        listEntities({ limit: 500 }),
+        fetchHealth(),
+      ]);
+      setStats(statsRes.data);
+      setGraph(graphRes.data);
+      setEntities(entitiesRes.data);
+      setVersion(healthRes.version);
+    } catch (e: any) {
+      setError(`加载失败: ${e.message || e}`);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  // 选中实体后加载详情
+  useEffect(() => {
+    if (!selectedEntityName) {
+      setSelectedEntity(null);
+      setSelectedRelations([]);
+      return;
+    }
+    Promise.all([
+      getEntity(selectedEntityName),
+      listRelations({ source: selectedEntityName }),
+      listRelations({ target: selectedEntityName }),
+    ])
+      .then(([entRes, srcRels, tgtRels]) => {
+        setSelectedEntity(entRes.data);
+        setSelectedRelations([...srcRels.data, ...tgtRels.data]);
+      })
+      .catch((e) => setError(`加载详情失败: ${e.message || e}`));
+  }, [selectedEntityName]);
+
+  // ============================================================
+  // 操作
+  // ============================================================
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    try {
+      const res = await searchMemory(searchQuery, 20);
+      setSearchResults(res.data);
+    } catch (e: any) {
+      setError(`搜索失败: ${e.message || e}`);
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!newEntity.name.trim()) return;
+    setIsLoading(true);
+    try {
+      await createEntity(newEntity);
+      setNewEntity({ name: '', entity_type: 'project', project: '_global' });
+      setShowCreate(false);
+      await refresh();
+    } catch (e: any) {
+      setError(`创建失败: ${e.message || e}`);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteEntity = async (name: string) => {
+    if (!confirm(`确认删除实体 ${name}?`)) return;
+    try {
+      await deleteEntity(name, name.startsWith('public_'));
+      setSelectedEntityName(null);
+      await refresh();
+    } catch (e: any) {
+      setError(`删除失败: ${e.message || e}`);
+    }
+  };
+
+  const handleAddObservation = async (content: string) => {
+    if (!selectedEntityName) return;
+    try {
+      await addObservation({ entity_name: selectedEntityName, content });
+      const res = await getEntity(selectedEntityName);
+      setSelectedEntity(res.data);
+      await refresh();
+    } catch (e: any) {
+      setError(`添加观察失败: ${e.message || e}`);
+      throw e;
+    }
+  };
+
+  const handleDeleteObservation = async (id: string) => {
+    try {
+      await deleteObservation(id);
+      if (selectedEntityName) {
+        const res = await getEntity(selectedEntityName);
+        setSelectedEntity(res.data);
+      }
+      await refresh();
+    } catch (e: any) {
+      setError(`删除观察失败: ${e.message || e}`);
+    }
+  };
+
+  const handleAddRelation = async (target: string, relType: RelationTypeName) => {
+    if (!selectedEntityName) return;
+    try {
+      await createRelation({
+        source: selectedEntityName,
+        target,
+        relation_type: relType,
+      });
+      const [, srcRels, tgtRels] = await Promise.all([
+        Promise.resolve(),
+        listRelations({ source: selectedEntityName }),
+        listRelations({ target: selectedEntityName }),
+      ]);
+      setSelectedRelations([...srcRels.data, ...tgtRels.data]);
+      await refresh();
+    } catch (e: any) {
+      setError(`添加关系失败: ${e.message || e}`);
+      throw e;
+    }
+  };
+
+  const handleDeleteRelation = async (id: string) => {
+    try {
+      await deleteRelation(id);
+      if (selectedEntityName) {
+        const [srcRels, tgtRels] = await Promise.all([
+          listRelations({ source: selectedEntityName }),
+          listRelations({ target: selectedEntityName }),
+        ]);
+        setSelectedRelations([...srcRels.data, ...tgtRels.data]);
+      }
+      await refresh();
+    } catch (e: any) {
+      setError(`删除关系失败: ${e.message || e}`);
+    }
+  };
+
+  const handleUpdateMetadata = async (metadata: Record<string, any>) => {
+    if (!selectedEntityName) return;
+    try {
+      await updateEntity(selectedEntityName, { metadata });
+      const res = await getEntity(selectedEntityName);
+      setSelectedEntity(res.data);
+      await refresh();
+    } catch (e: any) {
+      setError(`更新失败: ${e.message || e}`);
+      throw e;
     }
   };
 
   // ============================================================
-  // 加载态
+  // 过滤逻辑
   // ============================================================
-  if (statsLoading && !stats) {
-    return (
-      <div className="glass rounded-xl p-5 animate-fade-in">
-        <div className="skeleton h-6 w-32 rounded mb-4" />
-        <div className="skeleton h-10 rounded-lg mb-3" />
-        <div className="space-y-2">
-          {[1, 2, 3].map(i => (
-            <div key={i} className="skeleton h-16 rounded" />
-          ))}
-        </div>
-      </div>
-    );
-  }
+
+  const filteredEntities = useMemo(() => {
+    let result = entities;
+    if (filterType !== 'all') {
+      result = result.filter((e) => e.entity_type === filterType);
+    }
+    return result;
+  }, [entities, filterType]);
+
+  const displayEntities = searchResults.length > 0 ? searchResults.map((r) => r.entity) : filteredEntities;
+
+  // ============================================================
+  // 渲染
+  // ============================================================
 
   return (
-    <div className="glass rounded-xl p-5 animate-fade-in flex flex-col max-h-[70vh]">
-      {/* ============================================================
-       * 标题栏：图标 + 标题
-       * ============================================================ */}
-      <div className="flex items-center gap-3 mb-4 pb-3 border-b border-surface-300">
-        {/* 记忆库图标 */}
-        <div className="w-8 h-8 rounded-lg bg-hermes-500/20 flex items-center justify-center">
-          <svg className="w-5 h-5 text-hermes-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-              d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-          </svg>
+    <div className={`flex flex-col h-full bg-gray-50 ${standalone ? '' : 'rounded-lg border border-gray-200'}`}>
+      {/* Header */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+        <div>
+          <h1 className="text-lg font-bold text-gray-800">
+            🧠 Memory System
+          </h1>
+          <p className="text-xs text-gray-500 mt-0.5">
+            Dual-Track Persistent Memory v{version} · {stats ? `${stats.total_entities} entities / ${stats.total_relations} relations / ${stats.total_observations} observations` : '加载中...'}
+          </p>
         </div>
-        <h3 className="text-base font-semibold text-surface-950">记忆库</h3>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={refresh}
+            disabled={isLoading}
+            className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+          >
+            {isLoading ? '刷新中...' : '🔄 刷新'}
+          </button>
+          <button
+            onClick={() => setShowCreate(!showCreate)}
+            className="px-3 py-1.5 text-sm bg-hermes-500 text-white rounded hover:bg-hermes-600"
+          >
+            + 新建实体
+          </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+            >
+              ✕ 关闭
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ============================================================
-       * 搜索栏
-       * ============================================================ */}
-      <div className="flex items-center gap-2 mb-4">
-        <div className="flex-1 relative">
-          {/* 搜索图标 */}
-          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-          {/* 搜索输入框 */}
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="搜索代码片段..."
-            className="input-glow w-full pl-10 pr-4 py-2 text-sm"
+      {/* 错误提示 */}
+      {error && (
+        <div className="mx-4 mt-2 p-3 bg-red-50 border border-red-200 rounded text-sm text-red-700 flex items-center justify-between">
+          <span>⚠ {error}</span>
+          <button onClick={() => setError(null)} className="text-red-500 hover:underline">
+            关闭
+          </button>
+        </div>
+      )}
+
+      {/* 统计卡片 */}
+      {stats && (
+        <div className="grid grid-cols-3 gap-3 p-4">
+          {[
+            { label: '实体', value: stats.total_entities, color: 'blue' },
+            { label: '关系', value: stats.total_relations, color: 'green' },
+            { label: '观察', value: stats.total_observations, color: 'amber' },
+          ].map((s) => (
+            <div key={s.label} className="bg-white rounded-lg p-3 border border-gray-200">
+              <div className="text-xs text-gray-500">{s.label}</div>
+              <div className="text-2xl font-bold text-gray-800">{s.value}</div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* 主内容区 */}
+      <div className="flex-1 grid grid-cols-12 gap-3 p-4 overflow-hidden">
+        {/* 左侧：实体列表 */}
+        <div className="col-span-3 flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden">
+          <div className="p-3 border-b border-gray-200 space-y-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              placeholder="搜索关键词..."
+              className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded focus:outline-none focus:border-hermes-500"
+            />
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value)}
+              className="w-full px-2 py-1 text-sm border border-gray-300 rounded"
+            >
+              <option value="all">全部类型</option>
+              {ENTITY_TYPES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            {searchResults.length > 0 && (
+              <button
+                onClick={() => {
+                  setSearchQuery('');
+                  setSearchResults([]);
+                }}
+                className="w-full text-xs text-blue-500 hover:underline"
+              >
+                清除搜索结果
+              </button>
+            )}
+          </div>
+          <div className="flex-1 overflow-y-auto p-2 space-y-1">
+            {displayEntities.length > 0 ? (
+              displayEntities.map((e) => (
+                <EntityCard
+                  key={e.name}
+                  entity={e}
+                  selected={selectedEntityName === e.name}
+                  onClick={() => setSelectedEntityName(e.name)}
+                />
+              ))
+            ) : (
+              <div className="text-sm text-gray-400 text-center p-4">
+                {isLoading ? '加载中...' : '暂无数据'}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* 中间：图谱 */}
+        <div className="col-span-4">
+          <GraphView
+            graph={graph}
+            selectedEntity={selectedEntityName}
+            onSelectEntity={(n) => setSelectedEntityName(n)}
           />
         </div>
-        {/* 搜索按钮 */}
-        <button
-          onClick={handleSearch}
-          disabled={!query.trim() || searchLoading}
-          className="btn-primary text-sm px-4"
-        >
-          {searchLoading ? (
-            <span className="w-4 h-4 border-2 border-surface-50 border-t-transparent rounded-full animate-spin" />
+
+        {/* 右侧：实体详情 */}
+        <div className="col-span-5 bg-white rounded-lg border border-gray-200 p-4 overflow-y-auto">
+          {selectedEntity ? (
+            <EntityDetail
+              entity={selectedEntity}
+              relations={selectedRelations}
+              onAddObservation={handleAddObservation}
+              onDeleteObservation={handleDeleteObservation}
+              onAddRelation={handleAddRelation}
+              onDeleteRelation={handleDeleteRelation}
+              onDelete={() => handleDeleteEntity(selectedEntity.name)}
+              onUpdate={handleUpdateMetadata}
+              allEntities={entities}
+            />
           ) : (
-            '搜索'
+            <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm">
+              <div className="text-4xl mb-2">👈</div>
+              <div>从左侧列表选择一个实体查看详情</div>
+            </div>
           )}
-        </button>
+        </div>
       </div>
 
-      {/* ============================================================
-       * 搜索结果区域
-       * ============================================================ */}
-      <div className="flex-1 overflow-y-auto pr-2 min-h-0">
-        {results.length > 0 ? (
-          <div className="space-y-2 mb-4">
-            <div className="text-xs text-surface-500 mb-2">
-              找到 {results.length} 个结果
+      {/* 新建实体对话框 */}
+      {showCreate && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-96 max-w-full">
+            <h2 className="text-lg font-bold mb-4">新建实体</h2>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">名称 (snake_case, 3-128 字符)</label>
+                <input
+                  type="text"
+                  value={newEntity.name}
+                  onChange={(e) => setNewEntity({ ...newEntity, name: e.target.value })}
+                  placeholder="my_entity_name"
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded font-mono"
+                />
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">类型</label>
+                <select
+                  value={newEntity.entity_type}
+                  onChange={(e) => setNewEntity({ ...newEntity, entity_type: e.target.value as EntityTypeName })}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                >
+                  {ENTITY_TYPES.map((t) => (
+                    <option key={t} value={t}>{t}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-600 mb-1">项目</label>
+                <input
+                  type="text"
+                  value={newEntity.project}
+                  onChange={(e) => setNewEntity({ ...newEntity, project: e.target.value })}
+                  className="w-full px-3 py-2 text-sm border border-gray-300 rounded"
+                />
+              </div>
             </div>
-            {results.map(result => (
-              <div
-                key={result.id}
-                className="bg-surface-100/50 rounded-lg p-3 border border-surface-300 hover:border-hermes-500/20 transition-colors"
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                onClick={() => setShowCreate(false)}
+                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
               >
-                {/* 标题行：标题 + 相似度 + 语言 */}
-                <div className="flex items-center justify-between mb-1.5">
-                  <span className="text-sm font-medium text-surface-900 truncate flex-1 mr-2">
-                    {result.title}
-                  </span>
-                  <div className="flex items-center gap-2 flex-shrink-0">
-                    {/* 语言标签 */}
-                    <span className="px-1.5 py-0.5 rounded text-xs font-mono bg-surface-200 text-surface-600">
-                      {result.language}
-                    </span>
-                    {/* 相似度评分 */}
-                    <span className={`px-1.5 py-0.5 rounded text-xs font-medium ${getSimilarityColor(result.similarity)}`}>
-                      {(result.similarity * 100).toFixed(0)}%
-                    </span>
-                  </div>
-                </div>
-
-                {/* 代码片段预览（截断显示） */}
-                <pre className="text-xs text-surface-700 font-mono bg-surface-50 rounded p-2 overflow-x-auto max-h-20 overflow-y-hidden">
-                  {result.content.length > 200
-                    ? result.content.slice(0, 200) + '...'
-                    : result.content}
-                </pre>
-
-                {/* 标签列表 */}
-                {result.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    {result.tags.map(tag => (
-                      <span key={tag} className="px-1.5 py-0.5 rounded text-xs bg-hermes-500/10 text-hermes-400">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-
-                {/* 入库时间 */}
-                <div className="text-xs text-surface-500 mt-1.5">
-                  入库：{new Date(result.created_at).toLocaleDateString('zh-CN')}
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : query && !searchLoading ? (
-          /* 搜索无结果 */
-          <div className="text-xs text-surface-500 text-center py-6">
-            未找到匹配的代码片段
-          </div>
-        ) : !query ? (
-          /* 未搜索时的提示 */
-          <div className="text-xs text-surface-500 text-center py-6">
-            输入关键词搜索记忆库中的代码片段
-          </div>
-        ) : null}
-      </div>
-
-      {/* ============================================================
-       * 记忆库统计信息
-       * ============================================================ */}
-      {stats && (
-        <div className="mt-4 pt-3 border-t border-surface-300">
-          <h4 className="text-sm font-semibold text-surface-700 mb-3 flex items-center gap-2">
-            <svg className="w-4 h-4 text-hermes-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-            </svg>
-            统计信息
-          </h4>
-
-          {/* 统计卡片网格 */}
-          <div className="grid grid-cols-4 gap-2 mb-3">
-            <div className="bg-surface-100/50 rounded-lg p-2.5 border border-surface-300 text-center">
-              <div className="text-lg font-semibold text-hermes-400">{stats.total_snippets}</div>
-              <div className="text-xs text-surface-500">片段数</div>
+                取消
+              </button>
+              <button
+                onClick={handleCreate}
+                disabled={isLoading || !newEntity.name.trim()}
+                className="px-3 py-1.5 text-sm bg-hermes-500 text-white rounded hover:bg-hermes-600 disabled:opacity-50"
+              >
+                创建
+              </button>
             </div>
-            <div className="bg-surface-100/50 rounded-lg p-2.5 border border-surface-300 text-center">
-              <div className="text-lg font-semibold text-emerald-400">{stats.total_tags}</div>
-              <div className="text-xs text-surface-500">标签数</div>
-            </div>
-            <div className="bg-surface-100/50 rounded-lg p-2.5 border border-surface-300 text-center">
-              <div className="text-lg font-semibold text-surface-700">{formatBytes(stats.total_size_bytes)}</div>
-              <div className="text-xs text-surface-500">存储大小</div>
-            </div>
-            <div className="bg-surface-100/50 rounded-lg p-2.5 border border-surface-300 text-center">
-              <div className="text-lg font-semibold text-surface-500">
-                {Object.keys(stats.language_distribution).length}
-              </div>
-              <div className="text-xs text-surface-500">语言种类</div>
-            </div>
-          </div>
-
-          {/* 语言分布 */}
-          {Object.keys(stats.language_distribution).length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {Object.entries(stats.language_distribution).map(([lang, count]) => (
-                <span key={lang} className="px-2 py-0.5 rounded text-xs bg-surface-200 text-surface-600 font-mono">
-                  {lang}: {count}
-                </span>
-              ))}
-            </div>
-          )}
-
-          {/* 最后更新时间 */}
-          <div className="text-xs text-surface-500 mt-2">
-            最后更新：{new Date(stats.last_updated).toLocaleString('zh-CN')}
           </div>
         </div>
       )}
     </div>
   );
-}
+};
+
+export default MemoryPanel;

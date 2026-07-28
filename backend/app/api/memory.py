@@ -1,28 +1,37 @@
 """
 # ============================================================
-# 代码记忆库 API 端点（V4.1 新增）
+# Memory System REST API (v1.0.0)
 # ============================================================
-# 核心作用：提供代码记忆库的 RESTful API 接口，支持代码片段
-#           的搜索、添加、查询、删除和统计
+# 核心作用：智能体长期记忆 REST API
+#           17 个端点：Entities / Relations / Observations / Search / Graph / Skills / Health
 # 运行流程：
-#   - GET /api/memory/search?q=query - 语义搜索代码片段
-#   - POST /api/memory/snippets - 添加代码片段
-#   - GET /api/memory/snippets/{id} - 获取片段详情
-#   - DELETE /api/memory/snippets/{id} - 删除片段
-#   - GET /api/memory/stats - 获取记忆库统计信息
-# 输入参数：通过请求体、查询参数和路径参数传递
-# 输出结果：JSON 格式的代码片段信息或统计信息
+#   1. 启动时从 main.py 注册路由（prefix=/api/memory）
+#   2. 所有请求路由到 MCPMemoryStore 单例
+#   3. 错误处理：400/404/409/422/500
+# 输入参数：通过 JSON body 或 path/query 参数
+# 输出结果：JSON 响应
 # 修改记录：
-#   - 2026-06-24 | v4.1.0 | 初始版本，实现记忆库全功能 API
+#   - 2026-07-28 | v1.0.0 | Cycle 10 P1-8 新建 - 完整 17 个端点
 # ============================================================
 """
 
 import logging
-from typing import List, Optional
-from fastapi import APIRouter, Request, HTTPException, Query
+from datetime import datetime
+from typing import Any, Dict, List, Optional
+
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
-from ..services.memory_store import memory_store
+from ..services.memory import (
+    MCPMemoryStore,
+    MemoryEntity,
+    MemoryRelation,
+    MemoryObservation,
+    EntityType,
+    RelationType,
+    ObservationSource,
+    get_mcp_memory_store,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -30,235 +39,538 @@ router = APIRouter()
 
 
 # ============================================================
-# 请求/响应模型
+# Pydantic Models
 # ============================================================
 
-class SnippetAddRequest(BaseModel):
-    """
-    添加代码片段请求
-    字段说明：
-      - code: 代码文本（必填）
-      - language: 编程语言（可选，如 python、cpp、javascript）
-      - tags: 标签列表（可选，用于分类检索）
-      - description: 描述（可选，简要说明代码功能）
-      - source: 来源（可选，标注代码出处）
-      - version: 版本号（可选，默认 1.0.0）
-      - file_path: 原始文件路径（可选）
-    """
-    code: str = Field(..., min_length=1, description="代码文本")
-    language: str = Field(default="", description="编程语言")
-    tags: List[str] = Field(default_factory=list, description="标签列表")
-    description: str = Field(default="", description="描述")
-    source: str = Field(default="", description="来源")
-    version: str = Field(default="1.0.0", description="版本号")
-    file_path: str = Field(default="", description="原始文件路径")
+class CreateEntityRequest(BaseModel):
+    """创建实体请求"""
+    name: str = Field(..., min_length=3, max_length=128, description="实体名（snake_case）")
+    entity_type: str = Field(..., description="实体类型: project/pattern/preference/profile/fact")
+    project: str = Field(default="_global", max_length=128, description="所属项目")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="额外属性")
 
 
-class SnippetResponse(BaseModel):
-    """
-    代码片段响应
-    字段说明：
-      - id: 片段唯一 ID
-      - language: 编程语言
-      - tags: 标签列表
-      - description: 描述
-      - source: 来源
-      - version: 版本号
-      - file_path: 原始文件路径
-      - code: 泛化后的代码
-      - original_code: 原始代码
-      - reusability_score: 可复用性评分 (0.0-1.0)
-      - usage_count: 使用次数
-      - created_at: 创建时间
-    """
-    id: str
-    language: str
-    tags: List[str]
-    description: str
-    source: str
-    version: str
-    file_path: str
-    code: str
-    original_code: str
-    reusability_score: float
-    usage_count: int
-    created_at: str
+class UpdateEntityRequest(BaseModel):
+    """更新实体请求"""
+    entity_type: Optional[str] = None
+    project: Optional[str] = None
+    metadata: Optional[Dict[str, Any]] = None
 
 
-class SearchResultItem(BaseModel):
-    """
-    搜索结果项
-    相比 SnippetResponse 多了 similarity_score 字段
-    """
-    id: str
-    language: str
-    tags: List[str]
-    description: str
-    source: str
-    version: str
-    file_path: str
-    code: str
-    original_code: str
-    reusability_score: float
-    similarity_score: float
-    usage_count: int
-    created_at: str
+class CreateRelationRequest(BaseModel):
+    """创建关系请求"""
+    source: str = Field(..., min_length=3, max_length=128)
+    target: str = Field(..., min_length=3, max_length=128)
+    relation_type: str = Field(..., description="关系类型: depends_on/uses/solves/conflicts/extends/related_to")
+    weight: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
-class SearchResponse(BaseModel):
-    """
-    搜索响应
-    字段说明：
-      - query: 原始查询文本
-      - total: 匹配总数
-      - results: 匹配结果列表
-    """
-    query: str
-    total: int
-    results: List[SearchResultItem]
+class AddObservationRequest(BaseModel):
+    """添加观察请求"""
+    entity_name: str = Field(..., min_length=3, max_length=128)
+    content: str = Field(..., min_length=10, max_length=500, description="格式: [YYYY-MM-DD] xxx")
+    source: str = Field(default="agent", description="user/agent/system")
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0)
 
 
-class StatsResponse(BaseModel):
-    """
-    统计信息响应
-    字段说明：
-      - total_snippets: 总片段数
-      - languages: 各语言片段数
-      - avg_reusability: 平均可复用性评分
-      - total_usage: 总使用次数
-      - storage_size_bytes: 存储占用字节数
-      - model_name: 嵌入模型名称
-      - similarity_threshold: 相似度阈值
-    """
-    total_snippets: int
-    languages: dict
-    avg_reusability: float
-    total_usage: int
-    storage_size_bytes: int
-    model_name: str
-    similarity_threshold: float
+class MemoryKernelRequest(BaseModel):
+    """memory-kernel skill 请求"""
+    action: str = Field(..., description="read/write/update/delete")
+    name: Optional[str] = None
+    entity_type: Optional[str] = None
+    project: Optional[str] = None
+    observations: Optional[List[str]] = None
+    metadata: Optional[Dict[str, Any]] = None
+    query: Optional[str] = None
+    force: bool = False
 
 
-class DeleteResponse(BaseModel):
-    """删除操作响应"""
-    message: str
-    snippet_id: str
+class SelfImprovementRequest(BaseModel):
+    """self-improvement skill 请求"""
+    error_type: str = Field(..., min_length=3, max_length=128)
+    summary: str = Field(..., min_length=10, max_length=500)
+    occurrences: int = Field(default=1, ge=1)
+    verified: bool = Field(default=False, description="解决方案是否已验证")
+
+
+class MemoryRecallRequest(BaseModel):
+    """memory-recall skill 请求"""
+    query: str = Field(..., min_length=1, max_length=500)
+    limit: int = Field(default=5, ge=1, le=50)
 
 
 # ============================================================
-# API 端点
+# 辅助函数
 # ============================================================
 
-@router.get("/search", response_model=SearchResponse)
-async def search_snippets(
-    request: Request,
-    q: str = Query(..., min_length=1, description="搜索查询文本"),
-    language: Optional[str] = Query(None, description="按编程语言过滤"),
-    top_k: Optional[int] = Query(None, ge=1, le=100, description="返回结果数量"),
-):
-    """
-    语义搜索代码片段
-    调用方：前端搜索框、任务执行引擎（代码复用检索）
-    被调用方：MemoryStore.search()
-    参数：
-      - q: 搜索查询文本（自然语言描述或代码片段）
-      - language: 可选，按编程语言过滤
-      - top_k: 可选，返回结果数量（默认 10，最大 100）
-    返回值：SearchResponse（匹配的代码片段列表 + 相似度评分）
-    运行步骤：
-      1. 校验查询参数
-      2. 调用 MemoryStore.search() 执行语义检索
-      3. 返回匹配结果
-    """
-    logger.info("记忆库搜索 | query=%s | language=%s | top_k=%s", q[:50], language, top_k)
-    results = memory_store.search(query=q, language=language, top_k=top_k)
-    return SearchResponse(query=q, total=len(results), results=results)
+def _get_store() -> MCPMemoryStore:
+    """获取 MCP Memory Store 单例"""
+    return get_mcp_memory_store()
 
 
-@router.post("/snippets", response_model=SnippetResponse, status_code=201)
-async def add_snippet(
-    request: Request,
-    body: SnippetAddRequest,
-):
-    """
-    添加代码片段到记忆库
-    调用方：前端代码入库界面、任务执行引擎（自动入库）
-    被调用方：MemoryStore.add_snippet()
-    参数：
-      - body: SnippetAddRequest（代码文本 + 元数据）
-    返回值：SnippetResponse（创建的片段信息）
-    运行步骤：
-      1. 校验请求参数
-      2. 构建元数据字典
-      3. 调用 MemoryStore.add_snippet() 入库
-      4. 返回创建的片段信息
-    """
-    logger.info(
-        "添加代码片段 | language=%s | tags=%s | code_len=%d",
-        body.language,
-        body.tags,
-        len(body.code),
-    )
-
-    metadata = {
-        "language": body.language,
-        "tags": body.tags,
-        "description": body.description,
-        "source": body.source,
-        "version": body.version,
-        "file_path": body.file_path,
+def _entity_to_response(entity: MemoryEntity, store: MCPMemoryStore) -> Dict[str, Any]:
+    """实体转响应格式"""
+    observations = store.get_observations(entity.name)
+    relations = store.list_relations(source=entity.name)
+    relations += store.list_relations(target=entity.name)
+    return {
+        **entity.to_dict(),
+        "observations": [o.to_dict() for o in observations],
+        "relations": [r.to_dict() for r in relations],
     }
 
-    result = memory_store.add_snippet(code=body.code, metadata=metadata)
-    return SnippetResponse(**result)
+
+# ============================================================
+# Entity 端点
+# ============================================================
+
+@router.post("/entities")
+async def create_entity(req: CreateEntityRequest):
+    """创建记忆实体"""
+    store = _get_store()
+    # 校验 entity_type
+    if req.entity_type not in [e.value for e in EntityType]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"invalid entity_type: {req.entity_type}. "
+                   f"Must be one of {[e.value for e in EntityType]}",
+        )
+    entity = MemoryEntity(
+        name=req.name,
+        entity_type=req.entity_type,
+        project=req.project,
+        metadata=req.metadata,
+    )
+    success, err = store.create_entity(entity)
+    if not success:
+        # 区分已存在 vs 校验失败
+        if "already exists" in err:
+            raise HTTPException(status_code=409, detail=err)
+        raise HTTPException(status_code=400, detail=err)
+    return {
+        "success": True,
+        "action": "create_entity",
+        "data": _entity_to_response(entity, store),
+    }
 
 
-@router.get("/snippets/{snippet_id}", response_model=SnippetResponse)
-async def get_snippet(
-    request: Request,
-    snippet_id: str,
+@router.get("/entities")
+async def list_entities(
+    entity_type: Optional[str] = Query(None),
+    project: Optional[str] = Query(None),
+    limit: Optional[int] = Query(None, ge=1, le=1000),
 ):
-    """
-    获取指定代码片段详情
-    调用方：前端代码详情面板
-    被调用方：MemoryStore.get_snippet()
-    参数：
-      - snippet_id: 片段 ID
-    返回值：SnippetResponse（片段完整信息）
-    """
-    result = memory_store.get_snippet(snippet_id)
-    if result is None:
-        raise HTTPException(status_code=404, detail=f"代码片段不存在: {snippet_id}")
-    return SnippetResponse(**result)
+    """列出实体"""
+    store = _get_store()
+    entities = store.list_entities(entity_type=entity_type, project=project, limit=limit)
+    return {
+        "success": True,
+        "action": "list_entities",
+        "data": [_entity_to_response(e, store) for e in entities],
+        "total": len(entities),
+    }
 
 
-@router.delete("/snippets/{snippet_id}", response_model=DeleteResponse)
-async def delete_snippet(
-    request: Request,
-    snippet_id: str,
+@router.get("/entities/{name}")
+async def get_entity(name: str):
+    """查询实体"""
+    store = _get_store()
+    entity = store.get_entity(name)
+    if not entity:
+        raise HTTPException(status_code=404, detail=f"entity '{name}' not found")
+    return {
+        "success": True,
+        "action": "get_entity",
+        "data": _entity_to_response(entity, store),
+    }
+
+
+@router.put("/entities/{name}")
+async def update_entity(name: str, req: UpdateEntityRequest):
+    """更新实体"""
+    store = _get_store()
+    success, err = store.update_entity(
+        name,
+        entity_type=req.entity_type,
+        project=req.project,
+        metadata=req.metadata,
+    )
+    if not success:
+        if "not found" in err:
+            raise HTTPException(status_code=404, detail=err)
+        raise HTTPException(status_code=400, detail=err)
+    entity = store.get_entity(name)
+    return {
+        "success": True,
+        "action": "update_entity",
+        "data": _entity_to_response(entity, store),
+    }
+
+
+@router.delete("/entities/{name}")
+async def delete_entity(name: str, force: bool = Query(False)):
+    """删除实体"""
+    store = _get_store()
+    success, err = store.delete_entity(name, force=force)
+    if not success:
+        if "not found" in err:
+            raise HTTPException(status_code=404, detail=err)
+        if "public-protected" in err:
+            raise HTTPException(status_code=403, detail=err)
+        raise HTTPException(status_code=400, detail=err)
+    return {
+        "success": True,
+        "action": "delete_entity",
+        "name": name,
+    }
+
+
+# ============================================================
+# Relation 端点
+# ============================================================
+
+@router.post("/relations")
+async def create_relation(req: CreateRelationRequest):
+    """创建实体关系"""
+    store = _get_store()
+    success, err, relation = store.create_relation(
+        source=req.source,
+        target=req.target,
+        relation_type=req.relation_type,
+        weight=req.weight,
+    )
+    if not success:
+        if "not found" in err:
+            raise HTTPException(status_code=404, detail=err)
+        raise HTTPException(status_code=400, detail=err)
+    return {
+        "success": True,
+        "action": "create_relation",
+        "data": relation.to_dict(),
+    }
+
+
+@router.get("/relations")
+async def list_relations(
+    source: Optional[str] = Query(None),
+    target: Optional[str] = Query(None),
 ):
-    """
-    删除指定代码片段
-    调用方：前端代码管理面板
-    被调用方：MemoryStore.delete_snippet()
-    参数：
-      - snippet_id: 片段 ID
-    返回值：DeleteResponse（操作结果）
-    """
-    deleted = memory_store.delete_snippet(snippet_id)
-    if not deleted:
-        raise HTTPException(status_code=404, detail=f"代码片段不存在: {snippet_id}")
-    logger.info("代码片段已通过 API 删除 | id=%s", snippet_id[:8])
-    return DeleteResponse(message="代码片段已删除", snippet_id=snippet_id)
+    """列出关系"""
+    store = _get_store()
+    relations = store.list_relations(source=source, target=target)
+    return {
+        "success": True,
+        "action": "list_relations",
+        "data": [r.to_dict() for r in relations],
+        "total": len(relations),
+    }
 
 
-@router.get("/stats", response_model=StatsResponse)
-async def get_stats(request: Request):
+@router.delete("/relations/{relation_id}")
+async def delete_relation(relation_id: str):
+    """删除关系"""
+    store = _get_store()
+    success, err = store.delete_relation(relation_id)
+    if not success:
+        if "not found" in err:
+            raise HTTPException(status_code=404, detail=err)
+        raise HTTPException(status_code=400, detail=err)
+    return {
+        "success": True,
+        "action": "delete_relation",
+        "relation_id": relation_id,
+    }
+
+
+# ============================================================
+# Observation 端点
+# ============================================================
+
+@router.post("/observations")
+async def add_observation(req: AddObservationRequest):
+    """添加观察"""
+    store = _get_store()
+    # 校验 source
+    if req.source not in [s.value for s in ObservationSource]:
+        raise HTTPException(
+            status_code=400,
+            detail=f"invalid source: {req.source}",
+        )
+    success, err, obs = store.add_observation(
+        entity_name=req.entity_name,
+        content=req.content,
+        source=req.source,
+        confidence=req.confidence,
+    )
+    if not success:
+        if "not found" in err:
+            raise HTTPException(status_code=404, detail=err)
+        # 质量门控失败
+        if "must start with" in err or "secret" in err or "too long" in err:
+            raise HTTPException(status_code=422, detail=err)
+        raise HTTPException(status_code=400, detail=err)
+    return {
+        "success": True,
+        "action": "add_observation",
+        "data": obs.to_dict(),
+    }
+
+
+@router.delete("/observations/{observation_id}")
+async def delete_observation(observation_id: str):
+    """删除观察"""
+    store = _get_store()
+    success, err = store.delete_observation(observation_id)
+    if not success:
+        if "not found" in err:
+            raise HTTPException(status_code=404, detail=err)
+        raise HTTPException(status_code=400, detail=err)
+    return {
+        "success": True,
+        "action": "delete_observation",
+        "observation_id": observation_id,
+    }
+
+
+# ============================================================
+# Search & Graph 端点
+# ============================================================
+
+@router.get("/search")
+async def search_memory(
+    q: str = Query(..., min_length=1, max_length=500),
+    limit: int = Query(10, ge=1, le=50),
+):
+    """关键词搜索"""
+    store = _get_store()
+    results = store.search(q, limit=limit)
+    return {
+        "success": True,
+        "action": "search",
+        "data": results,
+        "total": len(results),
+        "query": q,
+        "source": "mcp",
+    }
+
+
+@router.get("/graph")
+async def get_graph():
+    """获取整个图谱"""
+    store = _get_store()
+    return {
+        "success": True,
+        "action": "get_graph",
+        "data": store.get_graph(),
+    }
+
+
+# ============================================================
+# Skill 端点
+# ============================================================
+
+@router.post("/skill/memory-kernel")
+async def memory_kernel_skill(req: MemoryKernelRequest):
     """
-    获取记忆库统计信息
-    调用方：前端统计面板
-    被调用方：MemoryStore.get_stats()
-    返回值：StatsResponse（总片段数、各语言分布、平均可复用性等）
+    memory-kernel skill 统一接口
+    支持 action: read / write / update / delete
     """
-    stats = memory_store.get_stats()
-    return StatsResponse(**stats)
+    store = _get_store()
+    action = req.action.lower()
+
+    if action == "read":
+        if not req.query:
+            raise HTTPException(status_code=400, detail="query is required for read")
+        results = store.search(req.query, limit=10)
+        return {
+            "success": True,
+            "action": "memory_kernel_read",
+            "data": results,
+        }
+
+    elif action == "write":
+        if not req.name or not req.entity_type:
+            raise HTTPException(
+                status_code=400,
+                detail="name and entity_type are required for write",
+            )
+        if req.observations is None:
+            req.observations = []
+        # 写入实体
+        entity = MemoryEntity(
+            name=req.name,
+            entity_type=req.entity_type,
+            project=req.project or "_global",
+            metadata=req.metadata or {},
+        )
+        success, err = store.create_entity(entity)
+        if not success:
+            if "already exists" in err:
+                raise HTTPException(status_code=409, detail=err)
+            raise HTTPException(status_code=400, detail=err)
+        # 添加 observations
+        added = []
+        for obs_content in req.observations:
+            ok, e, obs = store.add_observation(req.name, obs_content)
+            if ok:
+                added.append(obs.to_dict())
+        return {
+            "success": True,
+            "action": "memory_kernel_write",
+            "data": _entity_to_response(entity, store),
+            "observations_added": len(added),
+        }
+
+    elif action == "update":
+        if not req.name or req.observations is None:
+            raise HTTPException(
+                status_code=400,
+                detail="name and observations are required for update",
+            )
+        added = []
+        for obs_content in req.observations:
+            ok, e, obs = store.add_observation(req.name, obs_content)
+            if ok:
+                added.append(obs.to_dict())
+        return {
+            "success": True,
+            "action": "memory_kernel_update",
+            "name": req.name,
+            "observations_added": len(added),
+        }
+
+    elif action == "delete":
+        if not req.name:
+            raise HTTPException(status_code=400, detail="name is required for delete")
+        success, err = store.delete_entity(req.name, force=req.force)
+        if not success:
+            if "not found" in err:
+                raise HTTPException(status_code=404, detail=err)
+            if "public-protected" in err:
+                raise HTTPException(status_code=403, detail=err)
+            raise HTTPException(status_code=400, detail=err)
+        return {
+            "success": True,
+            "action": "memory_kernel_delete",
+            "name": req.name,
+        }
+
+    else:
+        raise HTTPException(
+            status_code=400,
+            detail=f"invalid action: {req.action}. Must be read/write/update/delete",
+        )
+
+
+@router.post("/skill/self-improvement")
+async def self_improvement_skill(req: SelfImprovementRequest):
+    """
+    self-improvement skill - 自动学习晋升
+    当错误出现 ≥ 3 次且解决方案已验证时，晋升为 pattern 实体
+    """
+    store = _get_store()
+    from datetime import datetime, timezone
+
+    # 检查发生频率
+    if req.occurrences < 3:
+        return {
+            "success": True,
+            "action": "self_improvement",
+            "promoted": False,
+            "reason": f"occurrences ({req.occurrences}) < threshold (3)",
+        }
+
+    if not req.verified:
+        return {
+            "success": True,
+            "action": "self_improvement",
+            "promoted": False,
+            "reason": "solution not verified yet",
+        }
+
+    # 创建或更新 pattern 实体
+    pattern_name = f"pattern_{req.error_type.replace(' ', '_').lower()}"
+    entity = store.get_entity(pattern_name)
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    obs_content = f"[{today}] {req.summary}"
+
+    if entity:
+        # 追加 observation
+        success, err, obs = store.add_observation(pattern_name, obs_content)
+        return {
+            "success": success,
+            "action": "self_improvement_update",
+            "pattern_name": pattern_name,
+            "observation_id": obs.id if obs else None,
+            "error": err if not success else None,
+            "promoted": success,
+        }
+    else:
+        # 创建新实体
+        new_entity = MemoryEntity(
+            name=pattern_name,
+            entity_type="pattern",
+            project="_global",
+        )
+        success, err = store.create_entity(new_entity)
+        if not success:
+            return {
+                "success": False,
+                "action": "self_improvement_create",
+                "error": err,
+                "promoted": False,
+            }
+        # 添加 observation
+        store.add_observation(pattern_name, obs_content)
+        return {
+            "success": True,
+            "action": "self_improvement_create",
+            "pattern_name": pattern_name,
+            "promoted": True,
+        }
+
+
+@router.post("/skill/memory-recall")
+async def memory_recall_skill(req: MemoryRecallRequest):
+    """
+    memory-recall skill - 跨会话记忆检索
+    用于在任务开始时自动回忆相关上下文
+    """
+    store = _get_store()
+    results = store.search(req.query, limit=req.limit)
+    return {
+        "success": True,
+        "action": "memory_recall",
+        "query": req.query,
+        "results": results,
+        "total": len(results),
+        "source": "mcp",
+    }
+
+
+# ============================================================
+# Health & Stats
+# ============================================================
+
+@router.get("/health")
+async def memory_health():
+    """健康检查"""
+    store = _get_store()
+    return {
+        "success": True,
+        "action": "health",
+        "service": "memory",
+        "version": "1.0.0",
+        "memory_dir": str(store.memory_dir),
+    }
+
+
+@router.get("/stats")
+async def memory_stats():
+    """统计信息"""
+    store = _get_store()
+    return {
+        "success": True,
+        "action": "stats",
+        "data": store.get_stats(),
+    }
