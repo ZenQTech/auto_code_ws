@@ -66,6 +66,12 @@ export interface BrandHeaderProps {
   fileExplorerOpen?: boolean;
   /** v1.4.0 新增：打开 Loop v7 工作流弹窗回调（可选，提供则菜单显示"Loop v7 工作流"项） */
   onOpenLoopV7?: () => void;
+  /** v2.0.0 (Cycle 9 P1-7) 新增：打开 DiffView 增强页路由回调 */
+  onOpenDiffView?: () => void;
+  /** v1.0.0 (Cycle 10 P1-8) 新增：打开 Memory System 路由回调 */
+  onOpenMemory?: () => void;
+  /** v1.0.0 (Cycle 10 P1-10) 新增：Verification Loop 入口回调 */
+  onOpenVerification?: () => void;
   /** v1.6.0 新增：打开 MCP 工具面板回调（可选，提供则菜单显示"MCP 工具"项） */
   onOpenMCP?: () => void;
   /** v1.6.0 新增：打开会话压缩面板回调（可选，提供则菜单显示"会话压缩"项） */
@@ -343,6 +349,9 @@ export default function BrandHeader({
   onOpenFileExplorer,
   fileExplorerOpen,
   onOpenLoopV7,
+  onOpenDiffView,
+  onOpenMemory,
+  onOpenVerification,
   onOpenMCP,
   onOpenCompaction,
   onOpenSkills,
@@ -537,6 +546,57 @@ export default function BrandHeader({
                 >
                   <Icon name="rocket" className="w-4 h-4" />
                   <span>🚀 Loop v7 工作流</span>
+                </button>
+              )}
+
+              {/* v2.0.0 (Cycle 9 P1-7) 新增：DiffView 多格式代码变更查看
+               *  行为：点击跳转 /diff-view 路由打开 DiffView 页面
+               *  图标：folder（文件夹），强调代码目录结构
+               *  父组件 App.tsx 透传 onOpenDiffView 以激活本项 */}
+              {onOpenDiffView && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenDiffView)}
+                  className="w-full px-4 py-2 text-left text-sm text-blue-700
+                             hover:bg-blue-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <Icon name="folder" className="w-4 h-4" />
+                  <span>📋 DiffView 增强</span>
+                </button>
+              )}
+
+              {/* v1.0.0 (Cycle 10 P1-8) 新增：Memory System 长期记忆管理
+               *  行为：点击跳转 /memory 路由打开 Memory System 页面
+               *  图标：folder，强调长期存储
+               *  父组件 App.tsx 透传 onOpenMemory 以激活本项 */}
+              {onOpenMemory && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMemory)}
+                  className="w-full px-4 py-2 text-left text-sm text-purple-700
+                             hover:bg-purple-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <Icon name="folder" className="w-4 h-4" />
+                  <span>🧠 Memory System</span>
+                </button>
+              )}
+
+              {/* v1.0.0 (Cycle 10 P1-10) 新增：Verification Loop 验证闭环
+               *  行为：点击跳转 /verification 路由打开验证闭环页面
+               *  图标：folder，强调自动验证与修复闭环
+               *  父组件 App.tsx 透传 onOpenVerification 以激活本项 */}
+              {onOpenVerification && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenVerification)}
+                  className="w-full px-4 py-2 text-left text-sm text-cyan-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <Icon name="folder" className="w-4 h-4" />
+                  <span>🔁 Verification Loop</span>
                 </button>
               )}
 

@@ -48,6 +48,21 @@
 #        - 基于响应体 SHA-256 计算强 ETag
 #        - 客户端 If-None-Match 命中时返回 304 Not Modified
 #        - 失败兜底：异常不影响主响应，仅记录日志
+#   - 2026-07-28 | v6.3.0 | Cycle 9 P0-17 新增：注册 project_agents 路由
+#     （/api/project-agents）实现 .trae/agents/ 子智能体目录扫描与 @ 调用
+#   - 2026-07-28 | v6.4.0 | Cycle 9 P1-5 新增：注册 skills_progressive 路由
+#     （/api/skills-progressive）实现 SKILL.md Progressive Disclosure
+#   - 2026-07-28 | v6.7.0 | Cycle 9 P1-7 新增：注册 diff_view 路由
+#     （/api/diff-view）实现多格式 diff + 快照管理 + 任意 ref 对比
+#   - 2026-07-28 | v6.9.0 | Cycle 10 P1-8 新增：注册 memory 路由
+#     （/api/memory）实现 Dual-Track Persistent Memory + memory-kernel
+#     + self-improvement + memory-recall 四个 skill
+#   - 2026-07-28 | v6.10.0 | Cycle 10 P1-10 新增：注册 verification 路由
+#     （/api/verification）实现 4 维度验证（syntax/module/integration/performance）
+#     + 自动修复编排（错误分类 + Agent 路由 + 退避重试）
+#     + 性能基线管理（基线对比 + 5% 退化告警）
+#     + Webhook 触发（git push / pull_request）
+#     + 报告生成（Markdown / JSON / HTML）
 # ============================================================
 """
 
@@ -831,6 +846,46 @@ app.include_router(custom_models_router)
 from .api.loop_commands import router as loop_commands_router
 app.include_router(loop_commands_router, prefix="/api/loop-commands", tags=["loop-commands"])
 
+# v6.3.0 Cycle 9 P0-17：.trae/agents/ 子智能体目录路由
+# 实现 TRAE v3.5.67 规范的 .trae/agents/<identifier>.md 扫描 + @ 调用
+from .api.project_agents import router as project_agents_router
+app.include_router(project_agents_router, prefix="/api/project-agents", tags=["project-agents"])
+
+# v6.4.0 Cycle 9 P1-5：SKILL.md Progressive Disclosure
+# 实现 Codex v0.135+ 规范的 8K cap 摘要 + on-demand 完整加载
+from .api.skills_progressive import router as skills_progressive_router
+app.include_router(skills_progressive_router, prefix="/api/skills-progressive", tags=["skills-progressive"])
+
+# v6.6.0 Cycle 9 P1-6：.trae/rules/ Multi-Level Loader
+# 实现 Codex v0.140+ 规范的 .trae/rules/<category>/<name>.md 多级嵌套加载
+from .api.trae_rules_loader import router as trae_rules_loader_router
+app.include_router(trae_rules_loader_router, prefix="/api/trae-rules", tags=["trae-rules-loader"])
+
+# v6.7.0 Cycle 9 P1-7：DiffView 增强（多格式 diff + 快照 + 任意 ref 对比 + 暂存控制）
+# 实现统一 unified / side_by_side / json_patch / stats 四种输出格式，
+# 支持工作区 / 任意 commit-branch-tag / 快照 三类对比场景，
+# 提供快照创建 / 列表 / 恢复 / 删除与 stage / unstage / stage-all 暂存控制
+from .api.diff_view import router as diff_view_router
+app.include_router(diff_view_router, prefix="/api/diff-view", tags=["diff-view"])
+
+# v6.9.0 Cycle 10 P1-8：Memory System（Dual-Track Persistent Memory）
+# 实现 TRAE Global Memory 风格的双轨记忆：
+# 1) MCP Memory: 跨会话知识图谱（JSONL 持久化）
+# 2) memory-kernel skill: R/W/U 协议 + 质量门控
+# 3) self-improvement skill: 自动从错误解决中学习晋升
+# 4) memory-recall skill: 跨会话记忆检索（Step 0 Pre-check）
+from .api.memory import router as memory_router
+app.include_router(memory_router, prefix="/api/memory", tags=["memory"])
+
+# v6.10.0 Cycle 10 P1-10：Verification Loop（验证闭环机制）
+# 实现 4 维度验证（syntax / module / integration / performance）
+# 失败自动修复（fix agent 路由 + 1s/5s/15s 退避 + 最多 3 次重试）
+# 性能基线管理（基线对比 + 5% 退化告警）
+# Webhook 触发（git push / pull_request 事件）
+# 报告生成（Markdown / JSON / HTML 三种格式）
+from .api.verification import router as verification_router
+app.include_router(verification_router, prefix="/api/verification", tags=["verification"])
+
 # 启动时初始化 Custom Models 服务 + Bearer Token 后台刷新任务
 @app.on_event("startup")
 async def _init_custom_models():
@@ -904,11 +959,14 @@ async def health_check():
 async def root_fallback():
     """
     根路径兜底路由
-    当前端未构建时，返回平台信息页和 API 文档链接
+    当 _frontend_available 时直接返回 index.html 内容（v6.8.0 Cycle 9 P1-7 升级）
+    否则返回平台信息页和 API 文档链接
     """
+    if _frontend_available and _index_html_content:
+        from fastapi.responses import HTMLResponse
+        return HTMLResponse(content=_index_html_content, media_type="text/html")
     if _frontend_available:
-        # 如果前端已挂载，这个路由不会被触发
-        # 但保留以防 StaticFiles 挂载失败
+        # 兼容：旧版 _index_html_content 不可用时回退
         from fastapi.responses import RedirectResponse
         return RedirectResponse(url="/index.html")
     from fastapi.responses import HTMLResponse
@@ -919,7 +977,7 @@ async def root_fallback():
     <style>
       body {{ font-family: sans-serif; max-width: 600px; margin: 80px auto; padding: 20px; background: #0f0f1a; color: #e0e0e0; }}
       h1 {{ color: #a78bfa; }} a {{ color: #7c3aed; }}
-      .card {{ background: #1a1a2e; border-radius: 12px; padding: 24px; margin: 16px 0; }}
+      .card {{ background: #1a1a2a; border-radius: 12px; padding: 24px; margin: 16px 0; }}
       code {{ background: #2d2d4a; padding: 2px 8px; border-radius: 4px; }}
     </style></head>
     <body>
@@ -941,5 +999,62 @@ async def root_fallback():
 # 注意：必须在所有显式路由注册之后挂载，否则会拦截 /health 等路由
 frontend_dist = settings.get_project_root() / "frontend" / "dist"
 _frontend_available = frontend_dist.exists()
+
+# v6.8.0 (Cycle 9 P1-7) 新增：SPA History 路由兜底
+#   作用：所有非 /api /ws /assets 的 GET 请求统一返回 index.html
+#   解决 StaticFiles(html=True) 在 /diff-view 等无对应文件的路径上返回 404 的问题
+#   使前端 React Router (BrowserRouter) 的 SPA 路由可以正常工作
 if _frontend_available:
-    app.mount("/", StaticFiles(directory=str(frontend_dist), html=True), name="frontend")
+    index_html_path = frontend_dist / "index.html"
+    if index_html_path.exists():
+        _index_html_content = index_html_path.read_text(encoding="utf-8")
+    else:
+        _index_html_content = ""
+
+    async def spa_serve(path: str = ""):  # noqa: ARG001
+        """
+        SPA History 路由兜底
+        对于非 API 路径的 GET 请求，统一返回前端 index.html，
+        由前端 React Router 自行处理 URL 路由解析
+        """
+        from fastapi.responses import HTMLResponse
+        if _index_html_content:
+            return HTMLResponse(content=_index_html_content, media_type="text/html")
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Frontend index.html not found")
+
+    # 注册 SPA 路由兜底 - 所有非 API/WS/assets 路径
+    # 注意：/ 由 @app.get("/") root_fallback 处理（向上兼容前端未构建场景）
+    spa_path_patterns = [
+        "/diff-view",
+        "/diff-view/{path:path}",
+        "/chat/{path:path}",
+        "/coding/{path:path}",
+        "/settings",
+        "/workflow/{path:path}",
+        "/select-mode",
+    ]
+    for p in spa_path_patterns:
+        app.add_api_route(p, spa_serve, methods=["GET"], include_in_schema=False)
+
+    # 通用 catch-all：所有非 /api /ws 的 GET 请求尝试从 dist 读取文件
+    #   - 文件存在：直接返回（支持 /assets/*、/vite.svg、字体文件等）
+    #   - 文件不存在：返回 index.html（SPA History 路由）
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def spa_catch_all(full_path: str):
+        from fastapi import HTTPException
+        from fastapi.responses import FileResponse, HTMLResponse
+        # 排除 API 和 WebSocket 路径
+        if full_path.startswith("api/") or full_path.startswith("ws/"):
+            raise HTTPException(status_code=404, detail="Not Found")
+        # 安全检查：拒绝路径遍历
+        if ".." in full_path.split("/"):
+            raise HTTPException(status_code=400, detail="Invalid path")
+        # 尝试读取文件
+        target = frontend_dist / full_path
+        if target.is_file():
+            return FileResponse(str(target))
+        # 文件不存在：返回 index.html（SPA 路由由前端处理）
+        if _index_html_content:
+            return HTMLResponse(content=_index_html_content, media_type="text/html")
+        raise HTTPException(status_code=404, detail="Frontend index.html not found")

@@ -902,6 +902,57 @@ export default function App() {
   }, [setShowLoopV7Runner]);
 
   /**
+   * v5.15.0 (Cycle 9 P1-7) 新增：跳转 DiffView 增强页
+   * 调用方：BrandHeader 菜单中的"📋 DiffView 增强"项
+   * 行为：调用 useNavigate 跳转到 /diff-view 路由
+   *       URL 携带 ?project= 参数（如有选中项目则透传）
+   */
+  const handleOpenDiffView = useCallback(() => {
+    try {
+      const projectPath = (() => {
+        try {
+          return localStorage.getItem('diffview.projectPath') || undefined;
+        } catch {
+          return undefined;
+        }
+      })();
+      const url = projectPath
+        ? `/diff-view?project=${encodeURIComponent(projectPath)}`
+        : '/diff-view';
+      navigate(url);
+    } catch (e) {
+      // 兜底：使用 location.href 跳转
+      window.location.href = '/diff-view';
+    }
+  }, [navigate]);
+
+  /**
+   * v1.0.0 (Cycle 10 P1-8) 新增：跳转 Memory System 长期记忆管理页
+   * 调用方：BrandHeader 菜单中的"🧠 Memory System"项
+   * 行为：调用 useNavigate 跳转到 /memory 路由
+   */
+  const handleOpenMemory = useCallback(() => {
+    try {
+      navigate('/memory');
+    } catch (e) {
+      window.location.href = '/memory';
+    }
+  }, [navigate]);
+
+  /**
+   * v1.0.0 (Cycle 10 P1-10) 新增：打开 Verification Loop 验证闭环页面
+   * 调用方：BrandHeader 菜单中的"🔁 Verification Loop"项
+   * 行为：调用 useNavigate 跳转到 /verification 路由
+   */
+  const handleOpenVerification = useCallback(() => {
+    try {
+      navigate('/verification');
+    } catch (e) {
+      window.location.href = '/verification';
+    }
+  }, [navigate]);
+
+  /**
    * 删除会话
    * 运行步骤：
    *   1. 二次确认
@@ -1817,6 +1868,9 @@ export default function App() {
           onOpenCompaction={setCompactionPanelOpen}
           onOpenSkills={setSkillsPanelOpen}
           onOpenAgentsMd={setAgentsMdPanelOpen}
+          onOpenDiffView={handleOpenDiffView}
+          onOpenMemory={handleOpenMemory}
+          onOpenVerification={handleOpenVerification}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}

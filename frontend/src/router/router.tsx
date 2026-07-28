@@ -35,6 +35,12 @@ const ChatHomePage = lazy(() => import('../pages/ChatHomePage'));
 const CodingHomePage = lazy(() => import('../pages/CodingHomePage'));
 const SettingsPage = lazy(() => import('../pages/SettingsPage'));
 const WorkflowDetailPage = lazy(() => import('../pages/WorkflowDetailPage'));
+// v1.0.0 (Cycle 9 P1-7) 新增：DiffView 独立访问页面（支持 ?project=/path 参数）
+const DiffViewPage = lazy(() => import('../pages/DiffViewPage'));
+// v1.0.0 (Cycle 10 P1-8) 新增：Memory System 独立访问页面
+const MemoryPage = lazy(() => import('../pages/MemoryPage'));
+// v1.0.0 (Cycle 10 P1-10) 新增：Verification Loop 独立访问页面
+const VerificationPage = lazy(() => import('../pages/VerificationPage'));
 
 // ============================================================
 // Suspense 包装器: 懒加载页面统一显示 loading
@@ -77,6 +83,13 @@ export const AppRouter: React.FC = () => {
           {/* 设置 & 工作流 - 独立页面 */}
           <Route path="settings" element={lazyPage(SettingsPage)} />
           <Route path="workflow/:workflowId" element={lazyPage(WorkflowDetailPage)} />
+          {/* v1.0.0 (Cycle 9 P1-7) 新增：DiffView 独立访问路由
+              支持 ?project=/path 参数直接打开指定项目的 diff 视图 */}
+          <Route path="diff-view" element={lazyPage(DiffViewPage)} />
+          {/* v1.0.0 (Cycle 10 P1-8) 新增：Memory System 独立访问路由 */}
+          <Route path="memory" element={lazyPage(MemoryPage)} />
+          {/* v1.0.0 (Cycle 10 P1-10) 新增：Verification Loop 独立访问路由 */}
+          <Route path="verification" element={lazyPage(VerificationPage)} />
 
           {/* 模式选择 - 保留独立路由 */}
           <Route path="select-mode" element={lazyPage(ModeSelectorPage)} />

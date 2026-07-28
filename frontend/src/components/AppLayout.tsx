@@ -77,6 +77,12 @@ export interface AppLayoutProps {
   onOpenFileExplorer: () => void;
   fileExplorerOpen: boolean;
   onOpenLoopV7: () => void;
+  /** v6.17.0 (Cycle 9 P1-7) 新增：跳转 DiffView 增强页（独立路由 /diff-view） */
+  onOpenDiffView: () => void;
+  /** v6.18.0 (Cycle 10 P1-8) 新增：跳转 Memory System 页面（独立路由 /memory） */
+  onOpenMemory: () => void;
+  /** v1.0.0 (Cycle 10 P1-10) 新增：跳转 Verification Loop 页面（独立路由 /verification） */
+  onOpenVerification: () => void;
   /** v6.14.0 Cycle 2 新增：打开 MCP 工具面板 */
   onOpenMCP: () => void;
   /** v6.14.0 Cycle 2 新增：打开会话压缩面板 */
@@ -200,6 +206,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenFileExplorer,
   fileExplorerOpen,
   onOpenLoopV7,
+  onOpenDiffView,
+  onOpenMemory,
+  onOpenVerification,
   onOpenMCP,
   onOpenCompaction,
   onOpenSkills,
@@ -379,6 +388,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenFileExplorer={onOpenFileExplorer}
         fileExplorerOpen={fileExplorerOpen}
         onOpenLoopV7={onOpenLoopV7}
+        onOpenDiffView={onOpenDiffView}
+        onOpenMemory={onOpenMemory}
+        onOpenVerification={onOpenVerification}
         onOpenMCP={onOpenMCP}
         onOpenCompaction={onOpenCompaction}
         onOpenSkills={onOpenSkills}
