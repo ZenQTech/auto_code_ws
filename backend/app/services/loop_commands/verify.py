@@ -15,6 +15,11 @@
 # 输出结果：dict {unit_tests, e2e_tests, typescript, vite_build, passed}
 # 修改记录：
 #   - 2026-07-27 | v1.0.0 | Cycle 8 P1-4 新建
+#   - 2026-07-28 | v1.1.0 | Cycle 9 P0-16 修复 Node.js 兼容性问题
+#     - 优先使用本地 node_modules/.bin/tsc（避免 npx 选择错误版本）
+#     - 检测 Node.js 版本，如果低于 16 则给出明确错误
+#     - 捕获 stderr 中的 SyntaxError（Node 兼容性问题）
+#     - 给出 nvm 升级提示
 # ============================================================
 """
 
@@ -247,17 +252,58 @@ class VerifyService:
         }
 
     def _run_typescript_check(self) -> Dict[str, Any]:
-        """运行 TypeScript 编译检查"""
+        """运行 TypeScript 编译检查
+
+        修复 v1.1.0:
+        - 优先使用本地 node_modules/.bin/tsc（避免 npx 选择错误版本）
+        - 检测 Node.js 版本，如果低于 16 则给出明确错误
+        - 捕获 stderr 中的 SyntaxError（Node 兼容性问题）
+        """
         if not (self.frontend_dir / "tsconfig.json").exists():
             return {"passed": True, "skipped": "tsconfig.json not found", "error_count": 0}
 
+        # 检查 Node.js 版本（TypeScript 5.6+ 需要 Node 16+）
+        import re as _re
+        try:
+            node_rc, node_ver, _ = _run_shell(
+                ["node", "--version"], timeout=5
+            )
+            m = _re.search(r"v(\d+)", node_ver)
+            if m and int(m.group(1)) < 16:
+                return {
+                    "passed": False,
+                    "error_count": 1,
+                    "returncode": -1,
+                    "skipped": f"Node.js {node_ver.strip()} too old (need >=16)",
+                    "hint": "use nvm: nvm use 24.15.0",
+                }
+        except Exception:
+            pass
+
+        # 优先使用本地 tsc 二进制
+        local_tsc = self.frontend_dir / "node_modules" / ".bin" / "tsc"
+        if local_tsc.exists():
+            tsc_cmd = [str(local_tsc), "--noEmit", "-p", "tsconfig.json"]
+        else:
+            tsc_cmd = ["npx", "tsc", "--noEmit", "-p", "tsconfig.json"]
+
         rc, stdout, stderr = _run_shell(
-            ["npx", "tsc", "--noEmit", "-p", "tsconfig.json"],
+            tsc_cmd,
             cwd=str(self.frontend_dir),
             timeout=120,
         )
 
-        error_count = stdout.count("error TS") if stdout else 0
+        error_count = (stdout + stderr).count("error TS")
+
+        # 检测 Node.js 兼容性问题（SyntaxError）
+        if rc != 0 and "SyntaxError" in (stderr or ""):
+            return {
+                "passed": False,
+                "error_count": error_count,
+                "returncode": rc,
+                "skipped": "Node.js version incompatible with TypeScript 5.6+",
+                "hint": "use nvm: nvm use 24.15.0",
+            }
 
         return {
             "passed": rc == 0,

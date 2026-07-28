@@ -35,7 +35,7 @@ from ..services.loop_commands import (
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/loop-commands", tags=["Loop Commands"])
+router = APIRouter(tags=["Loop Commands"])
 
 
 # ============================================================
