@@ -228,7 +228,7 @@ fi
 
 # 测试不存在的 workflow
 RESPONSE=$(curl -s "$BASE_URL/api/loop-commands/status/nonexistent_workflow_xyz")
-assert_contains "nonexistent workflow returns 404 or null" "$RESPONSE" '"detail"\|"workflow_id":null'
+assert_contains "nonexistent workflow returns 404" "$RESPONSE" 'Workflow not found'
 
 # ============================================================
 # 模块 8: 异常路径
