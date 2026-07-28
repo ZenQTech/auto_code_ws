@@ -74,3 +74,10 @@ credentials.json
 
 # ---- Rollout JSONL 测试数据 (不提交) ----
 backend/data/rollouts/
+
+# ---- E2E 框架自动产物 (Cycle 11 P2-1) ----
+tests/e2e_reports/
+tests/e2e_baselines/
+tests/e2e_screenshots/
+tests/failure_screenshots/
+tests/screenshots/
