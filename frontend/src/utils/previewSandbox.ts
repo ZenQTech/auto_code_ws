@@ -76,7 +76,7 @@ export function detectFileType(filename: string): 'html' | 'react' | 'js' | 'css
 /**
  * 生成 HTML 预览内容（html 模式）
  */
-export function buildHtmlPreview(html: string, config: Required<PreviewConfig>): string {
+export function buildHtmlPreview(html: string, _config: Required<PreviewConfig>): string {
   return `<!DOCTYPE html>
 <html>
 <head>
@@ -184,7 +184,7 @@ export class SandboxManager {
   private consoleListener: ((event: MessageEvent) => void) | null = null;
   private lastSnapshot: PreviewSnapshot | null = null;
 
-  constructor(config: PreviewConfig = {}) {
+  constructor(config: PreviewConfig = { mode: 'html' }) {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.updateDebounced = debounce(
       (files: Record<string, string>) => this._doUpdate(files),

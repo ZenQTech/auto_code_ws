@@ -166,7 +166,7 @@ describe('@ 引用解析', () => {
     expect(refs).toHaveLength(3);
     expect(refs[0].type).toBe('file');
     expect(refs[1].type).toBe('folder');
-    expect(refs[2].type).toBe('code');
+    expect(refs[2].type).toBe('symbol');
   });
 
   it('大小写不敏感', () => {

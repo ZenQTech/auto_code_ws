@@ -150,6 +150,11 @@ export default {
           '50%':  { transform: 'translateX(0%)' },
           '100%': { transform: 'translateX(200%)' },
         },
+        // 进度条收缩动画：右→左
+        'shrink-width': {
+          '0%':   { width: '100%' },
+          '100%': { width: '0%' },
+        },
       },
       /** 全局动画类 */
       animation: {

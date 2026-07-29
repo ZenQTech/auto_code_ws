@@ -115,6 +115,12 @@
 #        （渐变标题 + 玻璃拟态 + 加载骨架 + toast 提示 + 空状态）
 #     ④ BrandHeader 新增 onOpenCycle3/onOpenDualCompaction/onOpenRules 菜单项
 #        + shield/cpu 内联 SVG 图标 + "Cycle 3 新功能"分组标题
+#   - 2026-07-29 | v5.14.0 | Cycle 18 P0-3 集成全局错误处理：
+#     ① 导入 GlobalErrorToast 组件并在根级别渲染（始终显示在最顶层）
+#     ② main.tsx 中安装 GlobalErrorHandler（监听 window.onerror /
+#        unhandledrejection / 资源加载错误）
+#     ③ 关键面板（Sidebar / ComposerPanel / 后续 panel）增加 ErrorBoundary
+#        嵌套（level='panel'），任一面板崩溃不影响其他功能
 # ============================================================
  */
 
@@ -194,6 +200,16 @@ import SlashCommandHelp from './components/SlashCommandHelp';
 import CustomModelsPanel from './components/CustomModelsPanel';
 /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板 */
 import { ComposerLauncher } from './components/ComposerLauncher';
+/** v6.40.0 (Cycle 18 P0-3) 新增：全局错误 Toast */
+import { GlobalErrorToast } from './components/GlobalErrorToast';
+/** v6.40.0 (Cycle 18 P0-3) 新增：错误边界（用于嵌套关键面板） */
+import ErrorBoundary from './components/ErrorBoundary';
+/** v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板 */
+import { BackgroundTasksPanel } from './components/BackgroundTasksPanel';
+/** v6.42.0 (Cycle 19 P0-2) 新增：Best-of-N 多模型对比面板 */
+import { BestOfNPanel } from './components/BestOfNPanel';
+/** v6.43.0 (Cycle 19 P0-3) 新增：Design Mode 设计模式覆盖层 */
+import { DesignModeOverlay } from './components/DesignModeOverlay';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -366,8 +382,12 @@ export default function App() {
     currentSessionId,
     { onNotFound: handleSessionNotFound },
   );
-  /** PlanViewer：是否可见 */
+  /** PlanViewer：是否可见 - v6.37.0 P0-1: 新版 Composer Plan Mode 替代旧 PlanViewer */
   const [planVisible, setPlanVisible] = useState(false);
+  // 注：planVisible 旧版用于驱动 PlanViewer 弹窗，新版 Composer Plan Mode 集成在
+  // ComposerPanel 中（plan/planStage 状态由 useComposer 管理），保留 setPlanVisible
+  // 调用以维持旧事件链兼容
+  void planVisible;
   /** PlanViewer：计划内容 */
   const [planContent, setPlanContent] = useState('');
   /**
@@ -1147,6 +1167,36 @@ export default function App() {
   }, []);
 
   /**
+   * v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板开关状态
+   * 作用：控制 BackgroundTasksPanel 弹窗显隐
+   *       任务通过 BackgroundTaskEngine 单例管理，无需传递 props
+   */
+  const [backgroundTasksOpen, setBackgroundTasksOpen] = useState(false);
+  const handleOpenBackgroundTasks = useCallback(() => {
+    setBackgroundTasksOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.42.0 (Cycle 19 P0-2) 新增：Best-of-N 多模型对比面板开关状态
+   * 作用：控制 BestOfNPanel 弹窗显隐
+   *       候选通过 MultiModelExecutor 单例管理
+   */
+  const [bestOfNOpen, setBestOfNOpen] = useState(false);
+  const handleOpenBestOfN = useCallback(() => {
+    setBestOfNOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.43.0 (Cycle 19 P0-3) 新增：Design Mode 设计模式覆盖层开关状态
+   * 作用：控制 DesignModeOverlay 覆盖层显隐
+   *       设计模式通过 DesignModeController 单例管理
+   */
+  const [designModeOpen, setDesignModeOpen] = useState(false);
+  const handleOpenDesignMode = useCallback(() => {
+    setDesignModeOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -1896,14 +1946,16 @@ export default function App() {
   }, [handleStop, showToast]);
 
   /**
-   * 确认执行计划
-   * 运行步骤：
-   *   1. 调用 confirmPlan API，透传 session_id
-   *   2. 关闭 PlanViewer
-   *   3. 显示执行开始通知
-   *   4. 刷新智能体列表
+   * 确认执行计划 - v6.37.0 P0-1: 新版 Composer Plan Mode 替代了旧版 confirmPlan 流程
+   * 保留此函数体仅为兼容历史调用链；新流程下 PlanViewer 在 App.tsx 中不再渲染，
+   * Composer 内的 plan.executePlan 替代了此入口
+   *
+   * 注：handleConfirmPlan 引用 void 化以避免 TS6133，
+   *     在新版 Composer Plan Mode 流程下不再被实际调用
    */
+  // @ts-expect-error - 保留历史调用链，新版 Composer Plan Mode 替代
   const handleConfirmPlan = useCallback(async () => {
+    // 注：此函数在新版 Composer Plan Mode 中不再被引用，保留仅为兼容历史调用链
     // v5.9.0：按钮加载态
     if (isConfirmPlanLoading) return;
     setIsConfirmPlanLoading(true);
@@ -2011,6 +2063,11 @@ export default function App() {
   return (
     <>
       {/* ============================================================ */}
+      {/* v6.40.0 Cycle 18 P0-3：全局错误 Toast（始终在最顶层显示） */}
+      {/* ============================================================ */}
+      <GlobalErrorToast />
+
+      {/* ============================================================ */}
       {/* v3.0.0：模式未选择 → 渲染 ModeSelector */}
       {/* ============================================================ */}
       {!appMode && (
@@ -2059,8 +2116,9 @@ export default function App() {
       <>
 
       {/* ============================================================ */}
-      {/* 左侧边栏：会话历史 */}
+      {/* 左侧边栏：会话历史 (v6.40.0 Cycle 18 P0-3: ErrorBoundary 嵌套) */}
       {/* ============================================================ */}
+      <ErrorBoundary level="panel" name="Sidebar">
       <Sidebar
         expanded={sidebarExpanded}
         onToggle={handleToggleSidebar}
@@ -2076,8 +2134,11 @@ export default function App() {
         onModeSwitch={handleModeSwitch}
         deletingSession={isDeletingSession}
       />
+      </ErrorBoundary>
 
-      {/* v6.36.0 P2-1：移动端 Sidebar 抽屉包装（移动端有效，桌面端不渲染） */}
+      {/* v6.36.0 P2-1：移动端 Sidebar 抽屉包装（移动端有效，桌面端不渲染）
+          (v6.40.0 Cycle 18 P0-3: ErrorBoundary 嵌套) */}
+      <ErrorBoundary level="panel" name="MobileSidebar">
       <MobileSidebar
         open={mobileSidebarOpen}
         onClose={() => setMobileSidebarOpen(false)}
@@ -2098,6 +2159,7 @@ export default function App() {
         onModeSwitch={handleModeSwitch}
         deletingSession={isDeletingSession}
       />
+      </ErrorBoundary>
 
       {/* ============================================================ */}
       {/* 主内容区域：settingsOpen 时显示设置面板，否则显示对话界面 */}
@@ -2148,6 +2210,9 @@ export default function App() {
           onOpenGoalAutomation={handleOpenGoalAutomation}
           onOpenGoalTemplates={handleOpenGoalTemplates}
           onOpenComposer={handleOpenComposer}
+          onOpenBackgroundTasks={handleOpenBackgroundTasks}
+          onOpenBestOfN={handleOpenBestOfN}
+          onOpenDesignMode={handleOpenDesignMode}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -2412,7 +2477,26 @@ export default function App() {
           onClose={closeRulesPanel}
           maxWidth="max-w-3xl"
         >
-          <RulesPanel onClose={closeRulesPanel} />
+          <RulesPanel
+            open={rulesPanelOpen}
+            onClose={closeRulesPanel}
+            currentRules={{
+              version: '1.0',
+              project_type: 'generic',
+              rules: {
+                type_safety: 'strict',
+                error_handling: 'try_catch',
+                framework_best_practices: true,
+                import_order: 'alphabetical',
+                naming_convention: 'camelCase',
+                testing: { required: true, framework: 'vitest', coverage_threshold: 80 },
+                documentation: { required: true, language: 'chinese' },
+                security: { no_secrets_in_code: true, parameter_validation: true, input_sanitization: true },
+              },
+              custom_rules: [],
+            }}
+            onSave={() => closeRulesPanel()}
+          />
         </Cycle3Modal>
       )}
 
@@ -2493,8 +2577,47 @@ export default function App() {
       {/* v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板
        *  触发：BrandHeader 菜单"⚡ Composer 多文件编辑"项 / Cmd/Ctrl+I 快捷键
        *  关闭：面板内关闭按钮 / Esc 键
-       *  位置：根 fragment 末尾，z-index 由 ComposerPanel 自身管理（z-50） */}
+       *  位置：根 fragment 末尾，z-index 由 ComposerPanel 自身管理（z-50）
+       *  v6.40.0 Cycle 18 P0-3: ErrorBoundary 嵌套，Composer 崩溃不影响主界面 */}
+      <ErrorBoundary level="panel" name="ComposerLauncher">
       <ComposerLauncher externalIsOpen={composerOpen} />
+      </ErrorBoundary>
+
+      {/* v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板
+       *  触发：BrandHeader 菜单"📋 后台任务"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  任务状态由 BackgroundTaskEngine 单例管理（带持久化）
+       *  v6.41.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="BackgroundTasks">
+        <BackgroundTasksPanel
+          isOpen={backgroundTasksOpen}
+          onClose={() => setBackgroundTasksOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.42.0 (Cycle 19 P0-2) 新增：Best-of-N 多模型对比面板
+       *  触发：BrandHeader 菜单"⚖️ Best-of-N 多模型"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击（运行中禁用关闭）
+       *  多模型并行执行由 MultiModelExecutor 单例管理
+       *  v6.42.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="BestOfN">
+        <BestOfNPanel
+          isOpen={bestOfNOpen}
+          onClose={() => setBestOfNOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.43.0 (Cycle 19 P0-3) 新增：Design Mode 设计模式覆盖层
+       *  触发：BrandHeader 菜单"🎨 Design Mode 设计模式"项
+       *  关闭：覆盖层内退出按钮 / Esc 键
+       *  元素选择状态由 DesignModeController 单例管理
+       *  v6.43.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="DesignMode">
+        <DesignModeOverlay
+          isActive={designModeOpen}
+          onExit={() => setDesignModeOpen(false)}
+        />
+      </ErrorBoundary>
     </div>
       )}
     </>

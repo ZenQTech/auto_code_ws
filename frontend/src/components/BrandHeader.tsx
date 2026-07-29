@@ -128,6 +128,12 @@ export interface BrandHeaderProps {
   onOpenCustomModels?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
+  /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
+  onOpenBackgroundTasks?: () => void;
+  /** v6.42.0 (Cycle 19 P0-2) 新增：打开 Best-of-N 多模型对比面板回调（可选） */
+  onOpenBestOfN?: () => void;
+  /** v6.43.0 (Cycle 19 P0-3) 新增：打开 Design Mode 设计模式覆盖层回调（可选） */
+  onOpenDesignMode?: () => void;
 }
 
 /**
@@ -137,7 +143,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -373,6 +379,42 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <polyline points="2 12 12 17 22 12" />
         </svg>
       );
+    case 'background-tasks':
+      // v6.41.0 (Cycle 19 P0-1) 新增：后台任务（任务清单+勾选，表达后台异步执行）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <line x1="9" y1="3" x2="9" y2="21" />
+          <line x1="3" y1="9" x2="9" y2="9" />
+          <line x1="13" y1="9" x2="17" y2="9" />
+          <line x1="13" y1="13" x2="17" y2="13" />
+          <line x1="13" y1="17" x2="15" y2="17" />
+          <path d="M5 6l1 1 2-2" />
+          <path d="M5 12l1 1 2-2" />
+        </svg>
+      );
+    case 'best-of-n':
+      // v6.42.0 (Cycle 19 P0-2) 新增：多模型对比（天平+刻度，表达对比）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 3v18" />
+          <path d="M5 7h14" />
+          <path d="M5 7l-2 4a4 4 0 008 0L9 7" />
+          <path d="M19 7l-2 4a4 4 0 008 0l-2-4" />
+          <path d="M8 21h8" />
+        </svg>
+      );
+    case 'design-mode':
+      // v6.43.0 (Cycle 19 P0-3) 新增：设计模式（十字箭头+边框，表达框选）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M3 3h6v6H3z" />
+          <path d="M15 3h6v6h-6z" />
+          <path d="M3 15h6v6H3z" />
+          <path d="M15 15h6v6h-6z" />
+          <path d="M9 6h6M9 18h6M6 9v6M18 9v6" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -438,6 +480,12 @@ export default function BrandHeader({
   onOpenCustomModels,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
+  /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
+  onOpenBackgroundTasks,
+  /** v6.42.0 (Cycle 19 P0-2) 新增：Best-of-N */
+  onOpenBestOfN,
+  /** v6.43.0 (Cycle 19 P0-3) 新增：Design Mode */
+  onOpenDesignMode,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1126,6 +1174,57 @@ export default function BrandHeader({
                 >
                   <Icon name="layers" className="w-4 h-4 text-indigo-500" />
                   <span>⚡ Composer 多文件编辑</span>
+                </button>
+              )}
+
+              {/* v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板（菜单项）
+               *  行为：点击调 onOpenBackgroundTasks() 弹出 BackgroundTasksPanel
+               *       支持任务创建/启动/暂停/恢复/取消/重试 + 状态过滤 + 实时统计
+               *  图标：background-tasks（任务清单+勾选），表达后台异步执行 */}
+              {onOpenBackgroundTasks && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenBackgroundTasks)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-orange-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="background-tasks" className="w-4 h-4 text-orange-500" />
+                  <span>📋 后台任务</span>
+                </button>
+              )}
+
+              {/* v6.42.0 (Cycle 19 P0-2) 新增：Best-of-N 多模型对比（菜单项）
+               *  行为：点击调 onOpenBestOfN() 弹出 BestOfNPanel
+               *       支持多模型并行调用 + 流式输出 + 实时成本计算 + 对比表
+               *  图标：best-of-n（天平+刻度），表达多模型对比 */}
+              {onOpenBestOfN && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenBestOfN)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="best-of-n" className="w-4 h-4 text-cyan-500" />
+                  <span>⚖️ Best-of-N 多模型</span>
+                </button>
+              )}
+
+              {/* v6.43.0 (Cycle 19 P0-3) 新增：Design Mode 设计模式（菜单项）
+               *  行为：点击调 onOpenDesignMode() 激活 DesignModeOverlay
+               *       支持元素悬停高亮 + 点击选择 + 框选 + 元素信息提取
+               *  图标：design-mode（十字箭头+边框），表达框选与设计工具 */}
+              {onOpenDesignMode && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenDesignMode)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-purple-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="design-mode" className="w-4 h-4 text-purple-500" />
+                  <span>🎨 Design Mode 设计模式</span>
                 </button>
               )}
 

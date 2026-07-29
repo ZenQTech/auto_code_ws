@@ -508,3 +508,70 @@ Phase 7: 循环重启准备 + 迭代日志
 - `CYCLE17_SPEC_MODE_TOGGLE.md` (Mode Toggle Spec)
 - `CYCLE17_SPEC_PREVIEW.md` (Preview Spec)
 - `代码修改日志.md` (v6.37.0 条目)
+
+---
+
+## Cycle 18 总结
+
+### 完成项
+
+| 编号 | 任务 | 状态 | 测试通过率 |
+|---|---|---|---|
+| G18-01 | @ 引用类型扩展（@codebase / @git / @diff） | ✅ | 100% (47+150 断言) |
+| G18-02 | 项目级 AI 规则系统（.hermesrules 风格） | ✅ | 100% (41+150 断言) |
+| G18-03 | Self-Summarization 长会话控制 | ✅ | 100% (42+150 断言) |
+| Phase 5 | UI/UX 优化（Composer 集成 G18-01/02/03） | ✅ | 100% |
+| Phase 6 | Loop Engineering E2E 验证（8 阶段） | ✅ | 100% (78 断言) |
+
+### 验收标准（Cycle 18 全部通过）
+
+- ✅ 单元测试 1,081 个 100% 通过
+- ✅ E2E 测试 150 + 78 = 228 个断言 100% 通过
+- ✅ TypeScript 编译零错误
+- ✅ Loop Engineering 8 阶段完整验证通过
+- ✅ 修改日志 + 任务总结同步更新
+
+### 关键文件（CYCLE 18 全部产出）
+
+**代码（G18-01 @ 引用扩展）**:
+- `frontend/src/utils/referenceResolvers.ts` (720 行)
+- `frontend/src/utils/referenceResolvers.test.ts` (280 行, 31 测试)
+- `frontend/src/utils/composerEngine.references.test.ts` (180 行, 16 测试)
+- `frontend/src/utils/composerEngine.ts` (升级：扩展 ContextType 至 8 种)
+
+**代码（G18-02 项目级 AI 规则）**:
+- `frontend/src/utils/hermesRules.ts` (550 行)
+- `frontend/src/utils/hermesRules.test.ts` (280 行, 32 测试)
+- `frontend/src/hooks/useProjectRules.ts` (250 行)
+- `frontend/src/hooks/useProjectRules.test.ts` (140 行, 9 测试)
+- `frontend/src/components/RulesEditor.tsx` (280 行)
+- `frontend/src/components/RulesEditor.test.tsx` (180 行, 9 测试)
+- `frontend/src/components/RulesPanel.tsx` (升级)
+- `frontend/src/App.tsx` (RulesPanel 完整 props)
+
+**代码（G18-03 Self-Summarization）**:
+- `frontend/src/utils/composerEngine.summary.ts` (400 行)
+- `frontend/src/utils/composerEngine.summary.test.ts` (430 行, 31 测试)
+- `frontend/src/components/ContextWindowMeter.tsx` (140 行)
+- `frontend/src/components/ContextWindowMeter.test.tsx` (140 行, 11 测试)
+
+**集成（Composer 三合一）**:
+- `frontend/src/components/ComposerPanel.tsx` (升级至 v1.3.0)
+
+**测试 + 验证**:
+- `tests/test_e2e_cycle18.sh` (150 断言 100% 通过)
+- `tests/test_e2e_cycle18_loop_engineering.sh` (78 断言 100% 通过)
+
+**文档**:
+- `CYCLE18_GAP_ANALYSIS.md` (Gap 分析)
+- `CYCLE18_SPEC_REFERENCES.md` (References Spec)
+- `CYCLE18_SPEC_PROJECT_RULES.md` (Project Rules Spec)
+- `CYCLE18_SPEC_SUMMARIZATION.md` (Summarization Spec)
+- `CYCLE18_SUMMARY.md` (本轮总结)
+
+### 下一轮（Cycle 19）规划
+
+- 启动新循环：互联网调研 → 功能差距 → Spec → 开发 → 测试 → 优化 → 验证
+- 重点关注：后端 API 真实集成、AI 模型联动、摘要质量提升
+- 保持 Loop Engineering 工作流不变
+

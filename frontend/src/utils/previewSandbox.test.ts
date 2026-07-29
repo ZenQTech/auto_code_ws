@@ -169,7 +169,7 @@ describe('SandboxManager - 更新与防抖', () => {
   let mockIframe: HTMLIFrameElement;
 
   beforeEach(() => {
-    sandbox = createSandboxManager({ debounceMs: 50 });
+    sandbox = createSandboxManager({ mode: 'html', debounceMs: 50 });
     mockIframe = document.createElement('iframe');
     sandbox.attach(mockIframe);
   });
@@ -205,7 +205,7 @@ describe('SandboxManager - 订阅', () => {
   let sandbox: ReturnType<typeof createSandboxManager>;
 
   beforeEach(() => {
-    sandbox = createSandboxManager({ debounceMs: 10 });
+    sandbox = createSandboxManager({ mode: 'html', debounceMs: 10 });
   });
 
   it('subscribe 接收快照', () => {

@@ -27,7 +27,20 @@
 // ============================================================
 
 /** 上下文条目类型 */
-export type ContextType = 'file' | 'folder' | 'symbol' | 'docs' | 'web';
+export type ContextType = 'file' | 'folder' | 'symbol' | 'docs' | 'web' | 'codebase' | 'git' | 'diff';
+
+// 重新导出扩展引用类型，便于其他模块使用
+export type {
+  CodebaseContext,
+  CodebaseResult,
+  GitContext,
+  GitRefKind,
+  GitCommit,
+  GitBlameInfo,
+  DiffContext,
+  DiffFile,
+  DiffHunk,
+} from './referenceResolvers';
 
 /** 文件上下文 */
 export interface FileContext {
@@ -71,7 +84,15 @@ export interface WebContext {
 }
 
 /** 统一上下文条目 */
-export type ContextEntry = FileContext | FolderContext | SymbolContext | DocContext | WebContext;
+export type ContextEntry =
+  | FileContext
+  | FolderContext
+  | SymbolContext
+  | DocContext
+  | WebContext
+  | import('./referenceResolvers').CodebaseContext
+  | import('./referenceResolvers').GitContext
+  | import('./referenceResolvers').DiffContext;
 
 /** Composer 上下文 */
 export interface ComposerContext {
@@ -80,6 +101,9 @@ export interface ComposerContext {
   symbols: SymbolContext[];
   docs: DocContext[];
   web: WebContext[];
+  codebase: import('./referenceResolvers').CodebaseContext[];
+  git: import('./referenceResolvers').GitContext[];
+  diff: import('./referenceResolvers').DiffContext[];
 }
 
 /** 编辑状态 */
@@ -136,25 +160,72 @@ export interface ParsedReference {
  *   - @file:src/components/Foo.tsx
  *   - @folder:src/utils
  *   - @code:handleSubmit
+ *   - @codebase:user authentication (允许空格)
  *   - @docs:https://react.dev
- *   - @web:hook usage
- * 注意：value 不包含句号（.），以便处理 @folder:src/components. 这种句号结尾的句式
+ *   - @web:hook usage (允许空格)
+ *   - @git:log?file=src/auth.ts&line=42 (允许 ? & =)
+ *   - @diff
+ *   - @diff:HEAD
+ *   - @diff:abc1234
+ * 注意：value 规则按类型区分
+ *   - file/folder/code：排除空格/逗号/分号/句号
+ *   - codebase/web：允许空格
+ *   - docs：允许 URL（含 .）
+ *   - git/diff：允许 query string 字符
  */
 export function parseReferences(prompt: string): ParsedReference[] {
   const refs: ParsedReference[] = [];
-  // 匹配 @type:value 模式；value 排除空格/逗号/分号/句号
-  const regex = /@(file|folder|code|docs|web|File|Folder|Code|Docs|Web):?([^\s,;.]+)/g;
-  let match: RegExpExecArray | null;
-  while ((match = regex.exec(prompt)) !== null) {
-    const type = match[1].toLowerCase() as ContextType;
-    const value = match[2];
-    refs.push({
-      type,
-      value,
-      raw: match[0],
-      position: match.index,
-    });
+  // 多模式匹配：每种类型使用对应的 value 规则
+  const patterns: Array<{ type: ContextType; regex: RegExp }> = [
+    {
+      type: 'file' as ContextType,
+      regex: /@(file|File):([^\s,;.]+)/g,
+    },
+    {
+      type: 'folder' as ContextType,
+      regex: /@(folder|Folder):([^\s,;.]+)/g,
+    },
+    {
+      type: 'symbol' as ContextType,
+      regex: /@(code|Code):([^\s,;.]+)/g,
+    },
+    {
+      type: 'codebase' as ContextType,
+      regex: /@(codebase|Codebase):([a-zA-Z0-9 _\-./+]{1,200})/g,
+    },
+    {
+      type: 'web' as ContextType,
+      regex: /@(web|Web):([a-zA-Z0-9 _\-./+?&=]{1,200})/g,
+    },
+    {
+      type: 'docs' as ContextType,
+      regex: /@(docs|Docs):(\S+)/g,
+    },
+    {
+      type: 'git' as ContextType,
+      regex: /@(git|Git):([^\s,;]+)/g,
+    },
+    {
+      type: 'diff' as ContextType,
+      regex: /@(DIFF|diff|Diff):?(\S*)/g,
+    },
+  ];
+
+  for (const { type, regex } of patterns) {
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(prompt)) !== null) {
+      const value = (match[2] || '').trim();
+      refs.push({
+        type,
+        value,
+        raw: match[0],
+        position: match.index,
+      });
+    }
   }
+
+  // 按 position 排序
+  refs.sort((a, b) => a.position - b.position);
   return refs;
 }
 
@@ -165,6 +236,132 @@ let _idCounter = 0;
 function _genId(prefix: string): string {
   _idCounter += 1;
   return `${prefix}_${Date.now().toString(36)}_${_idCounter.toString(36)}`;
+}
+
+// ============================================================
+// 扩展引用解析（异步） - G18-01
+// ============================================================
+
+import {
+  resolveCodebase,
+  resolveGit,
+  resolveDiff,
+  type CodebaseContext,
+  type GitContext,
+  type DiffContext,
+  type GitRefKind,
+} from './referenceResolvers';
+
+/** 解析 git 子命令及参数 */
+export function parseGitRef(value: string): { ref: GitRefKind; file?: string; line?: number } {
+  // 支持 @git:log?file=src/auth.ts&line=42 形式
+  // 也支持 @git:log (默认)
+  const trimmed = value.trim();
+  if (!trimmed) return { ref: 'log' };
+
+  // 解析 query string
+  const [refPart, queryStr] = trimmed.split('?');
+  const ref = (refPart || 'log') as GitRefKind;
+
+  const result: { ref: GitRefKind; file?: string; line?: number } = { ref };
+
+  if (queryStr) {
+    const params = new URLSearchParams(queryStr);
+    if (params.has('file')) result.file = params.get('file') || undefined;
+    if (params.has('line')) {
+      const ln = parseInt(params.get('line') || '0', 10);
+      if (!isNaN(ln)) result.line = ln;
+    }
+  }
+
+  return result;
+}
+
+/** 解析 diff ref */
+export function parseDiffRef(value: string): string {
+  return (value || 'working').trim();
+}
+
+/**
+ * 解析并解析 prompt 中的 @ 引用（异步）
+ * 支持：
+ *   - @codebase:query
+ *   - @git:log[?file=...][&line=...]
+ *   - @git:blame[?file=...&line=...]
+ *   - @diff[:ref]
+ */
+export async function parseAndResolveReferences(
+  prompt: string,
+  options?: {
+    codebaseTopK?: number;
+    gitLimit?: number;
+    apiBase?: string;
+  }
+): Promise<{
+  references: ParsedReference[];
+  resolved: {
+    codebase: CodebaseContext[];
+    git: GitContext[];
+    diff: DiffContext[];
+  };
+  errors: Array<{ ref: string; error: string }>;
+}> {
+  const refs = parseReferences(prompt);
+  const errors: Array<{ ref: string; error: string }> = [];
+  const codebase: CodebaseContext[] = [];
+  const git: GitContext[] = [];
+  const diff: DiffContext[] = [];
+
+  // 并发解析
+  const promises: Promise<void>[] = [];
+
+  for (const ref of refs) {
+    if (ref.type === 'codebase') {
+      promises.push(
+        resolveCodebase(ref.value, {
+          topK: options?.codebaseTopK,
+          apiBase: options?.apiBase,
+        })
+          .then((ctx) => {
+            codebase.push(ctx);
+          })
+          .catch((err) => {
+            errors.push({ ref: ref.raw, error: String(err) });
+          })
+      );
+    } else if (ref.type === 'git') {
+      const parsed = parseGitRef(ref.value);
+      promises.push(
+        resolveGit(parsed.ref, {
+          filePath: parsed.file,
+          line: parsed.line,
+          limit: options?.gitLimit,
+          apiBase: options?.apiBase,
+        })
+          .then((ctx) => {
+            git.push(ctx);
+          })
+          .catch((err) => {
+            errors.push({ ref: ref.raw, error: String(err) });
+          })
+      );
+    } else if (ref.type === 'diff') {
+      const diffRef = parseDiffRef(ref.value);
+      promises.push(
+        resolveDiff(diffRef, { apiBase: options?.apiBase })
+          .then((ctx) => {
+            diff.push(ctx);
+          })
+          .catch((err) => {
+            errors.push({ ref: ref.raw, error: String(err) });
+          })
+      );
+    }
+  }
+
+  await Promise.all(promises);
+
+  return { references: refs, resolved: { codebase, git, diff }, errors };
 }
 
 // ============================================================
@@ -209,6 +406,9 @@ export class ComposerEngine {
         symbols: [],
         docs: [],
         web: [],
+        codebase: [],
+        git: [],
+        diff: [],
       },
       edits: [],
       snapshots: [],
@@ -248,6 +448,15 @@ export class ComposerEngine {
       case 'web':
         this.session.context.web.push(entry);
         break;
+      case 'codebase':
+        this.session.context.codebase.push(entry);
+        break;
+      case 'git':
+        this.session.context.git.push(entry);
+        break;
+      case 'diff':
+        this.session.context.diff.push(entry);
+        break;
     }
     this.session.updatedAt = Date.now();
     this._notify();
@@ -281,6 +490,21 @@ export class ComposerEngine {
           (e) => e.query !== identifier
         );
         break;
+      case 'codebase':
+        this.session.context.codebase = this.session.context.codebase.filter(
+          (e) => e.query !== identifier
+        );
+        break;
+      case 'git':
+        this.session.context.git = this.session.context.git.filter(
+          (e) => `${e.ref}:${e.filePath ?? ''}` !== identifier
+        );
+        break;
+      case 'diff':
+        this.session.context.diff = this.session.context.diff.filter(
+          (e) => e.ref !== identifier
+        );
+        break;
     }
     this.session.updatedAt = Date.now();
     this._notify();
@@ -294,6 +518,9 @@ export class ComposerEngine {
       symbols: [],
       docs: [],
       web: [],
+      codebase: [],
+      git: [],
+      diff: [],
     };
     this.session.updatedAt = Date.now();
     this._notify();
