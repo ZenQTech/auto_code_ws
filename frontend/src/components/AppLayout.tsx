@@ -151,6 +151,12 @@ export interface AppLayoutProps {
   onOpenModelRouter: () => void;
   /** v6.47.0 (Cycle 20 P0-3) 新增：事件钩子面板回调 */
   onOpenHooks20: () => void;
+  /** v6.48.0 (Cycle 21 P0-1) 新增：Best-of-N × Worktree 协同面板回调 */
+  onOpenBestOfNCoordinator: () => void;
+  /** v6.49.0 (Cycle 21 P0-2) 新增：模型路由成本统计 Dashboard 回调 */
+  onOpenModelRouterStats: () => void;
+  /** v6.50.0 (Cycle 21 P0-4) 新增：Hook 模板市场面板回调 */
+  onOpenHooksMarketplace: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -273,6 +279,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenWorktree,  // v6.45.0 (Cycle 20 P0-1) 透传 BrandHeader
   onOpenModelRouter,  // v6.46.0 (Cycle 20 P0-2) 透传 BrandHeader
   onOpenHooks20,  // v6.47.0 (Cycle 20 P0-3) 透传 BrandHeader
+  onOpenBestOfNCoordinator,  // v6.48.0 (Cycle 21 P0-1) 透传 BrandHeader
+  onOpenModelRouterStats,  // v6.49.0 (Cycle 21 P0-2) 透传 BrandHeader
+  onOpenHooksMarketplace,  // v6.50.0 (Cycle 21 P0-4) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -470,6 +479,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenWorktree={onOpenWorktree}
         onOpenModelRouter={onOpenModelRouter}
         onOpenHooks20={onOpenHooks20}
+        onOpenBestOfNCoordinator={onOpenBestOfNCoordinator}
+        onOpenModelRouterStats={onOpenModelRouterStats}
+        onOpenHooksMarketplace={onOpenHooksMarketplace}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

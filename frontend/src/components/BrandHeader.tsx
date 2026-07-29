@@ -140,6 +140,12 @@ export interface BrandHeaderProps {
   onOpenModelRouter?: () => void;
   /** v6.47.0 (Cycle 20 P0-3) 新增：打开事件钩子管理面板回调（可选） */
   onOpenHooks20?: () => void;
+  /** v6.48.0 (Cycle 21 P0-1) 新增：打开 Best-of-N × Worktree 协同面板回调（可选） */
+  onOpenBestOfNCoordinator?: () => void;
+  /** v6.49.0 (Cycle 21 P0-2) 新增：打开模型路由成本统计 Dashboard 回调（可选） */
+  onOpenModelRouterStats?: () => void;
+  /** v6.50.0 (Cycle 21 P0-4) 新增：打开 Hook 模板市场面板回调（可选） */
+  onOpenHooksMarketplace?: () => void;
 }
 
 /**
@@ -535,6 +541,12 @@ export default function BrandHeader({
   onOpenModelRouter,
   /** v6.47.0 (Cycle 20 P0-3) 新增：事件钩子 */
   onOpenHooks20,
+  /** v6.48.0 (Cycle 21 P0-1) 新增：Best-of-N × Worktree 协同 */
+  onOpenBestOfNCoordinator,
+  /** v6.49.0 (Cycle 21 P0-2) 新增：模型路由成本统计 */
+  onOpenModelRouterStats,
+  /** v6.50.0 (Cycle 21 P0-4) 新增：Hook 模板市场 */
+  onOpenHooksMarketplace,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1325,6 +1337,57 @@ export default function BrandHeader({
                 >
                   <Icon name="zap" className="w-4 h-4 text-amber-500" />
                   <span>🪝 事件钩子</span>
+                </button>
+              )}
+
+              {/* v6.48.0 (Cycle 21 P0-1) 新增：Best-of-N × Worktree 协同（菜单项）
+               *  行为：点击调 onOpenBestOfNCoordinator() 弹出 BestOfNCoordinatorPanel
+               *       支持多模型并行 + worktree 隔离 + 候选对比 + 最佳应用
+               *  图标：layers（堆叠），表达多模型协同 */}
+              {onOpenBestOfNCoordinator && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenBestOfNCoordinator)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-indigo-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="layers" className="w-4 h-4 text-indigo-500" />
+                  <span>🎯 Best-of-N 协同</span>
+                </button>
+              )}
+
+              {/* v6.49.0 (Cycle 21 P0-2) 新增：模型路由成本统计 Dashboard（菜单项）
+               *  行为：点击调 onOpenModelRouterStats() 弹出 ModelRouterStatsPanel
+               *       支持总成本/模型排行/趋势分析/告警配置
+               *  图标：chart（图表），表达数据统计 */}
+              {onOpenModelRouterStats && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenModelRouterStats)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-rose-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="chart" className="w-4 h-4 text-rose-500" />
+                  <span>💰 模型成本统计</span>
+                </button>
+              )}
+
+              {/* v6.50.0 (Cycle 21 P0-4) 新增：Hook 模板市场（菜单项）
+               *  行为：点击调 onOpenHooksMarketplace() 弹出 HooksMarketplacePanel
+               *       支持预置模板浏览/搜索/安装/卸载
+               *  图标：sparkles（星火），表达模板精选 */}
+              {onOpenHooksMarketplace && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenHooksMarketplace)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-violet-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="sparkles" className="w-4 h-4 text-violet-500" />
+                  <span>🛒 Hook 模板市场</span>
                 </button>
               )}
 

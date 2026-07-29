@@ -121,6 +121,14 @@
 #        unhandledrejection / 资源加载错误）
 #     ③ 关键面板（Sidebar / ComposerPanel / 后续 panel）增加 ErrorBoundary
 #        嵌套（level='panel'），任一面板崩溃不影响其他功能
+#   - 2026-07-29 | v6.48.0 | Cycle 21 P0-1~P0-4 集成 4 个协同面板：
+#     ① BestOfNCoordinatorPanel (v6.48.0) Best-of-N × Worktree 协同
+#     ② ModelRouterStatsPanel (v6.49.0) 模型路由成本统计 Dashboard
+#     ③ HooksMarketplacePanel (v6.50.0) Hook 模板市场
+#     ④ HookChainViewer (v1.4.0/Cycle 5) Hook 链路查看器（已存在）
+#     ⑤ 4 个面板均通过 ErrorBoundary 嵌套 + 显隐 state + onClose 回调
+#     ⑥ BrandHeader 新增对应菜单项：🎯 Best-of-N 协同 / 💰 模型成本统计 /
+#        🛒 Hook 模板市场
 # ============================================================
  */
 
@@ -216,6 +224,12 @@ import { WorktreePanel } from './components/WorktreePanel';
 import { ModelRouterPanel } from './components/ModelRouterPanel';
 /** v6.47.0 (Cycle 20 P0-3) 新增：事件钩子管理面板（新 v2 版本） */
 import { HooksManagerPanel } from './components/HooksManagerPanel';
+/** v6.48.0 (Cycle 21 P0-1) 新增：Best-of-N × Worktree 协同面板 */
+import { BestOfNCoordinatorPanel } from './components/BestOfNCoordinatorPanel';
+/** v6.49.0 (Cycle 21 P0-2) 新增：模型路由成本统计 Dashboard */
+import { ModelRouterStatsPanel } from './components/ModelRouterStatsPanel';
+/** v6.50.0 (Cycle 21 P0-4) 新增：Hook 模板市场面板 */
+import { HooksMarketplacePanel } from './components/HooksMarketplacePanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1230,6 +1244,36 @@ export default function App() {
   const [hooks20Open, setHooks20Open] = useState(false);
   const handleOpenHooks20 = useCallback(() => {
     setHooks20Open((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.48.0 (Cycle 21 P0-1) 新增：Best-of-N × Worktree 协同面板开关状态
+   * 作用：控制 BestOfNCoordinatorPanel 弹窗显隐
+   *       协同会话由 BestOfNWorktreeCoordinator 单例管理
+   */
+  const [bestOfNCoordinatorOpen, setBestOfNCoordinatorOpen] = useState(false);
+  const handleOpenBestOfNCoordinator = useCallback(() => {
+    setBestOfNCoordinatorOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.49.0 (Cycle 21 P0-2) 新增：模型路由成本统计 Dashboard 开关状态
+   * 作用：控制 ModelRouterStatsPanel 弹窗显隐
+   *       统计数据由 ModelCostStatsCollector 单例管理
+   */
+  const [modelRouterStatsOpen, setModelRouterStatsOpen] = useState(false);
+  const handleOpenModelRouterStats = useCallback(() => {
+    setModelRouterStatsOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.50.0 (Cycle 21 P0-4) 新增：Hook 模板市场面板开关状态
+   * 作用：控制 HooksMarketplacePanel 弹窗显隐
+   *       模板通过 HookTemplateMarketplace 单例管理
+   */
+  const [hooksMarketplaceOpen, setHooksMarketplaceOpen] = useState(false);
+  const handleOpenHooksMarketplace = useCallback(() => {
+    setHooksMarketplaceOpen((prev) => !prev);
   }, []);
 
   /**
@@ -2252,6 +2296,9 @@ export default function App() {
           onOpenWorktree={handleOpenWorktree}
           onOpenModelRouter={handleOpenModelRouter}
           onOpenHooks20={handleOpenHooks20}
+          onOpenBestOfNCoordinator={handleOpenBestOfNCoordinator}
+          onOpenModelRouterStats={handleOpenModelRouterStats}
+          onOpenHooksMarketplace={handleOpenHooksMarketplace}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -2691,6 +2738,42 @@ export default function App() {
         <HooksManagerPanel
           isOpen={hooks20Open}
           onClose={() => setHooks20Open(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.48.0 (Cycle 21 P0-1) 新增：Best-of-N × Worktree 协同面板
+       *  触发：BrandHeader 菜单"🎯 Best-of-N 协同"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  协同会话由 BestOfNWorktreeCoordinator 单例管理
+       *  v6.48.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="BestOfNCoordinator">
+        <BestOfNCoordinatorPanel
+          isOpen={bestOfNCoordinatorOpen}
+          onClose={() => setBestOfNCoordinatorOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.49.0 (Cycle 21 P0-2) 新增：模型路由成本统计 Dashboard
+       *  触发：BrandHeader 菜单"💰 模型成本统计"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  统计数据由 ModelCostStatsCollector 单例管理
+       *  v6.49.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="ModelRouterStats">
+        <ModelRouterStatsPanel
+          isOpen={modelRouterStatsOpen}
+          onClose={() => setModelRouterStatsOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.50.0 (Cycle 21 P0-4) 新增：Hook 模板市场面板
+       *  触发：BrandHeader 菜单"🛒 Hook 模板市场"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  模板通过 HookTemplateMarketplace 单例管理
+       *  v6.50.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="HooksMarketplace">
+        <HooksMarketplacePanel
+          isOpen={hooksMarketplaceOpen}
+          onClose={() => setHooksMarketplaceOpen(false)}
         />
       </ErrorBoundary>
     </div>

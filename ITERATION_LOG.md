@@ -692,3 +692,82 @@ Phase 7: 循环重启准备 + 迭代日志
 **当前 Cycle**: Cycle 20 ✅ 已完成  
 **下一 Cycle**: Cycle 21 启动准备  
 **负责人**: Hermes AI Agent
+
+---
+
+## Cycle 21 完成 (2026-07-29 16:30)
+
+### 完成情况
+- **周期**: Cycle 21 (v6.48.0 - v6.50.0)
+- **主旨**: 从互联网调研到生产可用级别，整合 codex/trae solo 模式功能
+- **状态**: ✅ 全部完成
+
+### 关键交付
+
+**Phase 1 (互联网调研)**：
+- CYCLE21_RESEARCH_REPORT.md - 7 维度调研
+- CYCLE21_GAP_ANALYSIS.md - 5 大差距
+- CYCLE21_SPEC_P0_1 + P0_2 - 2 份 SPEC
+
+**Phase 2 (差距分析)**：
+- G21-01 Best-of-N×Worktree 协同 (P0)
+- G21-02 Hook 链路追踪 (P0)
+- G21-03 模型成本统计 (P1)
+- G21-04 Worktree 多后端 (P1)
+- G21-05 Hook 模板市场 (P1)
+
+**Phase 3 (功能开发)**：
+- 5 引擎：BestOfNCoordinator / HookChainTracker / ModelCostStats / WorktreeBackend / HookTemplateMarketplace
+- 4 UI 面板：BestOfNCoordinatorPanel / HookChainViewer / ModelRouterStatsPanel / HooksMarketplacePanel
+- App.tsx 集成 4 面板 + BrandHeader 3 菜单 + AppLayout 透传
+
+**Phase 4 (测试验证)**：
+- 147 单元测试 100% 通过
+- 150 E2E 断言 100% 通过
+- TypeScript 0 错误
+- 全量 1735 测试 0 失败
+
+**Phase 5 (UI/UX)**：
+- 4 面板统一规范：Esc + 背景点击 + 渐变 + 玻璃拟态 + 渐入动画 + ErrorBoundary
+
+**Phase 6 (Loop Engineering)**：
+- 9 阶段全部保留
+- Cycle 15-20 关键模块无回归
+
+**Phase 7 (交付)**：
+- CYCLE21_SUMMARY.md
+- 代码修改日志追加
+- Git commit 准备
+
+### 关键 Bug 修复
+- AppLayout.tsx 缺 prop 类型定义
+- BrandHeader.tsx 缺 prop 解构（TS2304）
+- E2E 脚本 vitest 输出含 ANSI 颜色（strip_ansi 函数）
+- 方法名与实际签名不匹配
+
+### 测试统计
+
+| 类别 | Cycle 20 | Cycle 21 | 增长 |
+|---|---|---|---|
+| 引擎单测 | 165 | 312 | +147 |
+| 面板集成 | 63 | 63 | 0 |
+| E2E 断言 | 115 | 150 | +35 |
+| **总测试** | 1588 | 1735 | +147 |
+| **新代码行** | ~4500 | ~9000 | +4500 |
+| TypeScript 错误 | 0 | 0 | 0 |
+
+### 下一 Cycle 计划（Cycle 22）
+
+- **G22-01**: 最佳候选自动应用策略 - 基于历史选择学习用户偏好
+- **G22-02**: Hook 链路性能分析 - 慢节点/超时节点告警 + 优化建议
+- **G22-03**: 成本预测模型 - 基于历史数据预测未来开销
+- **G22-04**: Worktree 远程后端真实集成
+- **G22-05**: Hook 模板版本管理 + 一键升级
+- **G22-06**: 协同会话回放 + 分享
+
+---
+
+**更新日期**: 2026-07-29 16:30
+**当前 Cycle**: Cycle 21 ✅ 已完成
+**下一 Cycle**: Cycle 22 启动准备
+**负责人**: Hermes AI Agent

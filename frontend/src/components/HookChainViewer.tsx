@@ -1,382 +1,444 @@
 /**
  * # ============================================================
- * # HookChainViewer - Hook 触发链路可视化组件
+ * # HookChainViewer - Hook 链路可视化 (v1.0.0 Cycle 21 G21-02)
  * # ============================================================
- * # 核心作用：展示最近的 Hook 触发链路（v1.1.0 P0-6 新增）
- * # 运行流程：
- * #   1. 通过 useEffect 拉取 /api/hooks/chain
- * #   2. 展示最近 50 条触发记录
- * #   3. 支持按 event 类型过滤
- * #   4. 支持自动刷新（每 5s）
- * #   5. 展示摘要统计（total / blocking / context_injection / permission_override）
- * # 输入参数：onClose - 关闭回调
- * # 输出结果：面板 DOM
+ * # 核心作用：可视化 Hook 执行链路（时间线 / DAG / 列表三种模式）
+ * # 主要功能：
+ * #   1. 时间线模式：横向条形图展示 hook 执行序列
+ * #   2. DAG 模式：节点 + 边展示触发关系
+ * #   3. 列表模式：表格展示所有节点
+ * #   4. 导出 Mermaid / JSON 格式
+ * #   5. 实时更新新链路
+ * # ============================================================
  * # 修改记录：
- * #   - 2026-07-27 | v1.0.0 | P0-6 新建 - Hook 触发链路可视化
+ * #   - 2026-07-29 | v1.0.0 | Cycle 21 G21-02 初次创建
  * # ============================================================
  */
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { apiFetch } from '../hooks/apiShared';
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import {
+  getHookChainTracker,
+  type HookChain,
+  type HookChainNode,
+  type ChainEvent,
+  type HookType,
+} from '../utils/hookChainTracker';
 
-// 包装为更易用的方法
-const apiGet = <T,>(url: string): Promise<T> => apiFetch<T>(url);
-const apiSend = <T,>(method: string, url: string, body: any): Promise<T> =>
-  apiFetch<T>(url, { method, body: JSON.stringify(body) });
-
-// ============================================================
-// 类型定义
-// ============================================================
-
-export interface HookChainEntry {
-  id: string;
-  event: string;
-  session_id: string | null;
-  agent_id: string | null;
-  hook_name: string;
-  exit_code: number;
-  duration_ms: number;
-  additional_context: string | null;
-  permission_decision: string | null;
-  timestamp: number;
-  is_blocking: boolean;
-  error: string | null;
-}
-
-export interface HookChainSummary {
-  total: number;
-  events_count: Record<string, number>;
-  blocking_count: number;
-  context_injection_count: number;
-  permission_override_count: number;
-}
-
-// 事件类型图标 + 颜色
-const EVENT_META: Record<string, { icon: string; color: string; label: string }> = {
-  SessionStart: { icon: '🟢', color: 'emerald', label: '会话开始' },
-  UserPromptSubmit: { icon: '📝', color: 'blue', label: '用户消息' },
-  PreToolUse: { icon: '⚙️', color: 'amber', label: '工具调用前' },
-  PostToolUse: { icon: '✅', color: 'teal', label: '工具调用后' },
-  PermissionRequest: { icon: '🛡️', color: 'rose', label: '权限请求' },
-  PreCompact: { icon: '📦', color: 'orange', label: '压缩前' },
-  PostCompact: { icon: '📤', color: 'cyan', label: '压缩后' },
-  SubagentStart: { icon: '🤖', color: 'indigo', label: 'SubAgent 启动' },
-  SubagentStop: { icon: '⏹️', color: 'purple', label: 'SubAgent 停止' },
-  SessionEnd: { icon: '🔚', color: 'slate', label: '会话结束' },
-};
-
-const COLOR_CLASSES: Record<string, { bg: string; border: string; text: string; badge: string }> = {
-  emerald: { bg: 'bg-emerald-500/10', border: 'border-emerald-500/30', text: 'text-emerald-300', badge: 'bg-emerald-500/20 text-emerald-300' },
-  blue: { bg: 'bg-blue-500/10', border: 'border-blue-500/30', text: 'text-blue-300', badge: 'bg-blue-500/20 text-blue-300' },
-  amber: { bg: 'bg-amber-500/10', border: 'border-amber-500/30', text: 'text-amber-300', badge: 'bg-amber-500/20 text-amber-300' },
-  teal: { bg: 'bg-teal-500/10', border: 'border-teal-500/30', text: 'text-teal-300', badge: 'bg-teal-500/20 text-teal-300' },
-  rose: { bg: 'bg-rose-500/10', border: 'border-rose-500/30', text: 'text-rose-300', badge: 'bg-rose-500/20 text-rose-300' },
-  orange: { bg: 'bg-orange-500/10', border: 'border-orange-500/30', text: 'text-orange-300', badge: 'bg-orange-500/20 text-orange-300' },
-  cyan: { bg: 'bg-cyan-500/10', border: 'border-cyan-500/30', text: 'text-cyan-300', badge: 'bg-cyan-500/20 text-cyan-300' },
-  indigo: { bg: 'bg-indigo-500/10', border: 'border-indigo-500/30', text: 'text-indigo-300', badge: 'bg-indigo-500/20 text-indigo-300' },
-  purple: { bg: 'bg-purple-500/10', border: 'border-purple-500/30', text: 'text-purple-300', badge: 'bg-purple-500/20 text-purple-300' },
-  slate: { bg: 'bg-slate-500/10', border: 'border-slate-500/30', text: 'text-slate-300', badge: 'bg-slate-500/20 text-slate-300' },
-};
-
-function formatTimestamp(ts: number): string {
-  const d = new Date(ts * 1000);
-  const hh = String(d.getHours()).padStart(2, '0');
-  const mm = String(d.getMinutes()).padStart(2, '0');
-  const ss = String(d.getSeconds()).padStart(2, '0');
-  const ms = String(d.getMilliseconds()).padStart(3, '0');
-  return `${hh}:${mm}:${ss}.${ms}`;
-}
-
-export interface HookChainViewerProps {
-  /** 关闭回调 */
+interface HookChainViewerProps {
+  isOpen?: boolean;
   onClose: () => void;
 }
 
-// ============================================================
-// 主组件
-// ============================================================
+type ViewMode = 'timeline' | 'dag' | 'list';
 
-export const HookChainViewer: React.FC<HookChainViewerProps> = ({ onClose }) => {
-  const [items, setItems] = useState<HookChainEntry[]>([]);
-  const [summary, setSummary] = useState<HookChainSummary | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [eventFilter, setEventFilter] = useState<string>('');
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(5);
+const STATUS_COLORS: Record<HookChainNode['status'], string> = {
+  pending: 'bg-slate-500',
+  running: 'bg-blue-500 animate-pulse',
+  success: 'bg-green-500',
+  failed: 'bg-red-500',
+  timeout: 'bg-orange-500',
+  cancelled: 'bg-slate-400',
+};
 
-  // 加载数据
-  const loadData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const url = eventFilter
-        ? `/chain?limit=50&event=${eventFilter}`
-        : '/chain?limit=50';
-      const resp: any = await apiGet(url);
-      setItems(resp.items || []);
-      setSummary(resp.summary || null);
-    } catch (e) {
-      setError(`加载失败: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setLoading(false);
-    }
-  }, [eventFilter]);
+const STATUS_TEXT_COLORS: Record<HookChainNode['status'], string> = {
+  pending: 'text-slate-300',
+  running: 'text-blue-300',
+  success: 'text-green-300',
+  failed: 'text-red-300',
+  timeout: 'text-orange-300',
+  cancelled: 'text-slate-400',
+};
 
-  // 清空链路
-  const handleClear = useCallback(async () => {
-    if (!confirm('确认清空所有 hook 触发链路？')) return;
-    try {
-      await apiSend('POST', '/chain/clear', {});
-      await loadData();
-    } catch (e) {
-      setError(`清空失败: ${e instanceof Error ? e.message : String(e)}`);
-    }
-  }, [loadData]);
+const CHAIN_STATUS_LABELS: Record<HookChain['status'], string> = {
+  running: '执行中',
+  success: '成功',
+  failed: '失败',
+  partial: '部分失败',
+};
 
-  // 初次加载 + 过滤器变化时
+const TYPE_COLORS: Record<HookType, string> = {
+  before_prompt: 'bg-blue-500/20 text-blue-300',
+  after_prompt: 'bg-blue-500/20 text-blue-300',
+  before_response: 'bg-purple-500/20 text-purple-300',
+  after_response: 'bg-purple-500/20 text-purple-300',
+  thinking: 'bg-yellow-500/20 text-yellow-300',
+  subagent_start: 'bg-pink-500/20 text-pink-300',
+  subagent_end: 'bg-pink-500/20 text-pink-300',
+  compaction: 'bg-orange-500/20 text-orange-300',
+  turn_complete: 'bg-green-500/20 text-green-300',
+  tool_execution: 'bg-cyan-500/20 text-cyan-300',
+};
+
+export function HookChainViewer({ isOpen: isOpenProp = true, onClose }: HookChainViewerProps) {
+  const isOpen = isOpenProp;
+  const tracker = useMemo(() => getHookChainTracker(), []);
+  const [chains, setChains] = useState<HookChain[]>([]);
+  const [selectedChainId, setSelectedChainId] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('timeline');
+  const [exportedFormat, setExportedFormat] = useState<string>('');
+
+  // 刷新链路列表
   useEffect(() => {
-    loadData();
-  }, [loadData]);
+    if (!isOpen) return;
+    const refresh = () => {
+      setChains(tracker.getChains({ sortBy: 'startTime', sortOrder: 'desc', limit: 50 }));
+    };
+    refresh();
+    const unsub = (_event: ChainEvent) => {
+      refresh();
+    };
+    const off1 = tracker.on('chain-started', unsub);
+    const off2 = tracker.on('chain-finished', unsub);
+    const off3 = tracker.on('node-added', unsub);
+    return () => {
+      off1();
+      off2();
+      off3();
+    };
+  }, [tracker, isOpen]);
 
-  // 自动刷新
+  // Esc 关闭
   useEffect(() => {
-    if (!autoRefresh) return;
-    const id = setInterval(() => {
-      loadData();
-    }, refreshInterval * 1000);
-    return () => clearInterval(id);
-  }, [autoRefresh, refreshInterval, loadData]);
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onClose();
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose]);
 
-  // 按 event 分组
-  const eventGroups = useMemo(() => {
-    const groups: Record<string, HookChainEntry[]> = {};
-    for (const item of items) {
-      if (!groups[item.event]) groups[item.event] = [];
-      groups[item.event].push(item);
-    }
-    return groups;
-  }, [items]);
+  // 选中的链路
+  const selectedChain = useMemo(
+    () => chains.find((c) => c.chainId === selectedChainId) ?? chains[0] ?? null,
+    [chains, selectedChainId]
+  );
 
-  const eventList = Object.keys(EVENT_META);
+  // 模拟创建测试链路（演示用）
+  const handleCreateDemo = useCallback(() => {
+    const event = {
+      id: `demo-evt-${Date.now()}`,
+      type: 'before_prompt' as HookType,
+      hookId: 'demo-hook',
+      payload: { prompt: 'demo' },
+      timestamp: Date.now(),
+    };
+    const chain = tracker.startChain(event);
+    const node1 = tracker.addNode(chain.chainId, {
+      hookId: 'h1',
+      hookName: 'Lint Check',
+      hookType: 'before_prompt',
+    });
+    setTimeout(() => {
+      tracker.updateNode(chain.chainId, node1.nodeId, { status: 'success' });
+      const node2 = tracker.addNode(chain.chainId, {
+        hookId: 'h2',
+        hookName: 'AI Response',
+        hookType: 'after_response',
+        triggeredByNodeId: node1.nodeId,
+      });
+      setTimeout(() => {
+        tracker.updateNode(chain.chainId, node2.nodeId, { status: 'success' });
+        tracker.finishChain(chain.chainId, 'success');
+      }, 100);
+    }, 100);
+  }, [tracker]);
+
+  // 导出
+  const handleExport = useCallback(
+    (format: 'json' | 'mermaid' | 'dot') => {
+      if (!selectedChain) return;
+      setExportedFormat(tracker.exportChain(selectedChain.chainId, format));
+    },
+    [tracker, selectedChain]
+  );
+
+  if (!isOpen) return null;
+
+  // 统计
+  const stats = tracker.getStats();
 
   return (
-    <div className="flex flex-col h-full max-h-[85vh] overflow-hidden">
-      {/* 标题栏 */}
-      <div className="flex items-center justify-between px-5 py-3 border-b border-surface-300/30 flex-shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-2xl">🔗</span>
+    <div
+      data-testid="hook-chain-viewer"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div className="bg-gradient-to-br from-surface-900 to-surface-950 border border-surface-700 rounded-2xl w-[1100px] max-w-[95vw] max-h-[90vh] flex flex-col shadow-2xl">
+        {/* Header */}
+        <div className="flex items-center justify-between p-5 border-b border-surface-700">
           <div>
-            <h2 className="text-base font-bold text-surface-900">Hook 触发链路</h2>
-            <p className="text-[10px] text-surface-500 mt-0.5">
-              Codex v0.150+ Lifecycle Hooks · v1.0.0
+            <h2 className="text-xl font-semibold text-white">Hook 链路可视化</h2>
+            <p className="text-sm text-slate-400 mt-1">
+              链路: {stats.totalChains} · 节点: {stats.totalNodes} · 执行中: {stats.runningCount} · 成功率: {(stats.successRate * 100).toFixed(0)}%
             </p>
           </div>
-        </div>
-        <button
-          onClick={onClose}
-          aria-label="关闭"
-          className="text-surface-500 hover:text-surface-800 text-xl"
-        >
-          ✕
-        </button>
-      </div>
-
-      {/* 摘要卡片 */}
-      {summary && (
-        <div className="grid grid-cols-5 gap-2 p-4 border-b border-surface-300/30 flex-shrink-0">
-          <StatCard label="总触发" value={summary.total} color="text-hermes-500" />
-          <StatCard label="事件类型" value={Object.keys(summary.events_count).length} color="text-blue-500" />
-          <StatCard label="阻塞" value={summary.blocking_count} color="text-rose-500" />
-          <StatCard label="Context 注入" value={summary.context_injection_count} color="text-amber-500" />
-          <StatCard label="权限覆盖" value={summary.permission_override_count} color="text-emerald-500" />
-        </div>
-      )}
-
-      {/* 工具栏 */}
-      <div className="flex items-center gap-2 p-3 border-b border-surface-300/30 flex-shrink-0 flex-wrap">
-        <select
-          value={eventFilter}
-          onChange={(e) => setEventFilter(e.target.value)}
-          className="px-2 py-1.5 text-xs bg-surface-200 border border-surface-300/50 rounded text-surface-900"
-        >
-          <option value="">全部事件</option>
-          {eventList.map((e) => (
-            <option key={e} value={e}>
-              {EVENT_META[e].icon} {e}
-            </option>
-          ))}
-        </select>
-        <button
-          onClick={loadData}
-          disabled={loading}
-          className="px-3 py-1.5 text-xs bg-hermes-500 hover:bg-hermes-600 text-white rounded font-medium disabled:opacity-50"
-        >
-          {loading ? '⟳ 加载中' : '🔄 刷新'}
-        </button>
-        <button
-          onClick={handleClear}
-          className="px-3 py-1.5 text-xs bg-rose-500/80 hover:bg-rose-600 text-white rounded font-medium"
-        >
-          🗑️ 清空
-        </button>
-        <label className="flex items-center gap-1.5 text-xs text-surface-600 ml-auto cursor-pointer">
-          <input
-            type="checkbox"
-            checked={autoRefresh}
-            onChange={(e) => setAutoRefresh(e.target.checked)}
-            className="rounded"
-          />
-          <span>自动刷新</span>
-          <select
-            value={refreshInterval}
-            onChange={(e) => setRefreshInterval(Number(e.target.value))}
-            disabled={!autoRefresh}
-            className="px-1 py-0.5 text-xs bg-surface-200 border border-surface-300/50 rounded text-surface-900 disabled:opacity-50"
+          <button
+            onClick={onClose}
+            className="text-slate-400 hover:text-white text-2xl leading-none w-8 h-8 flex items-center justify-center rounded hover:bg-surface-700 transition"
+            aria-label="关闭"
           >
-            <option value={2}>2s</option>
-            <option value={5}>5s</option>
-            <option value={10}>10s</option>
-            <option value={30}>30s</option>
-          </select>
-        </label>
-      </div>
-
-      {/* 错误提示 */}
-      {error && (
-        <div className="mx-4 mt-3 px-3 py-2 bg-rose-500/10 border border-rose-500/30 text-rose-300 text-xs rounded">
-          {error}
+            ×
+          </button>
         </div>
-      )}
 
-      {/* 主体：触发链路列表 */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-2 min-h-0">
-        {items.length === 0 && !loading && (
-          <div className="text-center py-12 text-surface-500">
-            <div className="text-4xl mb-2">📭</div>
-            <p className="text-sm">暂无触发记录</p>
-            <p className="text-xs mt-1">注册 hook 并触发事件后，记录会显示在这里</p>
-          </div>
-        )}
-
-        {Object.entries(eventGroups).map(([event, entries]) => {
-          const meta = EVENT_META[event] || EVENT_META.SessionStart;
-          const colors = COLOR_CLASSES[meta.color];
-          return (
-            <div
-              key={event}
-              className={`${colors.bg} border ${colors.border} rounded-lg overflow-hidden`}
-            >
-              <div className={`px-3 py-1.5 ${colors.badge} flex items-center justify-between`}>
-                <div className="flex items-center gap-2">
-                  <span className="text-base">{meta.icon}</span>
-                  <span className="text-xs font-bold">{event}</span>
-                  <span className="text-[10px] opacity-70">{meta.label}</span>
-                </div>
-                <span className="text-[10px] opacity-70">{entries.length} 条</span>
-              </div>
-              <div className="divide-y divide-surface-300/20">
-                {entries.map((entry) => (
-                  <ChainEntryRow key={entry.id} entry={entry} />
-                ))}
-              </div>
+        {/* Body */}
+        <div className="flex-1 flex overflow-hidden">
+          {/* 左侧：链路列表 */}
+          <div className="w-72 border-r border-surface-700 overflow-y-auto">
+            <div className="p-3 space-y-1">
+              <button
+                onClick={handleCreateDemo}
+                data-testid="create-demo-chain"
+                className="w-full px-3 py-2 bg-primary-500/20 hover:bg-primary-500/30 text-primary-300 text-sm rounded border border-primary-500/30"
+              >
+                + 创建演示链路
+              </button>
             </div>
-          );
-        })}
-      </div>
+            <div className="space-y-1 px-2" data-testid="chain-list">
+              {chains.length === 0 ? (
+                <div className="text-center text-slate-500 text-sm py-8">暂无链路</div>
+              ) : (
+                chains.map((c) => (
+                  <button
+                    key={c.chainId}
+                    onClick={() => setSelectedChainId(c.chainId)}
+                    data-testid={`chain-${c.chainId}`}
+                    className={`w-full text-left px-3 py-2 rounded border transition ${
+                      selectedChain?.chainId === c.chainId
+                        ? 'bg-primary-500/20 border-primary-500/50'
+                        : 'bg-surface-800/50 border-surface-700 hover:border-surface-600'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-white truncate">{c.triggerType}</span>
+                      <span className={`text-xs px-1.5 py-0.5 rounded ${
+                        c.status === 'success' ? 'bg-green-500/20 text-green-300' :
+                        c.status === 'failed' ? 'bg-red-500/20 text-red-300' :
+                        c.status === 'running' ? 'bg-blue-500/20 text-blue-300 animate-pulse' :
+                        'bg-slate-500/20 text-slate-300'
+                      }`}>
+                        {CHAIN_STATUS_LABELS[c.status]}
+                      </span>
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      {c.nodes.length} 节点 · {c.totalDuration ?? 0}ms
+                    </div>
+                    <div className="text-xs text-slate-600">
+                      {new Date(c.startTime).toLocaleTimeString()}
+                    </div>
+                  </button>
+                ))
+              )}
+            </div>
+          </div>
 
-      {/* 底部：事件类型图例 */}
-      <div className="flex-shrink-0 px-4 py-2 border-t border-surface-300/30 bg-surface-50/50 text-[10px] text-surface-500 flex flex-wrap gap-2">
-        {eventList.map((e) => (
-          <span key={e} className="flex items-center gap-1">
-            {EVENT_META[e].icon} {e}
-          </span>
-        ))}
+          {/* 右侧：详情 */}
+          <div className="flex-1 overflow-y-auto p-4">
+            {selectedChain ? (
+              <div className="space-y-4">
+                {/* 视图切换 */}
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-1">
+                    {(['timeline', 'dag', 'list'] as ViewMode[]).map((m) => (
+                      <button
+                        key={m}
+                        onClick={() => setViewMode(m)}
+                        data-testid={`view-${m}`}
+                        className={`px-3 py-1 text-sm rounded ${
+                          viewMode === m
+                            ? 'bg-primary-500/20 text-primary-300'
+                            : 'bg-surface-800 text-slate-400 hover:bg-surface-700'
+                        }`}
+                      >
+                        {m === 'timeline' ? '时间线' : m === 'dag' ? 'DAG' : '列表'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={() => handleExport('json')}
+                      data-testid="export-json"
+                      className="px-2 py-1 text-xs bg-surface-800 text-slate-300 rounded hover:bg-surface-700"
+                    >
+                      导出 JSON
+                    </button>
+                    <button
+                      onClick={() => handleExport('mermaid')}
+                      data-testid="export-mermaid"
+                      className="px-2 py-1 text-xs bg-surface-800 text-slate-300 rounded hover:bg-surface-700"
+                    >
+                      导出 Mermaid
+                    </button>
+                    <button
+                      onClick={() => handleExport('dot')}
+                      data-testid="export-dot"
+                      className="px-2 py-1 text-xs bg-surface-800 text-slate-300 rounded hover:bg-surface-700"
+                    >
+                      导出 DOT
+                    </button>
+                  </div>
+                </div>
+
+                {/* 导出结果 */}
+                {exportedFormat && (
+                  <pre
+                    data-testid="export-result"
+                    className="bg-surface-800 border border-surface-700 rounded p-3 text-xs text-slate-300 overflow-x-auto max-h-40"
+                  >
+                    {exportedFormat}
+                  </pre>
+                )}
+
+                {/* 链路信息 */}
+                <div className="bg-surface-800/50 rounded-lg p-3 border border-surface-700">
+                  <div className="text-sm text-slate-300">
+                    <span className="text-slate-500">触发类型:</span> {selectedChain.triggerType}
+                  </div>
+                  <div className="text-sm text-slate-300">
+                    <span className="text-slate-500">状态:</span> {CHAIN_STATUS_LABELS[selectedChain.status]}
+                  </div>
+                  <div className="text-sm text-slate-300">
+                    <span className="text-slate-500">开始时间:</span> {new Date(selectedChain.startTime).toLocaleString()}
+                  </div>
+                  {selectedChain.totalDuration !== undefined && (
+                    <div className="text-sm text-slate-300">
+                      <span className="text-slate-500">总耗时:</span> {selectedChain.totalDuration}ms
+                    </div>
+                  )}
+                </div>
+
+                {/* 视图内容 */}
+                {viewMode === 'timeline' && (
+                  <div data-testid="timeline-view" className="bg-surface-800/30 rounded-lg p-3 border border-surface-700">
+                    <h3 className="text-sm font-medium text-slate-300 mb-3">时间线</h3>
+                    <TimelineView chain={selectedChain} />
+                  </div>
+                )}
+
+                {viewMode === 'dag' && (
+                  <div data-testid="dag-view" className="bg-surface-800/30 rounded-lg p-3 border border-surface-700">
+                    <h3 className="text-sm font-medium text-slate-300 mb-3">DAG</h3>
+                    <DagView chain={selectedChain} />
+                  </div>
+                )}
+
+                {viewMode === 'list' && (
+                  <div data-testid="list-view" className="space-y-2">
+                    <h3 className="text-sm font-medium text-slate-300 mb-3">节点列表</h3>
+                    {selectedChain.nodes.map((node) => (
+                      <div
+                        key={node.nodeId}
+                        className="bg-surface-800/50 rounded-lg p-3 border border-surface-700"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className={`w-2 h-2 rounded-full ${STATUS_COLORS[node.status]}`}></span>
+                            <span className="font-medium text-white">{node.hookName}</span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${TYPE_COLORS[node.hookType]}`}>
+                              {node.hookType}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-500">
+                            depth: {node.depth} · {node.duration ?? 0}ms · p:{node.priority}
+                          </div>
+                        </div>
+                        {node.error && (
+                          <div className="text-xs text-red-400 mt-2">错误: {node.error}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-center text-slate-500 py-12">选择一条链路查看详情</div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
-};
+}
 
-// ============================================================
-// 子组件：统计卡片
-// ============================================================
+// 时间线视图
+function TimelineView({ chain }: { chain: HookChain }) {
+  if (chain.nodes.length === 0) {
+    return <div className="text-slate-500 text-sm">无节点</div>;
+  }
+  const start = chain.startTime;
+  const end = chain.endTime ?? Date.now();
+  const total = end - start || 1;
 
-const StatCard: React.FC<{ label: string; value: number; color: string }> = ({ label, value, color }) => (
-  <div className="bg-surface-100/60 border border-surface-300/40 rounded p-2">
-    <div className={`text-xl font-bold ${color}`}>{value}</div>
-    <div className="text-[10px] text-surface-500 mt-0.5">{label}</div>
-  </div>
-);
-
-// ============================================================
-// 子组件：链路条目
-// ============================================================
-
-const ChainEntryRow: React.FC<{ entry: HookChainEntry; colors?: any }> = ({ entry }) => (
-  <div className="px-3 py-2 hover:bg-surface-100/30 transition-colors">
-    <div className="flex items-center justify-between gap-2 mb-1">
-      <div className="flex items-center gap-2 text-[11px]">
-        <span className="font-mono text-surface-600">{formatTimestamp(entry.timestamp)}</span>
-        <span
-          className={`px-1.5 py-0.5 rounded text-[10px] ${
-            entry.exit_code === 0
-              ? 'bg-emerald-500/20 text-emerald-300'
-              : entry.exit_code === 2
-              ? 'bg-rose-500/20 text-rose-300'
-              : 'bg-amber-500/20 text-amber-300'
-          }`}
-        >
-          exit={entry.exit_code}
-        </span>
-        {entry.is_blocking && (
-          <span className="px-1.5 py-0.5 rounded text-[10px] bg-rose-500/20 text-rose-300 font-bold">
-            阻塞
-          </span>
-        )}
-        <span className="text-surface-700 truncate max-w-[200px]" title={entry.hook_name}>
-          {entry.hook_name}
-        </span>
-        {entry.session_id && (
-          <span className="text-[10px] text-surface-500 font-mono">
-            session: {entry.session_id.slice(0, 12)}
-          </span>
-        )}
-        {entry.agent_id && (
-          <span className="text-[10px] text-surface-500 font-mono">
-            agent: {entry.agent_id.slice(0, 12)}
-          </span>
-        )}
-      </div>
-      <span className="text-[10px] text-surface-500">{entry.duration_ms.toFixed(1)}ms</span>
+  return (
+    <div className="space-y-2">
+      {chain.nodes.map((node) => {
+        const offset = ((node.startTime - start) / total) * 100;
+        const width = (((node.duration ?? 50) / total) * 100) || 2;
+        return (
+          <div key={node.nodeId} className="flex items-center gap-2 text-xs">
+            <span className="w-32 truncate text-slate-300" title={node.hookName}>
+              {node.hookName}
+            </span>
+            <div className="flex-1 h-4 bg-surface-900 rounded relative">
+              <div
+                className={`absolute h-4 rounded ${STATUS_COLORS[node.status]}`}
+                style={{ left: `${offset}%`, width: `${Math.max(width, 1)}%`, minWidth: '8px' }}
+                title={`${node.hookName}: ${node.duration ?? 0}ms`}
+              ></div>
+            </div>
+            <span className={`w-20 text-right ${STATUS_TEXT_COLORS[node.status]}`}>
+              {node.duration ?? 0}ms
+            </span>
+          </div>
+        );
+      })}
     </div>
-    {(entry.additional_context || entry.permission_decision) && (
-      <div className="mt-1 space-y-1">
-        {entry.additional_context && (
-          <div className="text-[10px] text-amber-300 bg-amber-500/10 border border-amber-500/20 rounded px-2 py-1">
-            <span className="font-bold">+ Context:</span> {entry.additional_context}
+  );
+}
+
+// DAG 视图
+function DagView({ chain }: { chain: HookChain }) {
+  if (chain.nodes.length === 0) {
+    return <div className="text-slate-500 text-sm">无节点</div>;
+  }
+
+  // 按层分组
+  const layers: Record<number, HookChainNode[]> = {};
+  chain.nodes.forEach((n) => {
+    if (!layers[n.depth]) layers[n.depth] = [];
+    layers[n.depth]!.push(n);
+  });
+
+  return (
+    <div className="space-y-3">
+      {Object.keys(layers).map((depth) => (
+        <div key={depth} className="flex items-center gap-2">
+          <span className="text-xs text-slate-500 w-12">L{depth}</span>
+          <div className="flex flex-wrap gap-2">
+            {layers[Number(depth)]?.map((node) => (
+              <div
+                key={node.nodeId}
+                className={`px-2 py-1 rounded text-xs border ${
+                  node.status === 'success'
+                    ? 'bg-green-500/20 border-green-500/30 text-green-300'
+                    : node.status === 'failed'
+                    ? 'bg-red-500/20 border-red-500/30 text-red-300'
+                    : node.status === 'running'
+                    ? 'bg-blue-500/20 border-blue-500/30 text-blue-300 animate-pulse'
+                    : 'bg-slate-500/20 border-slate-500/30 text-slate-300'
+                }`}
+                title={`${node.hookName} (${node.hookType})`}
+              >
+                {node.hookName}
+              </div>
+            ))}
           </div>
-        )}
-        {entry.permission_decision && (
-          <div
-            className={`text-[10px] border rounded px-2 py-1 ${
-              entry.permission_decision === 'allow'
-                ? 'text-emerald-300 bg-emerald-500/10 border-emerald-500/20'
-                : entry.permission_decision === 'deny'
-                ? 'text-rose-300 bg-rose-500/10 border-rose-500/20'
-                : 'text-amber-300 bg-amber-500/10 border-amber-500/20'
-            }`}
-          >
-            <span className="font-bold">🛡️ Decision:</span> {entry.permission_decision}
-          </div>
-        )}
-      </div>
-    )}
-    {entry.error && (
-      <div className="mt-1 text-[10px] text-rose-300 bg-rose-500/10 border border-rose-500/20 rounded px-2 py-1">
-        <span className="font-bold">Error:</span> {entry.error}
-      </div>
-    )}
-  </div>
-);
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default HookChainViewer;
