@@ -10,8 +10,8 @@
  * ============================================================
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react';
+import { describe, it, expect, vi } from 'vitest';
+import { render, act, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { ComposerPanel } from '../components/ComposerPanel';
 import { ComposerProvider, useComposer } from '../hooks/useComposer';
@@ -278,7 +278,6 @@ describe('Composer Plan Mode - 端到端工作流', () => {
     const { Wrapper, getApi } = makePlanHarness();
     render(<Wrapper />);
 
-    const cb = vi.fn();
     // 订阅需要从 engine 获取，这里通过 generatePlan 触发
     await act(async () => {
       await getApi().generatePlan('test');
@@ -306,7 +305,7 @@ describe('Composer Plan Mode - 边界场景', () => {
     render(<Wrapper />);
 
     await act(async () => {
-      const result = await getApi().generatePlan('test with default behavior');
+      await getApi().generatePlan('test with default behavior');
     });
 
     await waitFor(() => {
