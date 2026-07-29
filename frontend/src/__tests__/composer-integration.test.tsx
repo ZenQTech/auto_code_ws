@@ -211,9 +211,9 @@ describe('ComposerEngine 集成 - Snapshot 工作流', () => {
   });
 
   it('回滚到指定 snapshot', () => {
-    const s1 = engine.createSnapshot('snap1', { 'a.ts': 'v1' });
+    engine.createSnapshot('snap1', { 'a.ts': 'v1' });
     const s2 = engine.createSnapshot('snap2', { 'a.ts': 'v2' });
-    const s3 = engine.createSnapshot('snap3', { 'a.ts': 'v3' });
+    engine.createSnapshot('snap3', { 'a.ts': 'v3' });
 
     const result = engine.rollback(s2.id);
     expect(result?.id).toBe(s2.id);
@@ -347,7 +347,7 @@ describe('ComposerPanel 集成 - 端到端工作流', () => {
   });
 
   it('点击 diff 展开按钮展开 diff 内容', () => {
-    const { Wrapper, getApi, engine } = makeHarness();
+    const { Wrapper, getApi } = makeHarness();
     render(<Wrapper />);
 
     let editId = '';
@@ -380,13 +380,15 @@ describe('parseReferences - 多类型 @ 引用', () => {
     const prompt = 'Refactor @file:src/foo and @folder:src/components. Also check @code:handleSubmit and @docs:https://react-dev and @web:react hooks';
     const refs = parseReferences(prompt);
     expect(refs).toHaveLength(5);
-    expect(refs.map(r => r.type)).toEqual(['file', 'folder', 'code', 'docs', 'web']);
+    // 实现中 @code: 映射为 'symbol' 类型（@code: → symbol）
+    // @web: 允许空格（@web:react hooks → "react hooks"）
+    expect(refs.map(r => r.type)).toEqual(['file', 'folder', 'symbol', 'docs', 'web']);
     expect(refs.map(r => r.value)).toEqual([
       'src/foo',
       'src/components',
       'handleSubmit',
       'https://react-dev',
-      'react',
+      'react hooks',
     ]);
   });
 

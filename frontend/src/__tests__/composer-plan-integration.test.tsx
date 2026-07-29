@@ -10,7 +10,7 @@
  * ============================================================
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import { render, act, waitFor } from '@testing-library/react';
 import { useState } from 'react';
 import { ComposerPanel } from '../components/ComposerPanel';

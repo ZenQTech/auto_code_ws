@@ -1,8 +1,8 @@
 # Iteration Log - Hermes 平台循环工程
 
 > **起始日期**: 2026-07-29  
-> **当前 Cycle**: Cycle 15 ✅ 已完成  
-> **下一 Cycle**: Cycle 16 启动准备
+> **当前 Cycle**: Cycle 17 P0-1 ✅ 已完成（Composer Plan Mode）  
+> **下一 Cycle**: Cycle 17 P2 任务规划（思考可视化 / 流式响应 / Diff 高亮等）
 
 ---
 
@@ -361,3 +361,150 @@ Phase 7: 循环重启准备 + 迭代日志
 - 调研 TRAE Work 多模态协作增强
 - 补齐 P1-1 (App.tsx 拆分) / P1-2 (虚拟化集成) / P1-4 (Shiki)
 - Round 3 (P2): 移动端 / 快捷键 / 批量操作 / loading / 自动 commit
+
+---
+
+## Cycle 16 总结
+
+### 完成项
+
+| 编号 | 任务 | 状态 | 测试通过率 |
+|---|---|---|---|
+| Phase 1 | Composer 模式调研 (Cursor/v0/TRAE) | ✅ | 4 份调研报告 |
+| P0-1 | Composer 多文件编辑引擎 | ✅ | 51 单元 + 36 E2E |
+| P1 系列 | 错误边界 / Loading / 快捷键 / 批选 / 移动端 / 撤销栈 / diff 预览 / Shiki / Markdown / 虚拟列表 / 时间线 | ✅ | 250+ 测试 |
+| P2-1/2/5 | Toast / Tooltip / VersionTimeline | ✅ | 53 测试 |
+| Loop Engineering V16 | 端到端验证 | ✅ | 18/18 (100%) |
+
+### 关键成果
+
+1. **Composer 多文件编辑**: composerEngine + composerEngine.references + composerEngine.editOps
+2. **统一 Loading 体系**: 8 个 Loading 组件 + useAsyncLoading Hook
+3. **快捷键/批选/移动端**: useShortcut + useBatchSelection + useResponsive
+4. **撤销栈 + Version Timeline**: undoRedoStack + VersionTimeline 组件
+5. **代码高亮升级**: Shiki 替代 highlight.js
+6. **Loop Engineering V16**: 7 阶段 + 18 断言 100% 通过
+
+### Cycle 16 Bug 修复
+
+- data-component vs data-testid 不一致（统一为 data-testid）
+- useComposer 内 setState 异步导致 test 失败（添加 externalIsOpen props）
+- parseReferences 把句号包含在 value 中（修复 regex 排除 .）
+- getApi() 初始化前访问 undefined（重构 Harness）
+- Icon type 联合类型未包含 `layers`（添加 layers SVG）
+- 死代码警告（移除未使用 import）
+
+### 测试统计
+
+| 类别 | Cycle 15 | Cycle 16 | 增长 |
+|---|---|---|---|
+| 前端单测 | 331 | 402 | +71 |
+| 后端单测 | 469 | 469 | 0 |
+| E2E 断言 | 800+ | 836 | +36 |
+| **总计** | **850+** | **922** | **+72** |
+| TypeScript 错误 | 0 | 0 | 0 |
+
+---
+
+## Cycle 17 总结（进行中）
+
+### P0-1: Composer Plan Mode ✅ 已完成
+
+| 任务 | 产出 | 测试 | E2E |
+|---|---|---|---|
+| composerEngine.plan.ts (657 行) | PlanStage 7 状态机 + PlanStep 4 状态机 | 43 单测 100% | ✅ |
+| PlanViewer.tsx (433 行) | 5 种视图 + 步骤操作 UI | 11 集成 100% | ✅ |
+| useComposer.tsx 升级 v1.2.0 | 集成 PlanEngine | - | ✅ |
+| 修复 16 个 TypeScript 错误 | - | - | ✅ |
+| **E2E 验证** | test_e2e_cycle17_p0_1.sh (57 断言) | - | **57/57 100%** |
+
+### P0-2: 统一模式入口 ✅ 已完成
+
+| 任务 | 产出 | 测试 |
+|---|---|---|
+| useMode.ts (157 行) | Chat/Composer/Agent 模式 + 快捷键 | 12 单测 |
+| ModeToggle.tsx (117 行) | 模式切换 UI | - |
+
+### P0-3: 渐进式 UI 预览 ✅ 已完成
+
+| 任务 | 产出 | 测试 |
+|---|---|---|
+| previewSandbox.ts (418 行) | SandboxManager + 3 模式 + 防抖 | 27 单测 |
+| PreviewPanel.tsx (519 行) | 预览面板 + 状态徽章 | 23 集成 |
+| ComposerPanel.tsx v1.2.0 | 三模式 (edit/plan/preview) | - |
+
+### Cycle 17 测试统计
+
+| 类别 | Cycle 16 | Cycle 17 | 增长 |
+|---|---|---|---|
+| 前端单测 | 402 | 981 | **+579** |
+| 后端单测 | 469 | 469 | 0 |
+| E2E 断言 | 836 | 893 | +57 |
+| **总计** | **922** | **1450** | **+528** |
+| TypeScript 错误 | 0 | 0 | 0 |
+| Loop Engineering 验证 | 18/18 | 43/43 | +25 |
+
+### Cycle 17 P2 任务规划（下一轮）
+
+> 基于 `CYCLE17_GAP_ANALYSIS.md` 和 `CYCLE17_SUMMARY.md` 的优先级排序
+
+| 编号 | 任务 | 优先级 | 状态 |
+|---|---|---|---|
+| **P2-1** | 思考过程可视化增强（ThinkingBlock 阶段标签 + 动画） | 高 | 🟡 设计中 |
+| **P2-2** | 流式响应（SSE/EventSource 集成） | 高 | ⏳ 待启动 |
+| **P2-3** | 代码 diff 高亮（统一 diff 算法 + 语法高亮） | 中 | ⏳ 待启动 |
+| **P2-4** | 多文件批量编辑（Multi-file Edit UI） | 中 | ⏳ 待启动 |
+| **P2-5** | 撤销/重做可视化（Version Timeline UI） | 中 | ⏳ 待启动 |
+| **P2-6** | Composer 持久化（localStorage 同步） | 中 | ⏳ 待启动 |
+
+### Cycle 18 任务规划（备选）
+
+> 基于 `CYCLE18_GAP_ANALYSIS.md`
+
+| 编号 | 任务 | 优先级 | 状态 |
+|---|---|---|---|
+| **G18-01** | @ 引用类型扩展（@codebase / @git / @diff） | P1 | 📋 Spec 已完成 |
+| **G18-02** | 项目级 AI 规则系统（.hermesrules 风格） | P1 | 📋 Spec 已完成 |
+| **G18-03** | Self-Summarization 长 session 控制 | P1 | 📋 Spec 已完成 |
+
+**决策**: P2 任务（UI 体验优化）和 G18 任务（功能扩展）可以并行：
+- P2 系列：纯前端 UI 增强，立即可启动
+- G18 系列：需要前后端协作，建议在 P2-2（流式响应）后启动
+
+### 下一轮启动指南（CYCLE 17 P2 阶段）
+
+1. **优先 P2-1**（思考过程可视化）: 用户已多次反馈"看不到 AI 在想什么"，这是体验痛点
+2. **接着 P2-2**（流式响应）: 与 P2-1 紧密配合，构成"思考 + 流式输出"完整体验
+3. **P2-3 + P2-4** 可并行: 两者都涉及代码编辑 UI 增强
+4. **P2-5 + P2-6** 收尾: 体验层最后一公里
+
+### 验收标准（每 P2 任务通用）
+
+- ✅ 单元测试覆盖 ≥ 90% 关键路径
+- ✅ 集成测试覆盖 UI 交互流
+- ✅ E2E 验证脚本 ≥ 30 断言
+- ✅ TypeScript 零错误
+- ✅ Loop Engineering 工作流不破坏
+- ✅ 修改日志 + 任务总结同步更新
+
+### 关键文件（CYCLE 17 P0-1 全部产出）
+
+**代码**:
+- `frontend/src/utils/composerEngine.plan.ts` (657 行)
+- `frontend/src/components/PlanViewer.tsx` (433 行)
+- `frontend/src/hooks/useComposer.tsx` (升级 v1.2.0)
+- `frontend/src/utils/composerEngine.plan.test.ts` (499 行)
+- `frontend/src/__tests__/composer-plan-integration.test.tsx` (345 行)
+
+**测试 + 验证**:
+- `tests/test_e2e_cycle17_p0_1.sh` (57 断言 100% 通过)
+- `tests/test_e2e_loop_engineering_workflow.sh` (43 断言 100% 通过)
+
+**文档**:
+- `CYCLE17_P0_1_SUMMARY.md` (任务总结)
+- `CYCLE17_GAP_ANALYSIS.md` (Gap 分析)
+- `CYCLE17_RESEARCH_REPORT.md` (调研报告)
+- `CYCLE17_SPEC_PLAN_MODE.md` (Plan Mode Spec)
+- `CYCLE17_SPEC_MODE_TOGGLE.md` (Mode Toggle Spec)
+- `CYCLE17_SPEC_PREVIEW.md` (Preview Spec)
+- `代码修改日志.md` (v6.37.0 条目)

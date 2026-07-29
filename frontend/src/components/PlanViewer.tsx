@@ -329,8 +329,8 @@ export const PlanViewer: React.FC<PlanViewerProps> = ({
   const overallRisk = calculateOverallRisk(plan);
   const approvedSteps = getApprovedSteps(plan);
   // 由于前面多处 if stage === 'xxx' 提前 return，TS 已将 stage 类型收窄，
-  // 这里显式标注为完整 PlanStage 以允许后续比较
-  const currentStage: PlanStage = stage;
+  // 这里显式断言为完整 PlanStage 以允许后续比较
+  const currentStage = stage as PlanStage;
   const canExecute = currentStage === 'planned' && approvedSteps.length > 0;
 
   return (
