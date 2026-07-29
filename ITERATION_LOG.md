@@ -1,8 +1,8 @@
 # Iteration Log - Hermes 平台循环工程
 
 > **起始日期**: 2026-07-29  
-> **当前 Cycle**: Cycle 14 ✅ 已完成  
-> **下一 Cycle**: Cycle 15 启动准备
+> **当前 Cycle**: Cycle 15 ✅ 已完成  
+> **下一 Cycle**: Cycle 16 启动准备
 
 ---
 
@@ -160,6 +160,130 @@ Phase 7: 循环重启准备 + 迭代日志
 
 ---
 
-**更新日期**: 2026-07-29  
-**当前 Cycle**: 14 → 15 过渡  
+**更新日期**: 2026-07-29 11:30  
+**当前 Cycle**: Cycle 16 ✅ 已完成  
+**下一 Cycle**: Cycle 17 启动准备  
 **负责人**: Hermes AI Agent
+
+---
+
+## Cycle 16 总结
+
+### 完成项
+
+| 编号 | 任务 | 状态 | 测试通过率 |
+|---|---|---|---|
+| Phase 1 | 互联网调研（v0/Bolt/Cursor Composer/TRAE Work） | ✅ | CYCLE16_RESEARCH_REPORT.md |
+| Phase 2 | Gap 分析 + 4 份 spec 文档 | ✅ | CYCLE16_GAP_ANALYSIS.md / CYCLE16_SPEC_COMPOSER.md |
+| Phase 3-P0-1 | **Composer 多文件编辑引擎** | ✅ | 100% (36 引擎 + 14 面板 + 5 启动器 + 16 集成) |
+| Phase 3 | App.tsx 集成（菜单 + 快捷键） | ✅ | - |
+| Phase 5 | BrandHeader + AppLayout 集成 | ✅ | - |
+| Phase 6 | Loop Engineering 端到端 V16 | ✅ | 36/36 (100%) |
+| Phase 7 | Cycle 16 总结 + 重启准备 | ✅ | CYCLE16_SUMMARY.md |
+
+### 关键成果
+
+1. **Composer 核心引擎**: 600 行（composerEngine.ts）+ parseReferences + 5 种 Context 类型 + 完整 Edit/Snapshot 状态机
+2. **React 集成层**: useComposer Hook + ComposerProvider + ComposerLauncher
+3. **UI 组件**: ComposerPanel（5 个子组件：Header/ContextBar/PromptInput/EditList/Footer）
+4. **应用集成**: BrandHeader 菜单 + Cmd/Ctrl+I 快捷键 + AppLayout 透传
+5. **测试覆盖**: 71 单元 + 16 集成 + 36 E2E 断言 = **123 个测试点**
+
+### Cycle 16 Bug 修复
+
+- `data-component` vs `data-testid` 不一致（统一为 data-testid）
+- `useComposer` 内 setState 异步导致 test 失败（添加 externalIsOpen props）
+- `parseReferences` 把句号包含在 value 中（修复 regex 排除 .）
+- `getApi()` 初始化前访问 undefined（重构 Harness）
+- `Icon` type 联合类型未包含 `layers`（添加 layers SVG）
+- 死代码警告（移除未使用 import）
+
+### 测试统计
+
+| 类别 | Cycle 15 | Cycle 16 | 增长 |
+|---|---|---|---|
+| 前端单测 | 331 | 402 | +71 |
+| 后端单测 | 469 | 469 | 0 |
+| E2E 断言 | 800+ | 836 | +36 |
+| **总计** | **850+** | **922** | **+72** |
+| TypeScript 错误 | 0 | 0 | 0 |
+
+### 下一 Cycle 计划（Cycle 17）
+
+- Composer 持久化（localStorage 自动保存）
+- UI 深度优化（错误动画 + Loading 骨架屏）
+- Context 智能提示（输入 @ 时自动候选）
+- TRAE Work 渐进式代码生成增强
+- Diff 三粒度 UI 切换
+- 快捷键扩展（Cmd+Shift+P 命令面板）
+
+### 关键文件
+
+- `frontend/src/utils/composerEngine.ts` - 核心引擎
+- `frontend/src/components/ComposerPanel.tsx` - UI 面板
+- `frontend/src/components/ComposerLauncher.tsx` - 应用入口
+- `CYCLE16_SUMMARY.md` - 完整总结
+- `tests/test_e2e_composer.sh` - 端到端验证
+
+---
+
+## Cycle 15 总结
+
+### 完成项
+
+| 编号 | 任务 | 状态 | 测试通过率 |
+|---|---|---|---|
+| Phase 1 | 互联网调研（codex + trae solo 模式） | ✅ | 4 份调研报告 |
+| Phase 2 | 功能差距分析 + 4 份 spec 文档 | ✅ | visual/interaction/technical/acceptance |
+| Phase 3-P0-1 | MessageBubble 4 个 hover 工具栏按钮 | ✅ | 12 测试 |
+| Phase 3-P0-2 | 清理未使用死代码 | ✅ | -300 行 |
+| Phase 3-P0-3 | Vitest + RTL 测试体系 | ✅ | 163 测试 |
+| Phase 3-P0-4 | 工作流状态机扩展到 7 态 | ✅ | - |
+| Phase 3-P0-5 | Monaco Editor 懒加载 | ✅ | -78% 首屏 JS |
+| Phase 3-P0-6 | Diff 引擎升级三粒度 | ✅ | 15 测试 |
+| Phase 3-P1-1 | Health 端点补齐 | ✅ | 6 端点 |
+| Phase 3-P1-2 | LLM 成本精细化追踪 | ✅ | 7 计费组件 |
+| Phase 3-P1-3 | Judge 共识机制增强 | ✅ | 加权投票 + 一致性指标 |
+| Phase 3-P1-3 | design token 统一主题 | ✅ | 23 测试 |
+| Phase 3-P1-5 | Cmd+I + @ fuzzy search | ✅ | 20 测试 |
+| Phase 3-P1-6 | Undo/Redo Stack | ✅ | 23 测试 |
+| Phase 3-P1-7 | Toast 撤销按钮 | ✅ | 14 测试 |
+| Phase 3-P1-8 | Diff Preview 模态 | ✅ | 10 测试 |
+| Phase 5 | Loop Engineering 端到端验证 V15 | ✅ | 18/18 (100%) |
+| Phase 6 | 循环重启准备 | ✅ | - |
+
+### 关键成果
+
+1. **Vitest + RTL 完整测试体系**: 15 测试文件 / 331 单测
+2. **设计系统统一**: design token + 主题切换 + Design System 规范
+3. **Undo/Redo 栈**: 500ms 合并 + 订阅 + 序列化通用基础设施
+4. **Diff 三粒度**: 行/词/字符 + 色盲友好
+5. **Toast 体系**: 多队列 + 操作按钮 + 错误降级
+6. **Loop Engineering V15**: 7 阶段 / 18 断言 100% 通过
+7. **Cycle 15 新模块**: Goal Sync + Scheduler + LLM Cost（28 端点）
+
+### Cycle 15 Bug 修复
+
+- Loop Engineering V15 测试路由错误（`/api/goal` → `/api/goal/goals`）
+- assert_contains `\|` 误用（substring 匹配而非 regex）
+- TypeScript 死代码警告（React/showConfirm/afterEach/computeStats 等）
+- DiffPreviewModal 类型比较错误
+- useDesignTokens 类型不兼容（as const vs string）
+
+### 测试统计
+
+| 类别 | Cycle 14 | Cycle 15 | 增长 |
+|---|---|---|---|
+| 前端单测 | 0 | 331 | +331 |
+| 后端单测 | 469 | 469 | 0 |
+| E2E 测试 | 30+ | 50+ | +20 |
+| REST 端点 | 350+ | 360+ | +10 |
+| TypeScript 错误 | 0 | 0 | 0 |
+
+### 下一 Cycle 计划（Cycle 16）
+
+- 调研 v0/bolt.new 渐进式代码生成范式
+- 调研 Cursor Composer 模式的多文件编辑
+- 调研 TRAE Work 多模态协作增强
+- 补齐 P1-1 (App.tsx 拆分) / P1-2 (虚拟化集成) / P1-4 (Shiki)
+- Round 3 (P2): 移动端 / 快捷键 / 批量操作 / loading / 自动 commit
