@@ -235,7 +235,6 @@ export const PlanViewer: React.FC<PlanViewerProps> = ({
   onModifyStep,
   onApproveAll,
   onRejectAll,
-  onApprovePlan,
   onRejectPlan,
   onExecutePlan,
   onClose,
@@ -329,7 +328,10 @@ export const PlanViewer: React.FC<PlanViewerProps> = ({
   // 计划展示
   const overallRisk = calculateOverallRisk(plan);
   const approvedSteps = getApprovedSteps(plan);
-  const canExecute = stage === 'planned' && approvedSteps.length > 0;
+  // 由于前面多处 if stage === 'xxx' 提前 return，TS 已将 stage 类型收窄，
+  // 这里显式标注为完整 PlanStage 以允许后续比较
+  const currentStage: PlanStage = stage;
+  const canExecute = currentStage === 'planned' && approvedSteps.length > 0;
 
   return (
     <div
@@ -386,7 +388,7 @@ export const PlanViewer: React.FC<PlanViewerProps> = ({
             onApprove={onApproveStep}
             onReject={onRejectStep}
             onModify={onModifyStep}
-            disabled={stage === 'approved' || stage === 'executing' || stage === 'completed'}
+            disabled={currentStage === 'approved' || currentStage === 'executing' || currentStage === 'completed'}
           />
         ))}
       </div>
@@ -397,7 +399,7 @@ export const PlanViewer: React.FC<PlanViewerProps> = ({
           <button
             data-testid="plan-approve-all-button"
             onClick={onApproveAll}
-            disabled={stage === 'approved'}
+            disabled={currentStage === 'approved'}
             className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-500 disabled:bg-surface-700 disabled:text-slate-500 text-white text-sm rounded"
           >
             全部批准
@@ -405,7 +407,7 @@ export const PlanViewer: React.FC<PlanViewerProps> = ({
           <button
             data-testid="plan-reject-all-button-bottom"
             onClick={onRejectAll}
-            disabled={stage === 'rejected'}
+            disabled={currentStage === 'rejected'}
             className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 disabled:bg-surface-700 disabled:text-slate-500 text-white text-sm rounded"
           >
             全部拒绝
