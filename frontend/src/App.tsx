@@ -124,13 +124,18 @@ import {
   useAgents, useStats, useSessions, useSessionDetail,
   confirmPlan, chatWithHermesStreaming,
   createSession, deleteSession, updateSession,
-  batchDeleteSessions, fetchWorkflowStatus,
+  batchDeleteSessions, restoreSessions, fetchWorkflowStatus,
   startDesignPhase, confirmDesignPhase, rejectDesignPhase,
   reviewCode, fixCode, runReviewFixLoop,
 } from './hooks/useApi';
-import Toast from './components/Toast';
 import PlanViewer from './components/PlanViewer';
 import Sidebar from './components/Sidebar';
+/** v6.36.0 P2-1：移动端响应式组件 */
+import { useIsMobile } from './hooks/useResponsive';
+import MobileHeader from './components/MobileHeader';
+import MobileSidebar from './components/MobileSidebar';
+/** v6.37.0 P2-2：全局快捷键 Hook */
+import { useShortcut, COMMON_SHORTCUTS } from './hooks/useShortcut';
 import SettingsPanel from './components/SettingsPanel';
 import ModeSelector from './components/ModeSelector';
 import ProjectSelector from './components/ProjectSelector';
@@ -143,6 +148,8 @@ import { LS_CURRENT_SESSION_ID, LS_APP_MODE, extractSummary, extractQuestions } 
 import type { ChatMessage } from './utils/messageFormatters';
 /** 从 hooks/useToast 抽离的 toast 状态管理 */
 import { useToast } from './hooks/useToast';
+/** v6.35.0 P1-7：多 Toast 堆叠容器 */
+import ToastContainer from './components/ToastContainer';
 /** v4.2.0 P0-2：从 App.tsx 抽离 11 个面板/弹窗显隐状态 */
 import { useModals } from './hooks/useModals';
 /** v6.9.0 P0-2：从 App.tsx 抽离的用量监控面板 */
@@ -202,6 +209,10 @@ export default function App() {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   /** 左侧边栏是否展开（默认展开） */
   const [sidebarExpanded, setSidebarExpanded] = useState<boolean>(true);
+  /** v6.36.0 P2-1：移动端响应式检测 */
+  const isMobile = useIsMobile();
+  /** v6.36.0 P2-1：移动端 Sidebar 抽屉开关状态 */
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState<boolean>(false);
   /** v3.0.0：应用模式（null=未选择，chat=日常办公闲聊，coding=编程模式） */
   const [appMode, setAppMode] = useState<'chat' | 'coding' | null>(null);
   /** 智能体列表（子 CLI 实例） */
@@ -254,7 +265,60 @@ export default function App() {
    *   - dismissToast(id): 关闭指定 ID 的 Toast
    *   - toasts: 当前所有 Toast 队列（用于 ToastContainer 渲染）
    */
-  const { showToast, showToastWithAction, hideToast: handleToastClose, dismissToast, toasts } = useToast();
+  const { showToast, showToastWithAction, dismissToast, toasts } = useToast();
+
+  /**
+   * v6.37.0 P2-2：全局快捷键注册
+   * - Cmd/Ctrl+N: 新建对话
+   * - Cmd/Ctrl+B: 切换 Sidebar 展开
+   * - Cmd/Ctrl+/: 显示快捷键帮助
+   * - Esc: 关闭移动端 Sidebar 抽屉
+   */
+  useShortcut(
+    'new-chat',
+    COMMON_SHORTCUTS.NEW_CHAT,
+    () => {
+      handleNewTask();
+    },
+    { description: '新建对话', priority: 5 }
+  );
+
+  useShortcut(
+    'toggle-sidebar',
+    COMMON_SHORTCUTS.TOGGLE_SIDEBAR,
+    () => {
+      setSidebarExpanded((prev) => !prev);
+    },
+    { description: '切换侧边栏', priority: 5 }
+  );
+
+  useShortcut(
+    'show-shortcuts',
+    COMMON_SHORTCUTS.SHOW_SHORTCUTS,
+    () => {
+      showToastWithAction(
+        '快捷键：Cmd+N 新建 / Cmd+B 切换侧栏 / Cmd+I 切换 Composer / Cmd+Enter 提交',
+        '查看全部',
+        () => {
+          // TODO: 打开快捷键帮助面板
+          showToast('快捷键帮助面板开发中', 'info');
+        },
+        { type: 'info', duration: 5000 }
+      );
+    },
+    { description: '显示快捷键帮助', priority: 1 }
+  );
+
+  useShortcut(
+    'close-mobile-sidebar',
+    COMMON_SHORTCUTS.ESCAPE,
+    () => {
+      if (isMobile && mobileSidebarOpen) {
+        setMobileSidebarOpen(false);
+      }
+    },
+    { description: '关闭移动端侧栏抽屉', priority: 10 } // 高优先级
+  );
 
   /**
    * v2.10.4 新增：会话详情 404 回退回调
@@ -2004,6 +2068,28 @@ export default function App() {
         deletingSession={isDeletingSession}
       />
 
+      {/* v6.36.0 P2-1：移动端 Sidebar 抽屉包装（移动端有效，桌面端不渲染） */}
+      <MobileSidebar
+        open={mobileSidebarOpen}
+        onClose={() => setMobileSidebarOpen(false)}
+        expanded={sidebarExpanded}
+        onToggle={handleToggleSidebar}
+        sessions={sessions}
+        currentSessionId={currentSessionId}
+        onSelectSession={(id) => {
+          handleSelectSession(id);
+          setMobileSidebarOpen(false);
+        }}
+        onDeleteSession={handleDeleteSession}
+        onBatchDelete={handleBatchDelete}
+        loading={sessionsLoading}
+        onOpenSettings={setSettingsOpen}
+        onNewTask={handleNewTask}
+        appMode={appMode!}
+        onModeSwitch={handleModeSwitch}
+        deletingSession={isDeletingSession}
+      />
+
       {/* ============================================================ */}
       {/* 主内容区域：settingsOpen 时显示设置面板，否则显示对话界面 */}
       {/* ============================================================ */}
@@ -2013,8 +2099,19 @@ export default function App() {
           showToast={showToast}
         />
       ) : (
-        <AppLayout
-          appMode={appMode!}
+        <>
+          {/* v6.36.0 P2-1：移动端顶栏（仅移动端显示） */}
+          {isMobile && (
+            <MobileHeader
+              title={currentSessionTitle || 'Hermes'}
+              onMenuClick={() => setMobileSidebarOpen(true)}
+              onPrimaryAction={handleNewTask}
+              primaryActionIcon="+"
+              primaryActionLabel="新建对话"
+            />
+          )}
+          <AppLayout
+            appMode={appMode!}
           selectedProject={selectedProject}
           openedFile={openedFile}
           setOpenedFile={setOpenedFile}
@@ -2113,6 +2210,7 @@ export default function App() {
             inputRef.current?.focus();
           }}
         />
+        </>
       )}
 
       {/* ============================================================ */}

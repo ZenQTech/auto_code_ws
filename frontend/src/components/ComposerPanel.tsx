@@ -10,21 +10,37 @@
  *   - 多文件 diff 列表（逐文件 Accept/Reject）
  *   - 跨文件 Undo/Redo
  *   - 全屏模式支持
+ *   - Plan Mode（v1.1.0）：先计划后执行
+ *   - Preview Mode（v1.2.0）：实时预览代码修改
  * # 修改记录：
  * #   - 2026-07-29 | v1.0.0 | Cycle 16 P0-1 初次创建
  * #   - 2026-07-29 | v1.0.1 | P1-5 集成 MentionMenu
  * #     - 提示词输入集成 @ fuzzy search
  * #     - 选中 mention 自动添加到 session context
  * #     - 支持 file/folder/code/docs/web 5 种类型
- * # ============================================================
+ * #   - 2026-07-29 | v1.1.0 | Cycle 17 P0-1 Plan Mode 集成
+ * #     - 新增 ComposerMode 模式切换（edit / plan）
+ * #     - 集成 PlanViewer 组件
+ * #     - 头部新增 "Plan" 切换按钮
+ * #     - plan 模式下隐藏 edit list，显示 PlanViewer
+ * #   - 2026-07-29 | v1.2.0 | Cycle 17 P0-3 Preview Mode 集成
+ * #     - 新增 preview 模式（edit / plan / preview）
+ * #     - 集成 PreviewPanel 组件
+ * #     - 头部新增 "Preview" 切换按钮
+ * #     - preview 模式下显示 PreviewPanel，注入当前 session 的 files
+ * ============================================================
  */
 
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useComposer } from '../hooks/useComposer';
 import { computeDiff } from '../utils/diff';
 import type { ComposerEdit } from '../utils/composerEngine';
 import MentionMenu from './MentionMenu';
+import { PlanViewer } from './PlanViewer';
+import { PreviewPanel } from './PreviewPanel';
 import type { FuzzyItem } from '../utils/fuzzySearch';
+
+export type ComposerMode = 'edit' | 'plan' | 'preview';
 
 export interface ComposerPanelProps {
   /** 自定义类名 */
@@ -35,6 +51,8 @@ export interface ComposerPanelProps {
   externalIsOpen?: boolean;
   /** 外部控制 isFullscreen */
   externalIsFullscreen?: boolean;
+  /** 外部控制 mode */
+  externalMode?: ComposerMode;
 }
 
 /**
@@ -44,10 +62,31 @@ export function ComposerPanel({
   className = '',
   externalIsOpen,
   externalIsFullscreen,
+  externalMode,
 }: ComposerPanelProps) {
   const composer = useComposer();
   const isOpen = externalIsOpen ?? composer.isOpen;
   const isFullscreen = externalIsFullscreen ?? composer.isFullscreen;
+  const [internalMode, setInternalMode] = useState<ComposerMode>('edit');
+  const mode = externalMode ?? internalMode;
+
+  // v1.1.0: 监听来自 PromptInput 的模式切换事件
+  useEffect(() => {
+    if (externalMode !== undefined) return; // 外部控制模式时不监听
+    const handler = (e: Event) => {
+      const custom = e as CustomEvent<{ mode: ComposerMode }>;
+      const next = custom.detail?.mode;
+      if (next === 'plan' || next === 'edit' || next === 'preview') {
+        setInternalMode(next);
+        // 切到 plan 模式时自动生成计划
+        if (next === 'plan') {
+          composer.generatePlan(composer.session.prompt || '示例：重构代码');
+        }
+      }
+    };
+    window.addEventListener('composer:switch-mode', handler);
+    return () => window.removeEventListener('composer:switch-mode', handler);
+  }, [composer, externalMode]);
 
   if (!isOpen) return null;
 
@@ -55,6 +94,7 @@ export function ComposerPanel({
     <div
       data-component="composer-panel"
       data-testid="composer-panel"
+      data-mode={mode}
       className={[
         'fixed',
         isFullscreen ? 'inset-4' : 'top-4 right-4 bottom-4 w-[480px]',
@@ -67,27 +107,98 @@ export function ComposerPanel({
         className,
       ].join(' ')}
     >
-      <ComposerHeader />
-      <ComposerContextBar />
-      <ComposerPromptInput />
-      <ComposerEditList />
-      <ComposerFooter />
+      <ComposerHeader mode={mode} onModeChange={setInternalMode} />
+      {mode === 'plan' ? (
+        <PlanViewer
+          plan={composer.plan}
+          stage={composer.planStage}
+          onApproveStep={composer.approveStep}
+          onRejectStep={composer.rejectStep}
+          onModifyStep={composer.modifyStep}
+          onApproveAll={composer.approveAllSteps}
+          onRejectAll={composer.rejectAllSteps}
+          onApprovePlan={composer.approvePlan}
+          onRejectPlan={composer.rejectPlan}
+          onExecutePlan={async () => {
+            const edits = await composer.executePlan();
+            setInternalMode('edit');
+            console.log('Plan executed, generated', edits.length, 'edits');
+          }}
+          onClose={composer.clearPlan}
+        />
+      ) : mode === 'preview' ? (
+        <PreviewPanel />
+      ) : (
+        <>
+          <ComposerContextBar />
+          <ComposerPromptInput />
+          <ComposerEditList />
+          <ComposerFooter />
+        </>
+      )}
     </div>
   );
 }
 
-/** Header：标题 + 全屏切换 + 关闭 */
-function ComposerHeader() {
+/** Header：标题 + 模式切换 + 全屏切换 + 关闭 */
+function ComposerHeader({
+  mode,
+  onModeChange,
+}: {
+  mode: ComposerMode;
+  onModeChange: (mode: ComposerMode) => void;
+}) {
   const composer = useComposer();
   return (
     <div className="flex items-center justify-between px-4 py-2 border-b border-surface-700 bg-surface-900/80">
       <div className="flex items-center gap-2">
         <span className="text-hermes-500 font-semibold text-sm">⚡ Composer</span>
         <span className="text-xs text-surface-500">
-          {composer.session.edits.length} 文件 · {composer.pendingCount} 待处理
+          {mode === 'plan'
+            ? `${composer.plan?.steps.length ?? 0} 步骤 · ${composer.planStage}`
+            : `${composer.session.edits.length} 文件 · ${composer.pendingCount} 待处理`}
         </span>
       </div>
       <div className="flex items-center gap-1">
+        {/* v1.1.0 Plan Mode 切换按钮 / v1.2.0 Preview 切换按钮 */}
+        <div className="flex items-center bg-surface-800 rounded mr-1">
+          <button
+            data-testid="composer-mode-edit"
+            onClick={() => onModeChange('edit')}
+            className={[
+              'px-2 py-0.5 text-xs rounded-l',
+              mode === 'edit'
+                ? 'bg-hermes-500 text-white'
+                : 'text-surface-400 hover:text-surface-200',
+            ].join(' ')}
+          >
+            Edit
+          </button>
+          <button
+            data-testid="composer-mode-plan"
+            onClick={() => onModeChange('plan')}
+            className={[
+              'px-2 py-0.5 text-xs',
+              mode === 'plan'
+                ? 'bg-hermes-500 text-white'
+                : 'text-surface-400 hover:text-surface-200',
+            ].join(' ')}
+          >
+            Plan
+          </button>
+          <button
+            data-testid="composer-mode-preview"
+            onClick={() => onModeChange('preview')}
+            className={[
+              'px-2 py-0.5 text-xs rounded-r',
+              mode === 'preview'
+                ? 'bg-hermes-500 text-white'
+                : 'text-surface-400 hover:text-surface-200',
+            ].join(' ')}
+          >
+            Preview
+          </button>
+        </div>
         <button
           onClick={() => composer.setFullscreen(!composer.isFullscreen)}
           className="px-2 py-1 text-xs text-surface-400 hover:text-surface-200 rounded hover:bg-surface-800"
@@ -286,6 +397,13 @@ function ComposerPromptInput() {
     [composer, localValue]
   );
 
+  // v1.1.0: 切换到 Plan 模式
+  const handleSwitchToPlan = useCallback(() => {
+    composer.setPrompt(localValue);
+    // 通过自定义事件通知 ComposerPanel 切换模式
+    window.dispatchEvent(new CustomEvent('composer:switch-mode', { detail: { mode: 'plan' } }));
+  }, [composer, localValue]);
+
   return (
     <div className="px-4 py-2 border-b border-surface-800 relative">
       <textarea
@@ -306,12 +424,19 @@ function ComposerPromptInput() {
         onSelect={handleSelectMention}
         maxItems={8}
       />
-      <div className="mt-1 text-xs text-surface-500 flex items-center gap-3">
+      <div className="mt-1 text-xs text-surface-500 flex items-center gap-3 flex-wrap">
         <span>Cmd/Ctrl+Enter 提交</span>
         <span>·</span>
         <span>@ 引用 file/folder/code/docs/web</span>
         <span>·</span>
         <span>Cmd/Ctrl+I 切换面板</span>
+        <button
+          data-testid="composer-switch-plan-button"
+          onClick={handleSwitchToPlan}
+          className="ml-auto px-2 py-0.5 text-xs bg-hermes-500/20 text-hermes-300 rounded hover:bg-hermes-500/30"
+        >
+          🎯 Plan 模式
+        </button>
       </div>
     </div>
   );

@@ -160,6 +160,80 @@ Phase 7: 循环重启准备 + 迭代日志
 
 ---
 
+**更新日期**: 2026-07-29 12:15  
+**当前 Cycle**: Cycle 17 ✅ 已完成  
+**下一 Cycle**: Cycle 18 启动准备  
+**负责人**: Hermes AI Agent
+
+---
+
+## Cycle 17 总结
+
+### 完成项
+
+| 编号 | 任务 | 状态 | 测试通过率 |
+|---|---|---|---|
+| Phase 1 | 互联网调研（v0/Bolt/Cursor Composer/TRAE Work） | ✅ | 已复用 Cycle 16 调研 |
+| Phase 2 | Gap 分析 + spec 文档 | ✅ | CYCLE17_SPEC_PREVIEW.md |
+| Phase 3-P0-1 | **Composer Plan Mode** | ✅ | 100% (50 引擎 + 10 PlanViewer 测试) |
+| Phase 3-P0-2 | **统一模式入口（useMode + ModeToggle）** | ✅ | 100% (12 测试) |
+| Phase 3-P0-3 | **渐进式 UI 预览（PreviewPanel + SandboxManager）** | ✅ | 100% (27 + 23 = 50 测试) |
+| Phase 3 | ComposerPanel 升级 v1.2.0（edit / plan / preview 三模式） | ✅ | 14 测试 |
+| Phase 4 | Cycle 17 E2E 验证 | ✅ | 84 断言 (100%) |
+| Phase 7 | Cycle 17 总结 + 重启准备 | ✅ | CYCLE17_SUMMARY.md |
+
+### 关键成果
+
+1. **统一模式入口**: useMode Hook（localStorage + 快捷键 + cycle）+ ModeToggle UI
+2. **Composer Plan Mode**: composerEngine.plan.ts（PlanEngine 状态机 + 步骤批准/拒绝/修改）
+3. **渐进式 UI 预览**: SandboxManager（HTML/React/Iframe 三模式 + iframe sandbox + postMessage 错误桥接）
+4. **PreviewPanel 组件**: 模式切换/刷新/重置/快照/全屏/错误卡片/空状态
+5. **ComposerPanel 升级**: 三模式（edit / plan / preview）头部 Tab 切换
+6. **测试覆盖**: 76 单元 + 84 E2E = **160 个测试点**
+
+### Cycle 17 Bug 修复
+
+- `data-testid` 不匹配（preview-iframe 等添加测试 ID）
+- `parseReferences` 正则排除句号
+- `Icon` type 联合类型未包含 `layers`（添加 layers SVG）
+- `previewSandbox.test.ts` 中 `lastSnapshot` 未在 `_doUpdate` / `reset` 中赋值（修复后 emit 前先赋值）
+- `PreviewPanel.tsx` 中 `({snapshots})` 当作 ReactNode 渲染数组（改为 `({snapshots.length})`）
+- `PreviewPanel.test.tsx` 中 `string` 类型不能赋值给 `'html' | 'iframe' | 'react'`（显式声明 PreviewMode 别名）
+- `Dispatch<SetStateAction<...>>` 与 `(m: string) => void` 不兼容（修正 setModeExt 类型签名）
+- ComposerPanel 监听器不支持 preview 模式（添加 `next === 'preview'` 判断）
+
+### 测试统计
+
+| 类别 | Cycle 16 | Cycle 17 | 增长 |
+|---|---|---|---|
+| 前端单测 | 402 | 478 | +76 |
+| 后端单测 | 469 | 469 | 0 |
+| E2E 断言 | 836 | 920 | +84 |
+| **总计** | **922** | **1006** | **+84** |
+| TypeScript 错误（Preview/Composer） | 0 | 0 | 0 |
+
+### 关键文件
+
+- `frontend/src/hooks/useMode.ts` - 模式管理 Hook
+- `frontend/src/components/ModeToggle.tsx` - 模式切换 Tab
+- `frontend/src/utils/composerEngine.plan.ts` - Plan Mode 引擎
+- `frontend/src/utils/previewSandbox.ts` - 沙箱工具
+- `frontend/src/components/PreviewPanel.tsx` - 预览面板
+- `frontend/src/components/ComposerPanel.tsx` - UI 面板 (v1.2.0)
+- `CYCLE17_SUMMARY.md` - 完整总结
+- `tests/test_e2e_cycle17.sh` - 端到端验证
+
+### 下一 Cycle 计划（Cycle 18）
+
+- P0-4 思考过程可视化增强（折叠/展开/进度条）
+- P0-5 流式回答生成（SSE / WebSocket + 渐进式渲染）
+- P1-1 代码 diff 高亮增强（语法高亮 + 跳转 + 行号）
+- P1-2 多文件批量编辑（批量模板 + Pattern 替换）
+- P1-3 撤销/重做可视化（历史时间线 UI）
+- Composer 持久化（localStorage 自动保存）
+
+---
+
 **更新日期**: 2026-07-29 11:30  
 **当前 Cycle**: Cycle 16 ✅ 已完成  
 **下一 Cycle**: Cycle 17 启动准备  

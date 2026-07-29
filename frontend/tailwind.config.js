@@ -144,6 +144,12 @@ export default {
           '0%':   { opacity: '0', transform: 'translateY(4px)' },
           '100%': { opacity: '1', transform: 'translateY(0)' },
         },
+        // 不确定进度条动画：左→右循环
+        'progress-indeterminate': {
+          '0%':   { transform: 'translateX(-100%)' },
+          '50%':  { transform: 'translateX(0%)' },
+          '100%': { transform: 'translateX(200%)' },
+        },
       },
       /** 全局动画类 */
       animation: {
@@ -157,6 +163,7 @@ export default {
         'press':       'press 200ms cubic-bezier(0.34, 1.56, 0.64, 1)',
         'breathing-highlight': 'breathing-highlight 1.2s ease-out 1',
         'message-toolbar-in': 'message-toolbar-in 150ms cubic-bezier(0.4, 0, 0.2, 1)',
+        'progress-indeterminate': 'progress-indeterminate 1.4s ease-in-out infinite',
       },
     },
   },

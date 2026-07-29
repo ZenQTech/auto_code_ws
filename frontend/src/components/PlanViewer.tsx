@@ -1,161 +1,431 @@
 /**
  * # ============================================================
- * # PlanViewer 计划文档展示组件
+ * PlanViewer 组件 (v6.37.0 Cycle 17 P0-1)
  * # ============================================================
- * # 核心作用：接收 Markdown 格式的任务计划文本，渲染为格式化
- * #           HTML 展示，并提供"确认执行"按钮供用户确认
- * # 运行流程：
- * #   1. 接收 markdown 文本（计划.md 内容）
- * #   2. 将 Markdown 解析为 HTML（支持标题、列表、代码块、粗体）
- * #   3. 渲染格式化后的计划内容
- * #   4. 底部显示"确认执行"按钮，点击后触发 onConfirm 回调
- * # 输入参数：
- * #   - content: string，Markdown 格式的计划文本
- * #   - visible: boolean，控制组件显示/隐藏
- * #   - onConfirm: () => void，用户确认执行的回调
- * #   - onClose: () => void，关闭组件的回调
- * # 输出结果：无返回值，纯 UI 组件
+ * 核心作用：展示 Composer Plan Mode 的执行计划
+ * 使用场景：ComposerPanel 在 plan 阶段渲染此组件
+ * 功能要点：
+ *   - 显示计划摘要（影响文件数 / 总修改行数 / 风险等级）
+ *   - 步骤列表（按文件分组）
+ *   - 每个步骤支持：批准 / 拒绝 / 修改
+ *   - 批量操作：全部批准 / 全部拒绝
+ *   - 执行按钮（计划批准后）
+ * ============================================================
  * # 修改记录：
-#   - 2026-06-17 | v1.0.0 | 初始创建，实现计划文档 Markdown 渲染
-#   - 2026-06-17 | v1.1.0 | 优化模态弹窗体验：添加关闭动画、内容区渐变淡出效果、确认按钮过渡动画
-#   - 2026-06-23 | v1.2.0 | 模态框主面板升级为 .glass-strong；背景遮罩使用 .glass；按钮替换为 .btn-primary/.btn-ghost
-#   - 2026-06-25 | v1.3.0 | renderMarkdown 提取到 ../utils/markdown.ts 共享
-#   - 2026-07-24 | v1.4.0 | 新增 confirmLoading 可选 prop：确认按钮显示加载态
-#     防止快速重复点击触发多次 confirmPlan API 请求
-# ============================================================
+ * #   - 2026-07-29 | v1.0.0 | Cycle 17 P0-1 初次创建
+ * ============================================================
  */
 
-import { useMemo, useState, useEffect } from 'react';
-import { renderMarkdown } from '../utils/markdown';
+import React, { useState } from 'react';
+import type {
+  Plan,
+  PlanStep,
+  PlanStepOperation,
+  PlanStepRisk,
+  PlanStepStatus,
+  PlanStage,
+} from '../utils/composerEngine.plan';
+import { calculateOverallRisk, getApprovedSteps } from '../utils/composerEngine.plan';
 
-interface Props {
-  /** Markdown 格式的计划文本 */
-  content: string;
-  /** 控制组件显示/隐藏 */
-  visible: boolean;
-  /** 用户确认执行的回调 */
-  onConfirm: () => void;
-  /** 关闭组件的回调 */
+export interface PlanViewerProps {
+  /** 当前 Plan（null 时显示空状态） */
+  plan: Plan | null;
+  /** 当前阶段 */
+  stage: PlanStage;
+  /** 步骤操作回调 */
+  onApproveStep: (stepId: string) => void;
+  onRejectStep: (stepId: string, reason?: string) => void;
+  onModifyStep: (stepId: string, description: string) => void;
+  /** 整体操作回调 */
+  onApproveAll: () => void;
+  onRejectAll: () => void;
+  onApprovePlan: () => void;
+  onRejectPlan: (reason?: string) => void;
+  onExecutePlan: () => void;
+  /** 关闭 Plan 模式 */
   onClose: () => void;
-  /** v1.1.0 新增：确认按钮是否处于加载态（true 时禁用按钮 + 显示加载文案） */
-  confirmLoading?: boolean;
 }
 
-export default function PlanViewer({ content, visible, onConfirm, onClose, confirmLoading = false }: Props) {
-  /**
-   * 关闭动画状态：true 时播放淡出动画，动画结束后触发实际 onClose
-   */
-  const [isClosing, setIsClosing] = useState(false);
+// ============================================================
+// 工具组件
+// ====================================
 
-  /**
-   * 使用 useMemo 缓存 Markdown 渲染结果
-   * 仅在 content 变化时重新渲染，避免不必要的 DOM 操作
-   */
-  const htmlContent = useMemo(() => renderMarkdown(content), [content]);
+/** 操作类型徽章 */
+const OperationBadge: React.FC<{ operation: PlanStepOperation }> = ({ operation }) => {
+  const config: Record<PlanStepOperation, { label: string; className: string }> = {
+    create: { label: '创建', className: 'bg-green-500/20 text-green-300 border-green-500/30' },
+    modify: { label: '修改', className: 'bg-blue-500/20 text-blue-300 border-blue-500/30' },
+    delete: { label: '删除', className: 'bg-red-500/20 text-red-300 border-red-500/30' },
+    rename: { label: '重命名', className: 'bg-purple-500/20 text-purple-300 border-purple-500/30' },
+  };
+  const c = config[operation];
+  return (
+    <span
+      data-testid={`plan-op-${operation}`}
+      className={`px-2 py-0.5 text-xs rounded border ${c.className}`}
+    >
+      {c.label}
+    </span>
+  );
+};
 
-  // visible 变为 true 时重置关闭动画状态
-  useEffect(() => {
-    if (visible) {
-      setIsClosing(false);
+/** 风险等级徽章 */
+const RiskBadge: React.FC<{ risk: PlanStepRisk }> = ({ risk }) => {
+  const config: Record<PlanStepRisk, { label: string; className: string }> = {
+    low: { label: '低风险', className: 'bg-slate-500/20 text-slate-300' },
+    medium: { label: '中风险', className: 'bg-yellow-500/20 text-yellow-300' },
+    high: { label: '高风险', className: 'bg-red-500/20 text-red-300' },
+  };
+  const c = config[risk];
+  return (
+    <span
+      data-testid={`plan-risk-${risk}`}
+      className={`px-2 py-0.5 text-xs rounded ${c.className}`}
+    >
+      {c.label}
+    </span>
+  );
+};
+
+/** 步骤状态徽章 */
+const StatusBadge: React.FC<{ status: PlanStepStatus }> = ({ status }) => {
+  const config: Record<PlanStepStatus, { label: string; className: string }> = {
+    pending: { label: '待审', className: 'bg-slate-500/20 text-slate-300' },
+    approved: { label: '已批准', className: 'bg-green-500/20 text-green-300' },
+    rejected: { label: '已拒绝', className: 'bg-red-500/20 text-red-300' },
+    modified: { label: '已修改', className: 'bg-blue-500/20 text-blue-300' },
+  };
+  const c = config[status];
+  return (
+    <span
+      data-testid={`plan-status-${status}`}
+      className={`px-2 py-0.5 text-xs rounded ${c.className}`}
+    >
+      {c.label}
+    </span>
+  );
+};
+
+/** 单个步骤行 */
+const StepRow: React.FC<{
+  step: PlanStep;
+  onApprove: (id: string) => void;
+  onReject: (id: string, reason?: string) => void;
+  onModify: (id: string, desc: string) => void;
+  disabled: boolean;
+}> = ({ step, onApprove, onReject, onModify, disabled }) => {
+  const [editing, setEditing] = useState(false);
+  const [editedDesc, setEditedDesc] = useState(step.modifiedDescription ?? step.description);
+
+  const handleSave = () => {
+    if (editedDesc && editedDesc.trim()) {
+      onModify(step.id, editedDesc);
+      setEditing(false);
     }
-  }, [visible]);
-
-  /**
-   * 带关闭动画的关闭处理
-   * 先触发 isClosing 状态播放淡出动画，250ms 后执行实际 onClose
-   */
-  const handleClose = () => {
-    setIsClosing(true);
-    setTimeout(() => {
-      onClose();
-    }, 250);
   };
 
-  // 不可见且不在关闭动画中时不渲染
-  if (!visible && !isClosing) return null;
-
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/60 backdrop-blur-sm glass">
-      {/* 模态弹窗主体：Hermes 深色风格 + 玻璃拟态（强） */}
-      <div className={`glass-strong rounded-xl
-                      w-full max-w-3xl max-h-[85vh] flex flex-col mx-4
-                      ${isClosing ? 'animate-modal-out' : 'animate-modal-in'}`}>
-        {/* 标题栏 */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-surface-300">
-          <div className="flex items-center gap-3">
-            {/* Hermes 图标 */}
-            <div className="w-8 h-8 rounded-lg bg-hermes-500/20 flex items-center justify-center">
-              <svg className="w-5 h-5 text-hermes-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                  d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-            </div>
-            <h2 className="text-lg font-semibold text-surface-950">任务执行计划</h2>
+    <div
+      data-testid={`plan-step-${step.id}`}
+      data-status={step.status}
+      className={[
+        'p-3 rounded border',
+        step.status === 'rejected' ? 'opacity-50 line-through' : '',
+        step.status === 'approved' || step.status === 'modified'
+          ? 'border-green-500/30 bg-green-500/5'
+          : 'border-surface-700 bg-surface-900/50',
+      ].join(' ')}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap">
+            <OperationBadge operation={step.operation} />
+            <RiskBadge risk={step.riskLevel} />
+            <StatusBadge status={step.status} />
+            <span className="text-xs text-slate-400">
+              {step.estimatedLines} 行
+            </span>
           </div>
-          {/* 关闭按钮 */}
-          <button
-            onClick={handleClose}
-            className="icon-btn"
-            aria-label="关闭计划"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {/* 计划内容区域：可滚动，顶部/底部渐变淡出效果 */}
-        <div className="relative flex-1 overflow-hidden">
-          {/* 顶部渐变遮罩 */}
-          <div className="absolute top-0 left-0 right-0 h-6 bg-gradient-to-b from-surface-100 to-transparent z-10 pointer-events-none" />
-          <div className="h-full overflow-y-auto px-6 py-4">
-            {content ? (
-              <div
-                className="prose-sm max-w-none"
-                dangerouslySetInnerHTML={{ __html: htmlContent }}
+          <div className="mt-1 text-sm text-slate-200 font-mono">
+            {step.filePath}
+          </div>
+          {editing ? (
+            <div className="mt-2 flex gap-2">
+              <input
+                data-testid={`plan-step-modify-input-${step.id}`}
+                type="text"
+                value={editedDesc}
+                onChange={(e) => setEditedDesc(e.target.value)}
+                className="flex-1 bg-surface-800 border border-surface-600 rounded px-2 py-1 text-sm"
+                autoFocus
               />
-            ) : (
-              <div className="empty-state">
-                <span className="empty-icon">📝</span>
-                <span>暂无计划内容</span>
-              </div>
-            )}
+              <button
+                data-testid={`plan-step-modify-save-${step.id}`}
+                onClick={handleSave}
+                className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-sm rounded"
+              >
+                保存
+              </button>
+              <button
+                onClick={() => {
+                  setEditedDesc(step.modifiedDescription ?? step.description);
+                  setEditing(false);
+                }}
+                className="px-3 py-1 bg-surface-700 text-slate-200 text-sm rounded"
+              >
+                取消
+              </button>
+            </div>
+          ) : (
+            <div className="mt-1 text-sm text-slate-300">
+              {step.modifiedDescription ?? step.description}
+            </div>
+          )}
+          {step.rejectionReason && (
+            <div className="mt-1 text-xs text-red-300">
+              拒绝原因：{step.rejectionReason}
+            </div>
+          )}
+        </div>
+        {!disabled && step.status === 'pending' && !editing && (
+          <div className="flex flex-col gap-1">
+            <button
+              data-testid={`plan-step-approve-${step.id}`}
+              onClick={() => onApprove(step.id)}
+              className="px-2 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded"
+              title="批准"
+            >
+              ✓
+            </button>
+            <button
+              data-testid={`plan-step-reject-${step.id}`}
+              onClick={() => onReject(step.id)}
+              className="px-2 py-1 bg-red-600 hover:bg-red-500 text-white text-xs rounded"
+              title="拒绝"
+            >
+              ✗
+            </button>
+            <button
+              data-testid={`plan-step-edit-${step.id}`}
+              onClick={() => setEditing(true)}
+              className="px-2 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded"
+              title="修改"
+            >
+              ✎
+            </button>
           </div>
-          {/* 底部渐变遮罩 */}
-          <div className="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-surface-100 to-transparent z-10 pointer-events-none" />
-        </div>
-
-        {/* 底部操作栏 */}
-        <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-surface-300">
-          <button
-            onClick={handleClose}
-            className="btn-ghost"
-          >
-            取消
-          </button>
-          <button
-            onClick={onConfirm}
-            disabled={confirmLoading}
-            className={`btn-primary ${confirmLoading ? 'opacity-60 cursor-not-allowed' : ''}`}
-          >
-            {confirmLoading ? (
-              <span className="inline-flex items-center gap-2">
-                <svg
-                  className="w-4 h-4 animate-spin"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                执行中...
-              </span>
-            ) : (
-              '确认执行'
-            )}
-          </button>
-        </div>
+        )}
       </div>
     </div>
   );
-}
+};
+
+// ============================================================
+// 主组件
+// ============================================================
+
+/**
+ * PlanViewer 组件
+ */
+export const PlanViewer: React.FC<PlanViewerProps> = ({
+  plan,
+  stage,
+  onApproveStep,
+  onRejectStep,
+  onModifyStep,
+  onApproveAll,
+  onRejectAll,
+  onApprovePlan,
+  onRejectPlan,
+  onExecutePlan,
+  onClose,
+}) => {
+  // 加载状态（优先于空状态）
+  if (stage === 'analyzing') {
+    return (
+      <div
+        data-testid="plan-viewer-analyzing"
+        className="p-6 text-center text-slate-400"
+      >
+        <div className="animate-pulse text-2xl mb-2">⚙️</div>
+        <div>分析中...</div>
+        <div className="text-sm mt-1">正在分析项目并生成执行计划</div>
+      </div>
+    );
+  }
+
+  // 执行状态（优先于空状态）
+  if (stage === 'executing') {
+    return (
+      <div
+        data-testid="plan-viewer-executing"
+        className="p-6 text-center text-slate-400"
+      >
+        <div className="animate-pulse text-2xl mb-2">🚀</div>
+        <div>执行中...</div>
+        <div className="text-sm mt-1">正在按计划生成 Edits</div>
+      </div>
+    );
+  }
+
+  // 空状态
+  if (!plan) {
+    return (
+      <div
+        data-testid="plan-viewer-empty"
+        className="p-6 text-center text-slate-400"
+      >
+        <div className="text-4xl mb-2">📋</div>
+        <div>暂无计划</div>
+        <div className="text-sm mt-1">输入 prompt 后将自动生成计划</div>
+      </div>
+    );
+  }
+
+  // 完成状态
+  if (stage === 'completed') {
+    return (
+      <div
+        data-testid="plan-viewer-completed"
+        className="p-6 text-center"
+      >
+        <div className="text-4xl mb-2">✅</div>
+        <div className="text-green-300 font-semibold">计划已执行</div>
+        <div className="text-sm mt-1 text-slate-400">
+          {getApprovedSteps(plan).length} 个步骤已生成 Edit 草稿
+        </div>
+        <button
+          data-testid="plan-close-button"
+          onClick={onClose}
+          className="mt-4 px-4 py-2 bg-surface-700 hover:bg-surface-600 text-slate-200 rounded"
+        >
+          关闭
+        </button>
+      </div>
+    );
+  }
+
+  // 拒绝状态
+  if (stage === 'rejected') {
+    return (
+      <div
+        data-testid="plan-viewer-rejected"
+        className="p-6 text-center"
+      >
+        <div className="text-4xl mb-2">❌</div>
+        <div className="text-red-300 font-semibold">计划已拒绝</div>
+        <div className="text-sm mt-1 text-slate-400">所有 pending 步骤已标记为拒绝</div>
+        <button
+          data-testid="plan-close-button"
+          onClick={onClose}
+          className="mt-4 px-4 py-2 bg-surface-700 hover:bg-surface-600 text-slate-200 rounded"
+        >
+          关闭
+        </button>
+      </div>
+    );
+  }
+
+  // 计划展示
+  const overallRisk = calculateOverallRisk(plan);
+  const approvedSteps = getApprovedSteps(plan);
+  const canExecute = stage === 'planned' && approvedSteps.length > 0;
+
+  return (
+    <div
+      data-testid="plan-viewer"
+      data-stage={stage}
+      className="flex flex-col h-full"
+    >
+      {/* 头部：摘要 */}
+      <div className="p-4 border-b border-surface-700">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-semibold text-slate-200">执行计划</h3>
+          <button
+            data-testid="plan-reject-all-button"
+            onClick={() => onRejectPlan('整体拒绝')}
+            className="text-xs text-red-400 hover:text-red-300"
+          >
+            全部拒绝
+          </button>
+        </div>
+        <div className="grid grid-cols-3 gap-2 text-xs">
+          <div className="bg-surface-800 rounded p-2">
+            <div className="text-slate-400">文件数</div>
+            <div className="text-lg font-semibold text-slate-100" data-testid="plan-file-count">
+              {plan.steps.length}
+            </div>
+          </div>
+          <div className="bg-surface-800 rounded p-2">
+            <div className="text-slate-400">总行数</div>
+            <div className="text-lg font-semibold text-slate-100" data-testid="plan-total-lines">
+              {plan.totalLines}
+            </div>
+          </div>
+          <div className="bg-surface-800 rounded p-2">
+            <div className="text-slate-400">风险</div>
+            <div className="text-lg font-semibold text-slate-100">
+              <RiskBadge risk={overallRisk} />
+            </div>
+          </div>
+        </div>
+        <div className="mt-2 text-sm text-slate-300" data-testid="plan-summary">
+          {plan.summary}
+        </div>
+      </div>
+
+      {/* 步骤列表 */}
+      <div
+        data-testid="plan-step-list"
+        className="flex-1 overflow-y-auto p-4 space-y-2"
+      >
+        {plan.steps.map((step) => (
+          <StepRow
+            key={step.id}
+            step={step}
+            onApprove={onApproveStep}
+            onReject={onRejectStep}
+            onModify={onModifyStep}
+            disabled={stage === 'approved' || stage === 'executing' || stage === 'completed'}
+          />
+        ))}
+      </div>
+
+      {/* 底部：批量操作 */}
+      <div className="p-4 border-t border-surface-700 space-y-2">
+        <div className="flex gap-2">
+          <button
+            data-testid="plan-approve-all-button"
+            onClick={onApproveAll}
+            disabled={stage === 'approved'}
+            className="flex-1 px-3 py-2 bg-green-600 hover:bg-green-500 disabled:bg-surface-700 disabled:text-slate-500 text-white text-sm rounded"
+          >
+            全部批准
+          </button>
+          <button
+            data-testid="plan-reject-all-button-bottom"
+            onClick={onRejectAll}
+            disabled={stage === 'rejected'}
+            className="flex-1 px-3 py-2 bg-red-600 hover:bg-red-500 disabled:bg-surface-700 disabled:text-slate-500 text-white text-sm rounded"
+          >
+            全部拒绝
+          </button>
+        </div>
+        <button
+          data-testid="plan-execute-button"
+          onClick={onExecutePlan}
+          disabled={!canExecute}
+          className="w-full px-3 py-2 bg-blue-600 hover:bg-blue-500 disabled:bg-surface-700 disabled:text-slate-500 text-white text-sm rounded font-semibold"
+        >
+          {canExecute
+            ? `执行计划（${approvedSteps.length} 个步骤）`
+            : approvedSteps.length === 0
+            ? '请至少批准一个步骤'
+            : '已批准'}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+export default PlanViewer;
