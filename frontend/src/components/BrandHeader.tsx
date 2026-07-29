@@ -126,6 +126,8 @@ export interface BrandHeaderProps {
   onOpenSlashCommand?: () => void;
   /** v2.11.0 (Cycle 8 P0-14) 新增：打开 Custom Models 管理面板回调（可选） */
   onOpenCustomModels?: () => void;
+  /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
+  onOpenComposer?: () => void;
 }
 
 /**
@@ -135,7 +137,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -362,6 +364,15 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <circle cx="12" cy="12" r="2" fill="currentColor" />
         </svg>
       );
+    case 'layers':
+      // v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑（堆叠图层，表达多文件协调）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <polygon points="12 2 2 7 12 12 22 7 12 2" />
+          <polyline points="2 17 12 22 22 17" />
+          <polyline points="2 12 12 17 22 12" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -425,6 +436,8 @@ export default function BrandHeader({
   onOpenSlashCommand,
   /** v2.11.0 (Cycle 8 P0-14) 新增 */
   onOpenCustomModels,
+  /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
+  onOpenComposer,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1096,6 +1109,23 @@ export default function BrandHeader({
                 >
                   <Icon name="brain-network" className="w-4 h-4 text-emerald-500" />
                   <span>🧠 Custom Models 管理</span>
+                </button>
+              )}
+
+              {/* v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑（菜单项）
+               *  行为：点击调 onOpenComposer() 打开右侧 Composer 浮动面板
+               *       支持 @file/@folder/@code/@docs/@web 上下文 + 多文件 diff 审查 + Undo/Redo
+               *  图标：layers（堆叠图层），表达多文件协调编辑 */}
+              {onOpenComposer && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenComposer)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-indigo-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="layers" className="w-4 h-4 text-indigo-500" />
+                  <span>⚡ Composer 多文件编辑</span>
                 </button>
               )}
 

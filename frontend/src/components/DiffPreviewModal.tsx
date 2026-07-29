@@ -15,7 +15,7 @@
  */
 
 import { useMemo, useState, useCallback } from 'react';
-import { computeDiff, computeStats, type DiffSegment, type DiffGranularity } from '../utils/diff';
+import { computeDiff, type DiffSegment, type DiffGranularity } from '../utils/diff';
 
 export interface DiffPreviewModalProps {
   /** 是否打开 */
@@ -58,8 +58,10 @@ function normalizeSegment(seg: DiffSegment): InternalSegment {
     ?? (seg as unknown as { value?: string }).value
     ?? '';
   let type: SegmentType = 'equal';
-  if (seg.type === 'insert' || seg.type === 'added') type = 'added';
-  else if (seg.type === 'delete' || seg.type === 'removed') type = 'removed';
+  // 原始 type 可能是 equal/insert/delete 或 equal/added/removed
+  const rawType = (seg as { type: string }).type;
+  if (rawType === 'insert' || rawType === 'added') type = 'added';
+  else if (rawType === 'delete' || rawType === 'removed') type = 'removed';
   return { type, value: text };
 }
 
@@ -138,9 +140,7 @@ export function DiffPreviewModal({
   }, [segments]);
 
   // 将 segments 拆分为 old 视角和 new 视角（按行聚合）
-  const { oldLines, newLines } = useMemo(() => {
-    const old: Array<{ segment: InternalSegment; line: number }> = [];
-    const neu: Array<{ segment: InternalSegment; line: number }> = [];
+  const splitLines = useMemo(() => {
     const aggregateByLine = (
       typeFilter: (s: InternalSegment) => boolean
     ): Array<{ segment: InternalSegment; line: number; side: 'old' | 'new' }> => {
@@ -175,6 +175,7 @@ export function DiffPreviewModal({
       newLines: aggregateByLine((s) => s.type === 'equal' || s.type === 'added'),
     };
   }, [segments]);
+  const { oldLines, newLines } = splitLines;
 
   const handleApply = useCallback(() => {
     onApply();

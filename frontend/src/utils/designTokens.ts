@@ -71,7 +71,18 @@ export const colors: ColorTokens = {
 // ============================================================
 // 语义色（按用途）
 // ============================================================
-export const semanticColors = {
+export const semanticColors: {
+  bgPrimary: string;
+  bgSecondary: string;
+  bgTertiary: string;
+  textPrimary: string;
+  textSecondary: string;
+  textTertiary: string;
+  border: string;
+  borderHover: string;
+  accent: string;
+  accentHover: string;
+} = {
   bgPrimary: colors.surface[100],
   bgSecondary: colors.surface[200],
   bgTertiary: colors.surface[300],
@@ -82,7 +93,7 @@ export const semanticColors = {
   borderHover: 'rgba(240,160,48,0.4)',
   accent: colors.hermes[500],
   accentHover: colors.hermes[400],
-} as const;
+};
 
 // ============================================================
 // 间距阶梯（基于 4px 网格）

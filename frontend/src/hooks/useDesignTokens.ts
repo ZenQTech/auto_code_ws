@@ -99,7 +99,7 @@ function detectInitialTheme(): ThemeName {
 /**
  * 浅色主题下的语义色（文字/背景反转）
  */
-const lightSemantic = {
+const lightSemantic: typeof baseSemantic = {
   bgPrimary: '#ffffff',
   bgSecondary: '#f8f8fa',
   bgTertiary: '#f0f0f4',

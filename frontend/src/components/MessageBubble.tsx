@@ -18,10 +18,14 @@
  * #     - 点赞/点踩支持 visual state（aria-pressed + 背景色）
  * #     - 朗读按钮未提供回调时回退到内置 Web Speech API
  * #     - 全部按钮增加 disabled 态视觉反馈
+ * #   - 2026-07-29 | v6.33.1 | Cycle 15 P1-4 接入 MarkdownContent
+ * #     - AI 消息正文由纯文本替换为 MarkdownContent
+ * #     - 代码块自动 shiki 高亮
  * # ============================================================
  */
 
 import type { CSSProperties } from 'react';
+import MarkdownContent from './MarkdownContent';
 
 // ============================================================
 // inline SVG 图标组件
@@ -309,9 +313,14 @@ export default function MessageBubble({
           {thinking && (
             <ThinkingBlock content={thinking} isStreaming={isStreaming} />
           )}
-          {/* 主体内容 */}
-          <div className="text-body text-surface-800 whitespace-pre-wrap break-words">
-            {content}
+          {/* 主体内容（v6.33.1 P1-4：使用 MarkdownContent，代码块 shiki 高亮） */}
+          <div className="text-body text-surface-800">
+            <MarkdownContent
+              content={content}
+              theme="dark"
+              streamingBatchSize={isStreaming ? 30 : 0}
+              streamingBatchIntervalMs={isStreaming ? 80 : 0}
+            />
             {/* 流式光标：仅在 streaming 状态显示 */}
             {isStreaming && (
               <span

@@ -15,14 +15,18 @@
  * 复用说明：
  *   - 从 ChatView.tsx v1.0.0 抽离（2026-07-27 P0-5）
  *   - 行为完全保持不变，纯组件化拆分
- * 修改记录：
- *   - 2026-07-27 | v1.0.0 | P0-5 ChatView 组件独立 - MessageRow 抽离到独立文件
- * ============================================================
+ * # 修改记录：
+ * #   - 2026-07-27 | v1.0.0 | P0-5 ChatView 组件独立 - MessageRow 抽离到独立文件
+ * #   - 2026-07-29 | v1.0.1 | P1-4 接入 MarkdownContent
+ * #     - 消息正文由纯文本替换为 MarkdownContent
+ * #     - 代码块自动 shiki 高亮
+ * # ============================================================
  */
 
 import React, { memo } from 'react';
 import MessageBubble from '../MessageBubble';
 import ThinkingBlock from '../ThinkingBlock';
+import MarkdownContent from '../MarkdownContent';
 import type { ReasoningStage } from '../ThinkingBlock';
 import type { StreamingStatus } from '../ChatMainArea';
 import type { ChatMessage } from '../../utils/messageFormatters';
@@ -167,8 +171,17 @@ const MessageRow: React.FC<MessageRowProps> = memo(({
 
         {/* 消息正文 */}
         {msg.content && (
-          <div className="whitespace-pre-wrap break-words">
-            {msg.content}
+          <div className="break-words">
+            <MarkdownContent
+              content={msg.content}
+              theme="dark"
+              streamingBatchSize={
+                msg.id === streamingMessageId && streamingStatus === 'answering' ? 30 : 0
+              }
+              streamingBatchIntervalMs={
+                msg.id === streamingMessageId && streamingStatus === 'answering' ? 80 : 0
+              }
+            />
             {msg.role === 'hermes' &&
               msg.id === streamingMessageId &&
               streamingStatus === 'answering' && (

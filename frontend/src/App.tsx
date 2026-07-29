@@ -180,11 +180,13 @@ import OAuthConfigModal from './components/OAuthConfigModal';
 import SessionRolloutPanel from './components/SessionRolloutPanel';
 /** v5.14.0 (Cycle 7 P0-10) 新增：Multi-Agent v2 Path Tree 面板 */
 import MultiAgentTreePanel from './components/MultiAgentTreePanel';
-/** v5.6.0 (Cycle 7 P0-11) 新增：TRACE 规则管理面板 */
+/** v5.7.0 (Cycle 7 P0-11) 新增：TRACE 规则管理面板 */
 import RulePanel from './components/RulePanel';
 /** v5.7.0 (Cycle 8 P0-12) 新增：Slash Commands 帮助面板 */
 import SlashCommandHelp from './components/SlashCommandHelp';
 import CustomModelsPanel from './components/CustomModelsPanel';
+/** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板 */
+import { ComposerLauncher } from './components/ComposerLauncher';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -240,7 +242,19 @@ export default function App() {
    * - showToast(msg, type): 触发显示，2.4s 自动消失
    * - handleToastClose: 手动关闭回调
    */
-  const { visible: toastVisible, message: toastMessage, type: toastType, showToast, hideToast: handleToastClose } = useToast();
+  /**
+   * v6.35.0 P1-7：Toast 通知（升级到多 Toast 队列 + 撤销按钮）
+   * 返回字段：
+   *   - visible: 是否可见（兼容旧 API，反映最新一条）
+   *   - message: 提示文本（兼容旧 API，反映最新一条）
+   *   - type: 提示类型（兼容旧 API，反映最新一条）
+   *   - showToast(msg, type): 触发普通提示，2.4s 自动消失
+   *   - showToastWithAction(msg, label, onAction): 触发带操作按钮的提示（撤销/重试/查看等）
+   *   - hideToast: 手动关闭最新一条
+   *   - dismissToast(id): 关闭指定 ID 的 Toast
+   *   - toasts: 当前所有 Toast 队列（用于 ToastContainer 渲染）
+   */
+  const { showToast, showToastWithAction, hideToast: handleToastClose, dismissToast, toasts } = useToast();
 
   /**
    * v2.10.4 新增：会话详情 404 回退回调
@@ -1043,12 +1057,40 @@ export default function App() {
   }, [navigate]);
 
   /**
-   * 删除会话
+   * v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板开关状态
+   * 作用：控制右侧浮动面板显隐，Cmd/Ctrl+I 也可切换
+   */
+  const [composerOpen, setComposerOpen] = useState(false);
+  const handleOpenComposer = useCallback(() => {
+    setComposerOpen((prev) => !prev);
+  }, []);
+
+  // v6.36.0：监听全局 Cmd/Ctrl+I 快捷键切换 Composer
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'i' && !e.shiftKey) {
+        // 避免在输入框/textarea 中误触（用户输入 i）
+        const target = e.target as HTMLElement | null;
+        if (target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)) {
+          return;
+        }
+        e.preventDefault();
+        setComposerOpen((prev) => !prev);
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, []);
+
+  /**
+   * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
-   *   2. 调用 deleteSession API
+   *   2. 调用 deleteSession API（软删除，迁移到回收站）
    *   3. 若删除的是当前激活会话：自动创建新 Session
    *   4. 刷新边栏列表
+   *   5. 显示带"撤销"按钮的 Toast（6 秒反应时间）
+   *      用户点击"撤销" → 调用 restoreSessions API 恢复会话
    */
   const handleDeleteSession = useCallback(async (id: string) => {
     if (!confirm('确定删除此会话？所有对话记录将被清除')) return;
@@ -1056,7 +1098,6 @@ export default function App() {
     setIsDeletingSession(true);
     try {
       await deleteSession(id);
-      showToast('会话已删除', 'success');
       // 刷新边栏
       refetchSessions();
       // 若删除的是当前会话，自动创建新会话
@@ -1070,20 +1111,36 @@ export default function App() {
         setExpandedAgentId(null);
         refetchSessions();
       }
+      // v6.35.0 P1-7：带撤销按钮的 Toast
+      showToastWithAction(
+        '会话已删除',
+        '撤销',
+        async () => {
+          try {
+            await restoreSessions([id]);
+            showToast('已恢复会话', 'success');
+            refetchSessions();
+          } catch (e) {
+            showToast(`恢复失败：${(e as Error).message}`, 'error');
+          }
+        },
+        { type: 'warning' }
+      );
     } catch (e) {
       showToast(`删除失败：${(e as Error).message}`, 'error');
     } finally {
       setIsDeletingSession(false);
     }
-  }, [currentSessionId, refetchSessions, showToast, appMode]);
+  }, [currentSessionId, refetchSessions, showToast, showToastWithAction, appMode]);
 
   /**
-   * 批量删除会话（v2.7.0 新增）
+   * 批量删除会话（v2.7.0 新增 / v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 调用 batchDeleteSessions API 软删除所选会话
-   *   2. 显示成功 Toast
-   *   3. 刷新边栏会话列表
-   *   4. 若删除的会话包含当前激活会话，自动创建新 Session
+   *   2. 刷新边栏会话列表
+   *   3. 若删除的会话包含当前激活会话，自动创建新 Session
+   *   4. 显示带"撤销"按钮的 Toast
+   *      用户点击"撤销" → 调用 restoreSessions API 批量恢复
    */
   const handleBatchDelete = useCallback(async (ids: string[]) => {
     if (ids.length === 0) return;
@@ -1091,7 +1148,6 @@ export default function App() {
     setIsDeletingSession(true);
     try {
       const result = await batchDeleteSessions(ids);
-      showToast(result.message || `已批量删除 ${result.deleted_count} 个会话`, 'success');
       // 刷新边栏列表
       refetchSessions();
       // 若删除的会话中包含当前激活会话，自动创建新会话
@@ -1105,12 +1161,28 @@ export default function App() {
         setExpandedAgentId(null);
         refetchSessions();
       }
+      // v6.35.0 P1-7：带撤销按钮的 Toast
+      const count = result.deleted_count ?? ids.length;
+      showToastWithAction(
+        result.message || `已批量删除 ${count} 个会话`,
+        '撤销',
+        async () => {
+          try {
+            await restoreSessions(ids);
+            showToast(`已恢复 ${ids.length} 个会话`, 'success');
+            refetchSessions();
+          } catch (e) {
+            showToast(`恢复失败：${(e as Error).message}`, 'error');
+          }
+        },
+        { type: 'warning' }
+      );
     } catch (e) {
       showToast(`批量删除失败：${(e as Error).message}`, 'error');
     } finally {
       setIsDeletingSession(false);
     }
-  }, [currentSessionId, refetchSessions, showToast, appMode]);
+  }, [currentSessionId, refetchSessions, showToast, showToastWithAction, appMode]);
 
   /**
    * 在流式回调中实时访问最新的 thinkingContent
@@ -1886,8 +1958,8 @@ export default function App() {
       {/* ============================================================ */}
       {appMode && (
     <div className="min-h-screen bg-surface-50 flex">
-      {/* Toast 通知弹窗 */}
-      <Toast message={toastMessage} visible={toastVisible} type={toastType} onClose={handleToastClose} />
+      {/* Toast 通知容器（v6.35.0 P1-7：替换旧 Toast 组件，支持多 Toast 堆叠 + 撤销按钮） */}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
       {/* PlanViewer 计划展示弹窗 - 仅在编程模式下显示 */}
       {appMode === 'coding' && !selectedProject && (
@@ -1969,6 +2041,7 @@ export default function App() {
           onOpenTraeWork={handleOpenTraeWork}
           onOpenGoalAutomation={handleOpenGoalAutomation}
           onOpenGoalTemplates={handleOpenGoalTemplates}
+          onOpenComposer={handleOpenComposer}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -2309,6 +2382,12 @@ export default function App() {
       {customModelsModal.open && (
         <CustomModelsPanel onClose={customModelsModal.onClose} />
       )}
+
+      {/* v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板
+       *  触发：BrandHeader 菜单"⚡ Composer 多文件编辑"项 / Cmd/Ctrl+I 快捷键
+       *  关闭：面板内关闭按钮 / Esc 键
+       *  位置：根 fragment 末尾，z-index 由 ComposerPanel 自身管理（z-50） */}
+      <ComposerLauncher externalIsOpen={composerOpen} />
     </div>
       )}
     </>

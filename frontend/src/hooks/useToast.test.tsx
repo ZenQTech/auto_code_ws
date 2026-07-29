@@ -5,7 +5,6 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import * as React from 'react';
 import { renderHook, act, render, screen, fireEvent } from '@testing-library/react';
 import { useToast } from './useToast';
 import { ToastContainer } from '../components/ToastContainer';
@@ -121,6 +120,11 @@ describe('useToast v6.34.0 (P1-7)', () => {
 });
 
 describe('ToastContainer v6.34.0 (P1-7)', () => {
+  beforeEach(() => {
+    // 每个用例前清理 DOM，避免上一个用例渲染的 toast-item 干扰
+    document.body.innerHTML = '';
+  });
+
   it('空队列不渲染', () => {
     const { container } = render(
       <ToastContainer toasts={[]} onDismiss={() => {}} />
