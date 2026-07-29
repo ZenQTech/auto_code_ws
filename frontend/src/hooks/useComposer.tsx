@@ -39,12 +39,6 @@ import {
   createPlanEngine,
   type Plan,
   type PlanStage,
-  type PlanStep,
-  type FileContext,
-  type FolderContext,
-  type SymbolContext,
-  type DocContext,
-  type WebContext,
 } from '../utils/composerEngine.plan';
 
 /** Composer 引擎 Context（用于跨组件共享同一实例） */
@@ -290,7 +284,7 @@ export function useComposer(): UseComposerResult {
     }));
     // 将结果转换为 ComposerEdit 草稿
     const edits: ComposerEdit[] = [];
-    for (const { stepId, editId } of results) {
+    for (const { stepId } of results) {
       const step = currentPlan.steps.find((s) => s.id === stepId);
       if (step) {
         const edit = engine.addEdit({
