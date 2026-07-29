@@ -14,7 +14,7 @@
  * ============================================================
  */
 
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
   PlanEngine,
   createPlanEngine,
@@ -24,7 +24,6 @@ import {
   getRejectedSteps,
   MAX_PLAN_STEPS,
   type Plan,
-  type PlanStep,
   type PlanStage,
 } from './composerEngine.plan';
 
@@ -72,7 +71,7 @@ describe('PlanEngine - 基础状态管理', () => {
     ]);
     engine.approvePlan();
     expect(engine.getStage()).toBe('approved');
-    await engine.executePlan(async (step) => ({
+    await engine.executePlan(async () => ({
       beforeContent: '',
       afterContent: 'new',
     }));
