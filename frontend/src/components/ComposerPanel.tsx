@@ -38,14 +38,14 @@ import type { ComposerEdit } from '../utils/composerEngine';
 import MentionMenu from './MentionMenu';
 import { PlanViewer } from './PlanViewer';
 import { PreviewPanel } from './PreviewPanel';
-import { ContextWindowMeter } from './ContextWindowMeter';
+import { ContextWindowMeter, SummarizationHistory } from './ContextWindowMeter';
 import { RulesEditor } from './RulesEditor';
 import { ResolvedReferencesBar } from './ResolvedReferencesBar';
 import { ReferenceDetailModal } from './ReferenceDetailModal';
 import { RulesStatusBadge } from './RulesStatusBadge';
 import { RulesPanel } from './RulesPanel';
 import type { FuzzyItem } from '../utils/fuzzySearch';
-import { type ConversationItem } from '../utils/composerEngine.summary';
+import { type ConversationItem, type Summary } from '../utils/composerEngine.summary';
 import type { HermesRules } from '../utils/hermesRules';
 import type { GitRefKind } from '../utils/referenceResolvers';
 import type { ResolvedReference } from '../utils/composerEngine.integration';
@@ -156,6 +156,7 @@ export function ComposerPanel({
         <>
           <ComposerContextBar />
           <ComposerResolvedBar />
+          <ComposerSummarySection />
           <ComposerPromptInput />
           <ComposerEditList />
           <ComposerFooter
@@ -225,6 +226,89 @@ function ComposerResolvedBar() {
 /** v1.3.0: 全局引用详情模态 - 暴露给外部触发 */
 function ComposerReferenceDetail() {
   return null; // 详情模态已由 ComposerResolvedBar 内部管理
+}
+
+/** v1.4.0: 摘要区域 (Cycle 18 P0-2) */
+function ComposerSummarySection() {
+  const composer = useComposer();
+
+  // 只在有摘要历史或可摘要时显示
+  if (composer.summaryHistory.length === 0 && !composer.shouldSummarize) {
+    return null;
+  }
+
+  const handleSummarize = () => {
+    composer.summarize({ force: true });
+  };
+
+  const handleApply = (summary: Summary) => {
+    composer.applySummary(summary.id);
+  };
+
+  const handleDelete = (summaryId: string) => {
+    composer.deleteSummary(summaryId);
+  };
+
+  const handleClear = () => {
+    composer.clearSummaryHistory();
+  };
+
+  return (
+    <div
+      data-testid="composer-summary-section"
+      className="px-4 py-2 border-b border-surface-800"
+    >
+      {/* 摘要触发提示 */}
+      {composer.shouldSummarize && composer.summaryHistory.length === 0 && (
+        <div
+          data-testid="composer-summarize-suggestion"
+          className="bg-yellow-500/10 border border-yellow-500/30 rounded p-2 mb-2 flex items-center justify-between"
+        >
+          <span className="text-xs text-yellow-200">
+            ⚠️ 上下文较长 ({(composer.tokensUsed / 1000).toFixed(1)}K / {composer.summaryConfig.triggerThreshold / 1000}K tokens)
+          </span>
+          <button
+            data-testid="composer-summarize-btn"
+            onClick={handleSummarize}
+            className="px-2 py-0.5 text-xs bg-yellow-600 hover:bg-yellow-700 text-white rounded"
+          >
+            立即摘要
+          </button>
+        </div>
+      )}
+
+      {/* 摘要历史 */}
+      {composer.summaryHistory.length > 0 && (
+        <div data-testid="composer-summary-history-wrapper">
+          <div className="flex items-center justify-between mb-1">
+            <span className="text-[10px] text-surface-400 font-semibold">
+              📑 摘要历史 ({composer.summaryHistory.length})
+              {composer.appliedSummaryId && (
+                <span
+                  data-testid="composer-summary-applied-badge"
+                  className="ml-2 px-1.5 py-0.5 bg-hermes-500/20 text-hermes-300 rounded"
+                >
+                  已应用
+                </span>
+              )}
+            </span>
+            <button
+              data-testid="composer-summary-clear"
+              onClick={handleClear}
+              className="text-[10px] text-surface-500 hover:text-red-300"
+            >
+              清空
+            </button>
+          </div>
+          <SummarizationHistory
+            summaries={composer.summaryHistory}
+            onApply={handleApply}
+            onDelete={handleDelete}
+          />
+        </div>
+      )}
+    </div>
+  );
 }
 
 /** Header：标题 + 模式切换 + 全屏切换 + 关闭 */

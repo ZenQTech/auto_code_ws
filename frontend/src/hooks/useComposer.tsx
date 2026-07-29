@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * useComposer Hook (v6.36.0 Cycle 16 P0-1 / v1.1.0 P1-5 升级 / v1.2.0 P0-1 Plan 集成 / v1.3.0 P0-1 集成层)
+ * useComposer Hook (v6.36.0 Cycle 16 P0-1 / v1.1.0 P1-5 升级 / v1.2.0 P0-1 Plan 集成 / v1.3.0 P0-1 集成层 / v1.4.0 P0-2 Summary 集成)
  * # ============================================================
  * 核心作用：React Hook 包装 ComposerEngine
  * 使用场景：ComposerPanel 等 UI 组件订阅 session 变化
@@ -14,22 +14,18 @@
  *     - 暴露 resolvedReferences / resolutionErrors / projectRules
  *     - 暴露 resolveAllReferences / loadProjectRules / setProjectRules
  *     - 暴露 injectRules / getRulesMetadata
+ *   - v1.4.0: 集成 composerEngine.summary.integration 层（Cycle 18 P0-2）
+ *     - 暴露 summaryHistory / summaryConfig / tokensUsed / shouldSummarize
+ *     - 暴露 summarize / applySummary / unapplySummary / deleteSummary / clearSummaryHistory
+ *     - 暴露 updateSummaryConfig
  * # 修改记录：
  *   - 2026-07-29 | v1.0.0 | Cycle 16 P0-1 初次创建
  *   - 2026-07-29 | v1.1.0 | P1-5 UI 状态下沉到引擎
- *     - isOpen / isFullscreen 改为从 engine 订阅
- *     - open / close / toggle / setFullscreen 直接调用 engine
- *     - Cmd/Ctrl+I 快捷键在输入框也可用
- *     - 解决 Harness 与 ComposerPanel 状态不同步
  *   - 2026-07-29 | v1.2.0 | Cycle 17 P0-1 Plan Mode 集成
- *     - 新增 usePlan 状态管理（plan / stage）
- *     - 暴露 plan / planStage / generatePlan / approveStep / rejectStep / modifyStep 等
- *     - executePlan 返回 Edit 草稿列表
- *     - 新增 usePlanMode 模式开关
  *   - 2026-07-29 | v1.3.0 | Cycle 18 P0-1 集成层
- *     - 暴露 resolvedReferences / resolutionErrors / projectRules 状态
- *     - 暴露 resolveAllReferences / loadProjectRules / setProjectRules
- *     - 暴露 injectRules / getRulesMetadata
+ *   - 2026-07-29 | v1.4.0 | Cycle 18 P0-2 Summary 集成
+ *     - 集成 composerEngine.summary.integration
+ *     - 暴露 12 个新 API
  * ============================================================
  */
 
@@ -64,6 +60,22 @@ import {
   type ComposerIntegrationState,
   type RulesMetadata,
 } from '../utils/composerEngine.integration';
+import {
+  getSummaryHistory,
+  getSummaryConfig,
+  getCurrentTokens,
+  shouldSummarize as shouldSummarizeFn,
+  generateSummary,
+  applySummary as applySummaryFn,
+  unapplySummary,
+  deleteSummary,
+  clearSummaryHistory,
+  updateSummaryConfig,
+  subscribeSummary,
+  resetSummaryIntegration,
+  type ComposerSummaryState,
+} from '../utils/composerEngine.summary.integration';
+import type { Summary, SummaryConfig } from '../utils/composerEngine.summary';
 import type { HermesRules } from '../utils/hermesRules';
 
 /** Composer 引擎 Context（用于跨组件共享同一实例） */
@@ -156,6 +168,19 @@ export interface UseComposerResult {
   updateProjectRules: (rules: HermesRules) => void;
   injectRulesIntoPrompt: (prompt: string) => string;
   getRulesMeta: () => RulesMetadata;
+
+  // v1.4.0 Summary 集成 (Cycle 18 P0-2)
+  summaryHistory: Summary[];
+  summaryConfig: SummaryConfig;
+  appliedSummaryId: string | null;
+  tokensUsed: number;
+  shouldSummarize: boolean;
+  summarize: (options?: { force?: boolean }) => Summary | null;
+  applySummary: (summaryId: string) => boolean;
+  unapplySummary: () => boolean;
+  deleteSummary: (summaryId: string) => boolean;
+  clearSummaryHistory: () => void;
+  updateSummaryConfig: (config: Partial<SummaryConfig>) => void;
 }
 
 export function useComposer(): UseComposerResult {
@@ -414,6 +439,79 @@ export function useComposer(): UseComposerResult {
     return getRulesMetadata(engine);
   }, [engine]);
 
+  // v1.4.0: Summary 集成层状态
+  const [summaryState, setSummaryState] = useState<ComposerSummaryState>(() => ({
+    history: getSummaryHistory(engine),
+    config: getSummaryConfig(engine),
+    appliedSummaryId: null,
+    originalPrompt: null,
+    lastSummarizedAt: 0,
+    applyCount: 0,
+  }));
+
+  useEffect(() => {
+    // 初始重置
+    resetSummaryIntegration(engine);
+    setSummaryState({
+      history: [],
+      config: getSummaryConfig(engine),
+      appliedSummaryId: null,
+      originalPrompt: null,
+      lastSummarizedAt: 0,
+      applyCount: 0,
+    });
+    const unsub = subscribeSummary(engine, (state) => {
+      setSummaryState({
+        history: [...state.history],
+        config: state.config,
+        appliedSummaryId: state.appliedSummaryId,
+        originalPrompt: state.originalPrompt,
+        lastSummarizedAt: state.lastSummarizedAt,
+        applyCount: state.applyCount,
+      });
+    });
+    return () => {
+      unsub();
+    };
+  }, [engine]);
+
+  // 生成摘要
+  const summarize = useCallback(
+    (options?: { force?: boolean }): Summary | null => {
+      return generateSummary(engine, options);
+    },
+    [engine]
+  );
+
+  // 应用摘要
+  const applySummary = useCallback(
+    (summaryId: string): boolean => {
+      return applySummaryFn(engine, summaryId);
+    },
+    [engine]
+  );
+
+  // 删除摘要
+  const deleteSummaryFn = useCallback(
+    (summaryId: string): boolean => {
+      return deleteSummary(engine, summaryId);
+    },
+    [engine]
+  );
+
+  // 清空摘要历史
+  const clearSummary = useCallback(() => {
+    clearSummaryHistory(engine);
+  }, [engine]);
+
+  // 更新配置
+  const updateSummaryConfigFn = useCallback(
+    (config: Partial<SummaryConfig>) => {
+      updateSummaryConfig(engine, config);
+    },
+    [engine]
+  );
+
   return {
     isOpen: ui.isOpen,
     session,
@@ -476,6 +574,19 @@ export function useComposer(): UseComposerResult {
     updateProjectRules,
     injectRulesIntoPrompt,
     getRulesMeta,
+
+    // v1.4.0 Summary 集成
+    summaryHistory: summaryState.history,
+    summaryConfig: summaryState.config,
+    appliedSummaryId: summaryState.appliedSummaryId,
+    tokensUsed: getCurrentTokens(engine),
+    shouldSummarize: shouldSummarizeFn(engine),
+    summarize,
+    applySummary,
+    unapplySummary: () => unapplySummary(engine),
+    deleteSummary: deleteSummaryFn,
+    clearSummaryHistory: clearSummary,
+    updateSummaryConfig: updateSummaryConfigFn,
   };
 }
 
