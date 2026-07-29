@@ -38,7 +38,17 @@ import type { ComposerEdit } from '../utils/composerEngine';
 import MentionMenu from './MentionMenu';
 import { PlanViewer } from './PlanViewer';
 import { PreviewPanel } from './PreviewPanel';
+import { ContextWindowMeter } from './ContextWindowMeter';
+import { RulesEditor } from './RulesEditor';
+import { ResolvedReferencesBar } from './ResolvedReferencesBar';
+import { ReferenceDetailModal } from './ReferenceDetailModal';
+import { RulesStatusBadge } from './RulesStatusBadge';
+import { RulesPanel } from './RulesPanel';
 import type { FuzzyItem } from '../utils/fuzzySearch';
+import { type ConversationItem } from '../utils/composerEngine.summary';
+import type { HermesRules } from '../utils/hermesRules';
+import type { GitRefKind } from '../utils/referenceResolvers';
+import type { ResolvedReference } from '../utils/composerEngine.integration';
 
 export type ComposerMode = 'edit' | 'plan' | 'preview';
 
@@ -53,6 +63,8 @@ export interface ComposerPanelProps {
   externalIsFullscreen?: boolean;
   /** 外部控制 mode */
   externalMode?: ComposerMode;
+  /** v1.3.0: 项目 ID（用于项目规则） */
+  projectId?: string;
 }
 
 /**
@@ -63,12 +75,20 @@ export function ComposerPanel({
   externalIsOpen,
   externalIsFullscreen,
   externalMode,
+  projectId = 'default',
 }: ComposerPanelProps) {
   const composer = useComposer();
   const isOpen = externalIsOpen ?? composer.isOpen;
   const isFullscreen = externalIsFullscreen ?? composer.isFullscreen;
   const [internalMode, setInternalMode] = useState<ComposerMode>('edit');
   const mode = externalMode ?? internalMode;
+
+  // v1.3.0: 规则编辑器显示状态（旧版 + 新版）
+  const [isRulesOpen, setIsRulesOpen] = useState(false);
+  const [isNewRulesOpen, setIsNewRulesOpen] = useState(false);
+
+  // v1.3.0: 当前项目规则（由父组件注入或默认）
+  const [currentRules, setCurrentRules] = useState<HermesRules | null>(null);
 
   // v1.1.0: 监听来自 PromptInput 的模式切换事件
   useEffect(() => {
@@ -107,7 +127,11 @@ export function ComposerPanel({
         className,
       ].join(' ')}
     >
-      <ComposerHeader mode={mode} onModeChange={setInternalMode} />
+      <ComposerHeader
+        mode={mode}
+        onModeChange={setInternalMode}
+        onOpenRules={() => setIsRulesOpen(true)}
+      />
       {mode === 'plan' ? (
         <PlanViewer
           plan={composer.plan}
@@ -131,22 +155,87 @@ export function ComposerPanel({
       ) : (
         <>
           <ComposerContextBar />
+          <ComposerResolvedBar />
           <ComposerPromptInput />
           <ComposerEditList />
-          <ComposerFooter />
+          <ComposerFooter
+            onOpenRules={() => setIsRulesOpen(true)}
+            currentRules={currentRules}
+            onOpenNewRules={() => setIsNewRulesOpen(true)}
+          />
         </>
       )}
+
+      {/* v1.3.0: 项目级 AI 规则编辑器 (旧版 - YAML) */}
+      <RulesEditor
+        projectId={projectId}
+        isOpen={isRulesOpen}
+        onClose={() => setIsRulesOpen(false)}
+        onSave={(rules) => {
+          setCurrentRules(rules);
+          console.log('Rules saved:', rules.project_type);
+        }}
+      />
+
+      {/* v1.3.0: 项目级 AI 规则编辑器 (新版 - 可视化) */}
+      <RulesPanel
+        open={isNewRulesOpen}
+        onClose={() => setIsNewRulesOpen(false)}
+        currentRules={currentRules ?? composer.projectRules}
+        onSave={(rules) => {
+          setCurrentRules(rules);
+          composer.updateProjectRules(rules);
+          setIsNewRulesOpen(false);
+        }}
+      />
+
+      <ComposerReferenceDetail />
     </div>
   );
+}
+
+/** v1.3.0: 已解析引用条 (Cycle 18 P0-1) */
+function ComposerResolvedBar() {
+  const composer = useComposer();
+  const [selectedRef, setSelectedRef] = useState<ResolvedReference | null>(null);
+
+  if (composer.resolvedReferences.length === 0 && composer.resolutionErrors.length === 0) {
+    return null;
+  }
+
+  return (
+    <>
+      <div className="px-4 py-2 border-b border-surface-800">
+        <ResolvedReferencesBar
+          references={composer.resolvedReferences}
+          errors={composer.resolutionErrors}
+          onReferenceClick={(ref) => setSelectedRef(ref)}
+          onRetry={() => composer.resolveReferences(composer.session.prompt || '')}
+        />
+      </div>
+      <ReferenceDetailModal
+        reference={selectedRef}
+        open={selectedRef !== null}
+        onClose={() => setSelectedRef(null)}
+      />
+    </>
+  );
+}
+
+/** v1.3.0: 全局引用详情模态 - 暴露给外部触发 */
+function ComposerReferenceDetail() {
+  return null; // 详情模态已由 ComposerResolvedBar 内部管理
 }
 
 /** Header：标题 + 模式切换 + 全屏切换 + 关闭 */
 function ComposerHeader({
   mode,
   onModeChange,
+  onOpenRules,
 }: {
   mode: ComposerMode;
   onModeChange: (mode: ComposerMode) => void;
+  onOpenRules: () => void;
 }) {
   const composer = useComposer();
   return (
@@ -200,6 +289,15 @@ function ComposerHeader({
           </button>
         </div>
         <button
+          onClick={onOpenRules}
+          className="px-2 py-1 text-xs text-surface-400 hover:text-surface-200 rounded hover:bg-surface-800"
+          aria-label="项目规则"
+          data-testid="composer-open-rules"
+          title="项目级 AI 规则"
+        >
+          📋
+        </button>
+        <button
           onClick={() => composer.setFullscreen(!composer.isFullscreen)}
           className="px-2 py-1 text-xs text-surface-400 hover:text-surface-200 rounded hover:bg-surface-800"
           aria-label={composer.isFullscreen ? '退出全屏' : '全屏'}
@@ -220,19 +318,26 @@ function ComposerHeader({
   );
 }
 
-/** 上下文栏：显示当前 file/folder/symbol/docs/web 引用 */
+/** 上下文栏：显示当前 file/folder/symbol/docs/web 引用 + G18-01 新增 codebase/git/diff */
 function ComposerContextBar() {
   const composer = useComposer();
   const ctx = composer.session.context;
   const totalCount =
-    ctx.files.length + ctx.folders.length + ctx.symbols.length + ctx.docs.length + ctx.web.length;
+    ctx.files.length +
+    ctx.folders.length +
+    ctx.symbols.length +
+    ctx.docs.length +
+    ctx.web.length +
+    ctx.codebase.length +
+    ctx.git.length +
+    ctx.diff.length;
   if (totalCount === 0) {
     return (
       <div
         className="px-4 py-2 text-xs text-surface-500 border-b border-surface-800"
         data-testid="composer-context-bar"
       >
-        添加 @ 引用: @file:path / @folder:path / @code:name / @docs:url / @web:query
+        添加 @ 引用: @file / @folder / @code / @docs / @web / @codebase / @git / @diff
       </div>
     );
   }
@@ -276,6 +381,29 @@ function ComposerContextBar() {
           onRemove={() => composer.removeContext('web', w.query)}
         />
       ))}
+      {ctx.codebase.map((c) => (
+        <ContextChip
+          key={`codebase-${c.query}`}
+          label={`🔎 ${c.query} (${c.results.length})`}
+          onRemove={() => composer.removeContext('codebase', c.query)}
+        />
+      ))}
+      {ctx.git.map((g) => (
+        <ContextChip
+          key={`git-${g.ref}-${g.filePath ?? ''}`}
+          label={`📜 git:${g.ref}${g.filePath ? ` ${g.filePath}` : ''}`}
+          onRemove={() =>
+            composer.removeContext('git', `${g.ref}:${g.filePath ?? ''}`)
+          }
+        />
+      ))}
+      {ctx.diff.map((d) => (
+        <ContextChip
+          key={`diff-${d.ref}`}
+          label={`📝 diff:${d.ref} (+${d.totalAdditions}/-${d.totalDeletions})`}
+          onRemove={() => composer.removeContext('diff', d.ref)}
+        />
+      ))}
       <button
         onClick={composer.clearContext}
         className="px-2 py-0.5 text-xs text-surface-500 hover:text-error-400"
@@ -310,6 +438,7 @@ function ComposerPromptInput() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // 默认 @ 候选项（实际项目可注入 file list / 符号表）
+  // v1.3.0: 增加 codebase / git / diff 引用（Cycle 18 G18-01）
   const mentionItems = useMemo<FuzzyItem[]>(
     () => [
       { id: 'file-App.tsx', title: 'src/App.tsx', icon: '📄', meta: { type: 'file', value: 'src/App.tsx' } },
@@ -321,15 +450,23 @@ function ComposerPromptInput() {
       { id: 'symbol-ComposerEngine', title: 'ComposerEngine', icon: '🔣', subtitle: 'class · src/utils/composerEngine.ts', meta: { type: 'code', value: 'ComposerEngine' } },
       { id: 'docs-react', title: 'React 文档', icon: '📚', subtitle: 'https://react.dev', meta: { type: 'docs', value: 'https://react.dev' } },
       { id: 'web', title: '网络搜索', icon: '🌐', subtitle: '输入查询词', meta: { type: 'web', value: '' } },
+      // G18-01 新增
+      { id: 'codebase-search', title: '语义搜索代码库', icon: '🔎', subtitle: '输入查询', meta: { type: 'codebase', value: '' } },
+      { id: 'git-log', title: 'git:log', icon: '📜', subtitle: '查看提交历史', meta: { type: 'git', value: 'log' } },
+      { id: 'git-blame', title: 'git:blame', icon: '📜', subtitle: '查看文件 blame', meta: { type: 'git', value: 'blame' } },
+      { id: 'git-branch', title: 'git:branch', icon: '📜', subtitle: '查看分支', meta: { type: 'git', value: 'branch' } },
+      { id: 'diff-working', title: 'diff:working', icon: '📝', subtitle: '未提交修改', meta: { type: 'diff', value: 'working' } },
+      { id: 'diff-staged', title: 'diff:staged', icon: '📝', subtitle: '已暂存修改', meta: { type: 'diff', value: 'staged' } },
     ],
     []
   );
 
   /**
    * 选中 mention 后的回调：自动添加到 session context
+   * v1.3.0: 支持 codebase / git / diff 新类型（Cycle 18 G18-01）
    */
   const handleSelectMention = useCallback(
-    (item: FuzzyItem) => {
+    async (item: FuzzyItem) => {
       const meta = item.meta as { type?: string; value?: string } | undefined;
       if (!meta?.type || !meta.value) return;
       // 构造 context entry 并添加到 session
@@ -371,6 +508,37 @@ function ComposerPromptInput() {
         case 'web':
           // web 需要用户提供 query，跳过自动添加
           break;
+        // G18-01: 新增 3 种引用类型
+        case 'codebase': {
+          try {
+            const { resolveCodebase } = await import('../utils/referenceResolvers');
+            const ctx = await resolveCodebase(meta.value || 'default', { topK: 5 });
+            composer.addContext(ctx);
+          } catch (e) {
+            console.warn('Failed to resolve codebase', e);
+          }
+          break;
+        }
+        case 'git': {
+          try {
+            const { resolveGit } = await import('../utils/referenceResolvers');
+            const ctx = await resolveGit(meta.value as GitRefKind, { limit: 5 });
+            composer.addContext(ctx);
+          } catch (e) {
+            console.warn('Failed to resolve git', e);
+          }
+          break;
+        }
+        case 'diff': {
+          try {
+            const { resolveDiff } = await import('../utils/referenceResolvers');
+            const ctx = await resolveDiff(meta.value, {});
+            composer.addContext(ctx);
+          } catch (e) {
+            console.warn('Failed to resolve diff', e);
+          }
+          break;
+        }
       }
     },
     [composer]
@@ -577,49 +745,135 @@ function StatusBadge({ status }: { status: ComposerEdit['status'] }) {
   );
 }
 
-/** 底部操作栏：全部接受/拒绝/撤销/重做 */
-function ComposerFooter() {
+/** 底部操作栏：全部接受/拒绝/撤销/重做 + 上下文窗口 + 规则 */
+function ComposerFooter({
+  onOpenRules,
+  onOpenNewRules,
+  currentRules,
+}: {
+  onOpenRules: () => void;
+  onOpenNewRules?: () => void;
+  currentRules: HermesRules | null;
+}) {
   const composer = useComposer();
+  // v1.3.0: 将 Composer 会话内容转换为 ConversationItem 用于 token 估算
+  const conversationItems: ConversationItem[] = useMemo(
+    () => [
+      {
+        id: 'prompt',
+        role: 'user' as const,
+        content: composer.session.prompt || '',
+        timestamp: Date.now(),
+      },
+      ...composer.session.edits.map((e, i) => ({
+        id: e.id,
+        role: 'assistant' as const,
+        content: `${e.filePath}\n${e.afterContent}`,
+        timestamp: e.createdAt ?? Date.now() - (composer.session.edits.length - i) * 1000,
+      })),
+    ],
+    [composer.session.prompt, composer.session.edits]
+  );
+
+  // v1.3.0: 规则元数据
+  const rulesMeta = useMemo(() => composer.getRulesMeta(), [composer]);
+  const activeTemplateName = useMemo(() => {
+    if (currentRules?.project_type) {
+      const typeMap: Record<string, string> = {
+        typescript: 'TypeScript Strict',
+        python: 'Python PEP8',
+        react: 'React',
+        vue: 'Vue',
+        generic: 'Generic',
+      };
+      return typeMap[currentRules.project_type] ?? '自定义';
+    }
+    return undefined;
+  }, [currentRules]);
+
   return (
     <div
-      className="flex items-center justify-between px-4 py-2 border-t border-surface-700 bg-surface-900/80"
+      className="flex flex-col border-t border-surface-700 bg-surface-900/80"
       data-testid="composer-footer"
     >
-      <div className="flex items-center gap-1">
-        <button
-          onClick={composer.undo}
-          disabled={!composer.canUndo}
-          className="px-2 py-1 text-xs text-surface-300 hover:text-surface-100 disabled:opacity-30 disabled:cursor-not-allowed rounded hover:bg-surface-800"
-          data-testid="composer-undo"
-        >
-          ↶ Undo
-        </button>
-        <button
-          onClick={composer.redo}
-          disabled={!composer.canRedo}
-          className="px-2 py-1 text-xs text-surface-300 hover:text-surface-100 disabled:opacity-30 disabled:cursor-not-allowed rounded hover:bg-surface-800"
-          data-testid="composer-redo"
-        >
-          ↷ Redo
-        </button>
+      {/* v1.3.0: 上下文窗口使用量（token 进度条） */}
+      <div className="px-4 py-1.5 border-b border-surface-800">
+        <ContextWindowMeter
+          items={conversationItems}
+          config={{ triggerThreshold: 8000 }}
+          onSummarize={(summary) => {
+            console.log(
+              'Summary generated:',
+              summary.id,
+              `(${summary.stats.reductionRatio.toFixed(1)}% reduction)`
+            );
+          }}
+        />
       </div>
-      <div className="flex items-center gap-1">
-        <button
-          onClick={composer.rejectAll}
-          disabled={composer.pendingCount === 0}
-          className="px-3 py-1 text-xs bg-error-500/20 text-error-300 rounded hover:bg-error-500/30 disabled:opacity-30 disabled:cursor-not-allowed"
-          data-testid="composer-reject-all"
-        >
-          拒绝全部
-        </button>
-        <button
-          onClick={composer.acceptAll}
-          disabled={composer.pendingCount === 0}
-          className="px-3 py-1 text-xs bg-success-500/20 text-success-300 rounded hover:bg-success-500/30 disabled:opacity-30 disabled:cursor-not-allowed"
-          data-testid="composer-accept-all"
-        >
-          接受全部
-        </button>
+
+      <div className="flex items-center justify-between px-4 py-2">
+        <div className="flex items-center gap-1">
+          <button
+            onClick={composer.undo}
+            disabled={!composer.canUndo}
+            className="px-2 py-1 text-xs text-surface-300 hover:text-surface-100 disabled:opacity-30 disabled:cursor-not-allowed rounded hover:bg-surface-800"
+            data-testid="composer-undo"
+          >
+            ↶ Undo
+          </button>
+          <button
+            onClick={composer.redo}
+            disabled={!composer.canRedo}
+            className="px-2 py-1 text-xs text-surface-300 hover:text-surface-100 disabled:opacity-30 disabled:cursor-not-allowed rounded hover:bg-surface-800"
+            data-testid="composer-redo"
+          >
+            ↷ Redo
+          </button>
+          {currentRules && (
+            <span
+              className="ml-1 px-1.5 py-0.5 text-[10px] bg-hermes-500/15 text-hermes-300 rounded"
+              data-testid="composer-rules-indicator"
+              title="项目规则已激活"
+            >
+              📋 {currentRules.project_type ?? 'generic'}
+            </span>
+          )}
+          {/* v1.3.0: 规则状态徽章 (Cycle 18 P0-1) */}
+          {onOpenNewRules && (
+            <RulesStatusBadge
+              metadata={rulesMeta}
+              templateName={activeTemplateName}
+              onClick={onOpenNewRules}
+              compact
+            />
+          )}
+        </div>
+        <div className="flex items-center gap-1">
+          <button
+            onClick={onOpenNewRules ?? onOpenRules}
+            className="px-2 py-1 text-xs text-surface-300 hover:text-surface-100 rounded hover:bg-surface-800"
+            data-testid="composer-footer-rules"
+            title="可视化编辑项目规则"
+          >
+            ⚙️ 规则
+          </button>
+          <button
+            onClick={composer.rejectAll}
+            disabled={composer.pendingCount === 0}
+            className="px-3 py-1 text-xs bg-error-500/20 text-error-300 rounded hover:bg-error-500/30 disabled:opacity-30 disabled:cursor-not-allowed"
+            data-testid="composer-reject-all"
+          >
+            拒绝全部
+          </button>
+          <button
+            onClick={composer.acceptAll}
+            disabled={composer.pendingCount === 0}
+            className="px-3 py-1 text-xs bg-success-500/20 text-success-300 rounded hover:bg-success-500/30 disabled:opacity-30 disabled:cursor-not-allowed"
+            data-testid="composer-accept-all"
+          >
+            接受全部
+          </button>
+        </div>
       </div>
     </div>
   );
