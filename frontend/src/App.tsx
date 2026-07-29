@@ -137,6 +137,14 @@
 #     ⑤ 4 个面板均通过 ErrorBoundary 嵌套 + 显隐 state + onClose 回调
 #     ⑥ BrandHeader 新增 4 个菜单项 + 4 个 SVG 图标
 #     ⑦ AppLayout 新增 4 个回调 prop 透传
+#   - 2026-07-29 | v6.57.0 | Cycle 23 G23-01~G23-04 集成 3 个新功能面板：
+#     ① CandidateLearningPanel (v1.0.0/Cycle 23 G23-01) 候选学习
+#     ② SessionReplayPanel (v1.0.0/Cycle 23 G23-02) 会话回放
+#     ③ ProactiveSuggestionPanel + FloatingSuggestionBubble (v1.0.0/Cycle 23 G23-04) AI 主动建议 + 浮动气泡
+#     ④ 3 个面板均通过 ErrorBoundary 嵌套 + 显隐 state + onClose 回调
+#     ⑤ BrandHeader 新增 3 个菜单项 + 3 个 SVG 图标
+#     ⑥ AppLayout 新增 3 个回调 prop 透传
+#     ⑦ 浮动气泡挂在主内容区域右下角，hover 自动展开建议
 # ============================================================
  */
 
@@ -246,6 +254,12 @@ import { CostPredictionPanel } from './components/CostPredictionPanel';
 import { HookPerformancePanel } from './components/HookPerformancePanel';
 /** v6.54.0 (Cycle 22 G22-04) 新增：模型路由管理面板 */
 import { ModelRouterAdminPanel } from './components/ModelRouterAdminPanel';
+/** v6.55.0 (Cycle 23 G23-01) 新增：候选学习面板 */
+import { CandidateLearningPanel } from './components/CandidateLearningPanel';
+/** v6.56.0 (Cycle 23 G23-02) 新增：会话回放面板 */
+import { SessionReplayPanel } from './components/SessionReplayPanel';
+/** v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议面板（含浮动气泡） */
+import { ProactiveSuggestionPanel, FloatingSuggestionBubble } from './components/ProactiveSuggestionPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1333,6 +1347,36 @@ export default function App() {
   }, []);
 
   /**
+   * v6.55.0 (Cycle 23 G23-01) 新增：候选学习面板开关状态
+   * 作用：控制 CandidateLearningPanel 弹窗显隐
+   *       学习引擎由 CandidateLearningEngine 单例管理
+   */
+  const [candidateLearningOpen, setCandidateLearningOpen] = useState(false);
+  const handleOpenCandidateLearning = useCallback(() => {
+    setCandidateLearningOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.56.0 (Cycle 23 G23-02) 新增：会话回放面板开关状态
+   * 作用：控制 SessionReplayPanel 弹窗显隐
+   *       回放引擎由 SessionReplayEngine 单例管理
+   */
+  const [sessionReplayOpen, setSessionReplayOpen] = useState(false);
+  const handleOpenSessionReplay = useCallback(() => {
+    setSessionReplayOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议面板开关状态
+   * 作用：控制 ProactiveSuggestionPanel 弹窗显隐
+   *       建议引擎由 ProactiveSuggestionEngine 单例管理
+   */
+  const [proactiveSuggestionOpen, setProactiveSuggestionOpen] = useState(false);
+  const handleOpenProactiveSuggestion = useCallback(() => {
+    setProactiveSuggestionOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2359,6 +2403,9 @@ export default function App() {
           onOpenCostPrediction={handleOpenCostPrediction}
           onOpenHookPerformance={handleOpenHookPerformance}
           onOpenModelRouterAdmin={handleOpenModelRouterAdmin}
+          onOpenCandidateLearning={handleOpenCandidateLearning}
+          onOpenSessionReplay={handleOpenSessionReplay}
+          onOpenProactiveSuggestion={handleOpenProactiveSuggestion}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -2884,6 +2931,44 @@ export default function App() {
           onClose={() => setModelRouterAdminOpen(false)}
         />
       </ErrorBoundary>
+
+      {/* v6.55.0 (Cycle 23 G23-01) 新增：候选学习面板
+       *  触发：BrandHeader 菜单"🧠 候选学习"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  学习引擎由 CandidateLearningEngine 单例管理 */}
+      <ErrorBoundary level="panel" name="CandidateLearning">
+        <CandidateLearningPanel
+          isOpen={candidateLearningOpen}
+          onClose={() => setCandidateLearningOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.56.0 (Cycle 23 G23-02) 新增：会话回放面板
+       *  触发：BrandHeader 菜单"⏮️ 会话回放"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  回放引擎由 SessionReplayEngine 单例管理 */}
+      <ErrorBoundary level="panel" name="SessionReplay">
+        <SessionReplayPanel
+          isOpen={sessionReplayOpen}
+          onClose={() => setSessionReplayOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议面板
+       *  触发：BrandHeader 菜单"💡 AI 主动建议"项 / 浮动气泡
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  建议引擎由 ProactiveSuggestionEngine 单例管理 */}
+      <ErrorBoundary level="panel" name="ProactiveSuggestion">
+        <ProactiveSuggestionPanel
+          isOpen={proactiveSuggestionOpen}
+          onClose={() => setProactiveSuggestionOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.57.0 (Cycle 23 G23-04) 新增：浮动建议气泡
+       *  位置：右下角，仅在有活跃建议时显示
+       *  点击展开 AI 主动建议面板 */}
+      <FloatingSuggestionBubble onOpenPanel={handleOpenProactiveSuggestion} />
     </div>
       )}
     </>

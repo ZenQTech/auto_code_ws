@@ -154,6 +154,12 @@ export interface BrandHeaderProps {
   onOpenHookPerformance?: () => void;
   /** v6.54.0 (Cycle 22 G22-04) 新增：打开模型路由管理面板回调（可选） */
   onOpenModelRouterAdmin?: () => void;
+  /** v6.55.0 (Cycle 23 G23-01) 新增：候选学习面板回调（可选） */
+  onOpenCandidateLearning?: () => void;
+  /** v6.56.0 (Cycle 23 G23-02) 新增：会话回放面板回调（可选） */
+  onOpenSessionReplay?: () => void;
+  /** v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议面板回调（可选） */
+  onOpenProactiveSuggestion?: () => void;
 }
 
 /**
@@ -163,7 +169,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -504,6 +510,31 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M9 12l2 2 4-4" />
         </svg>
       );
+    case 'learning':
+      // 候选学习 - 大脑 + 节点
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2z" />
+          <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2z" />
+        </svg>
+      );
+    case 'replay':
+      // 会话回放 - 快退箭头
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+          <path d="M3 3v5h5" />
+        </svg>
+      );
+    case 'suggestion':
+      // AI 主动建议 - 灯泡
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M9 18h6" />
+          <path d="M10 22h4" />
+          <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -595,6 +626,12 @@ export default function BrandHeader({
   onOpenHookPerformance,
   /** v6.54.0 (Cycle 22 G22-04) 新增：模型路由管理 */
   onOpenModelRouterAdmin,
+  /** v6.55.0 (Cycle 23 G23-01) 新增：候选学习 */
+  onOpenCandidateLearning,
+  /** v6.56.0 (Cycle 23 G23-02) 新增：会话回放 */
+  onOpenSessionReplay,
+  /** v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议 */
+  onOpenProactiveSuggestion,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1504,6 +1541,60 @@ export default function BrandHeader({
                 >
                   <Icon name="admin" className="w-4 h-4 text-sky-500" />
                   <span>🛡️ 模型路由管理</span>
+                </button>
+              )}
+
+              {/* v6.55.0 (Cycle 23 G23-01) 新增：候选学习（菜单项）
+               *  行为：点击调 onOpenCandidateLearning() 弹出 CandidateLearningPanel
+               *       支持偏好画像/学习记录/反馈学习/模拟推荐
+               *  图标：learning（大脑） */}
+              {onOpenCandidateLearning && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCandidateLearning)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-violet-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-candidate-learning"
+                >
+                  <Icon name="learning" className="w-4 h-4 text-violet-500" />
+                  <span>🧠 候选学习</span>
+                </button>
+              )}
+
+              {/* v6.56.0 (Cycle 23 G23-02) 新增：会话回放（菜单项）
+               *  行为：点击调 onOpenSessionReplay() 弹出 SessionReplayPanel
+               *       支持录制/回放/导出/分享
+               *  图标：replay（快退箭头） */}
+              {onOpenSessionReplay && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSessionReplay)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-session-replay"
+                >
+                  <Icon name="replay" className="w-4 h-4 text-cyan-500" />
+                  <span>⏮️ 会话回放</span>
+                </button>
+              )}
+
+              {/* v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议（菜单项）
+               *  行为：点击调 onOpenProactiveSuggestion() 弹出 ProactiveSuggestionPanel
+               *       支持上下文分析/建议生成/智能去重/反馈学习
+               *  图标：suggestion（灯泡） */}
+              {onOpenProactiveSuggestion && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenProactiveSuggestion)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-amber-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-proactive-suggestion"
+                >
+                  <Icon name="suggestion" className="w-4 h-4 text-amber-500" />
+                  <span>💡 AI 主动建议</span>
                 </button>
               )}
 

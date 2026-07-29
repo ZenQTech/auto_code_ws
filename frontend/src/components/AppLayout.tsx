@@ -165,6 +165,12 @@ export interface AppLayoutProps {
   onOpenHookPerformance: () => void;
   /** v6.54.0 (Cycle 22 G22-04) 新增：模型路由管理面板回调 */
   onOpenModelRouterAdmin: () => void;
+  /** v6.55.0 (Cycle 23 G23-01) 新增：候选学习面板回调 */
+  onOpenCandidateLearning: () => void;
+  /** v6.56.0 (Cycle 23 G23-02) 新增：会话回放面板回调 */
+  onOpenSessionReplay: () => void;
+  /** v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议面板回调 */
+  onOpenProactiveSuggestion: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -294,6 +300,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenCostPrediction,  // v6.52.0 (Cycle 22 G22-02) 透传 BrandHeader
   onOpenHookPerformance,  // v6.53.0 (Cycle 22 G22-03) 透传 BrandHeader
   onOpenModelRouterAdmin,  // v6.54.0 (Cycle 22 G22-04) 透传 BrandHeader
+  onOpenCandidateLearning,  // v6.55.0 (Cycle 23 G23-01) 透传 BrandHeader
+  onOpenSessionReplay,  // v6.56.0 (Cycle 23 G23-02) 透传 BrandHeader
+  onOpenProactiveSuggestion,  // v6.57.0 (Cycle 23 G23-04) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -498,6 +507,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenCostPrediction={onOpenCostPrediction}
         onOpenHookPerformance={onOpenHookPerformance}
         onOpenModelRouterAdmin={onOpenModelRouterAdmin}
+        onOpenCandidateLearning={onOpenCandidateLearning}
+        onOpenSessionReplay={onOpenSessionReplay}
+        onOpenProactiveSuggestion={onOpenProactiveSuggestion}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}
