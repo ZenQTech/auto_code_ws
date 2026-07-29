@@ -964,6 +964,85 @@ export default function App() {
   }, [navigate]);
 
   /**
+   * v1.0.0 (Cycle 13 P1-2) 新增：LLM-as-Judge 验证层入口
+   */
+  const handleOpenLlmJudge = useCallback(() => {
+    try {
+      navigate('/llm-judge');
+    } catch (e) {
+      window.location.href = '/llm-judge';
+    }
+  }, [navigate]);
+
+  /**
+   * v1.0.0 (Cycle 13 P1-3) 新增：Plugin Marketplace 入口
+   */
+  const handleOpenMarketplace = useCallback(() => {
+    try {
+      navigate('/marketplace');
+    } catch (e) {
+      window.location.href = '/marketplace';
+    }
+  }, [navigate]);
+
+  /**
+   * v1.0.0 (Cycle 14 P0-2) 新增：多模态支持入口
+   */
+  const handleOpenMultimodal = useCallback(() => {
+    try {
+      navigate('/multimodal');
+    } catch (e) {
+      window.location.href = '/multimodal';
+    }
+  }, [navigate]);
+
+  /**
+   * v1.0.0 (Cycle 14 P0-3) 新增：企业级 Plugin Hub 入口
+   */
+  const handleOpenEnterpriseHub = useCallback(() => {
+    try {
+      navigate('/enterprise-hub');
+    } catch (e) {
+      window.location.href = '/enterprise-hub';
+    }
+  }, [navigate]);
+
+  /**
+   * v1.0.0 (Cycle 14 P1-3) 新增：TRAE Work 多模态协作入口
+   */
+  const handleOpenTraeWork = useCallback(() => {
+    try {
+      navigate('/work');
+    } catch (e) {
+      window.location.href = '/work';
+    }
+  }, [navigate]);
+
+  /**
+   * v1.0.0 (Cycle 14 P1-4) 新增：Goal Automation 入口
+   * 功能：自动轮转 + Agent 注册表 + 委派任务三合一
+   */
+  const handleOpenGoalAutomation = useCallback(() => {
+    try {
+      navigate('/goal-automation');
+    } catch (e) {
+      window.location.href = '/goal-automation';
+    }
+  }, [navigate]);
+
+  /**
+   * v1.0.0 (Cycle 14 P1-5) 新增：Goal Templates 模板库入口
+   * 功能：6 类内置模板 + Fork + 一键实例化为 Goal
+   */
+  const handleOpenGoalTemplates = useCallback(() => {
+    try {
+      navigate('/goal-templates');
+    } catch (e) {
+      window.location.href = '/goal-templates';
+    }
+  }, [navigate]);
+
+  /**
    * 删除会话
    * 运行步骤：
    *   1. 二次确认
@@ -1883,6 +1962,13 @@ export default function App() {
           onOpenMemory={handleOpenMemory}
           onOpenVerification={handleOpenVerification}
           onOpenDoctor={handleOpenDoctor}
+          onOpenLlmJudge={handleOpenLlmJudge}
+          onOpenMarketplace={handleOpenMarketplace}
+          onOpenMultimodal={handleOpenMultimodal}
+          onOpenEnterpriseHub={handleOpenEnterpriseHub}
+          onOpenTraeWork={handleOpenTraeWork}
+          onOpenGoalAutomation={handleOpenGoalAutomation}
+          onOpenGoalTemplates={handleOpenGoalTemplates}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}

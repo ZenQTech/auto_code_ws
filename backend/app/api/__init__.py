@@ -16,6 +16,8 @@
 #     四个路由注册（Codex 核心特性：模型选择 / 推理强度 / /review / /fix）
 #   - 2026-07-28 | v6.17.0 | Cycle 11 P2-1 新增 e2e 路由注册
 #     （Playwright E2E 自动化：health/scenarios/run/reports/baselines/compare）
+#   - 2026-07-28 | v6.20.0 | Cycle 13 P0-1 新增 worktree_v2 路由注册
+#     （Worktree 隔离执行：完整生命周期 + 状态机 + 自动合并 + 冲突解决 + 过期检测）
 # ============================================================
 """
 
@@ -77,3 +79,21 @@ api_router.include_router(subagent_memory_router, prefix="/agents", tags=["SubAg
 # v6.17.0 Cycle 11 P2-1：Playwright E2E 自动化
 from .e2e import router as e2e_router
 api_router.include_router(e2e_router, prefix="/e2e", tags=["E2E 自动化"])
+# v6.18.0 Cycle 12 P0-1：Plugin 系统
+from .plugins import router as plugins_router
+api_router.include_router(plugins_router, prefix="/plugins", tags=["Plugin 系统"])
+# v6.19.0 Cycle 12 P0-2：/goal 长时域模式
+from .goal import router as goal_router
+api_router.include_router(goal_router, prefix="/goal", tags=["/goal 长时域模式"])
+# v6.20.0 Cycle 13 P0-1：Worktree v2 隔离执行
+from .worktree_v2 import router as worktree_v2_router
+api_router.include_router(worktree_v2_router, tags=["Worktree v2 隔离执行"])
+# v6.21.0 Cycle 13 P0-2：Hermes Python/TypeScript SDK API
+from .sdk import router as sdk_router
+api_router.include_router(sdk_router, tags=["Hermes SDK"])
+# v6.22.0 Cycle 13 P0-3：LLM-as-Judge 验证层
+from .llm_judge import router as llm_judge_router
+api_router.include_router(llm_judge_router, tags=["LLM-as-Judge 验证层"])
+# v6.23.0 Cycle 13 P1-1：Plugin Marketplace 远端仓库
+from .marketplace import router as marketplace_router
+api_router.include_router(marketplace_router, prefix="/marketplace", tags=["Plugin Marketplace"])

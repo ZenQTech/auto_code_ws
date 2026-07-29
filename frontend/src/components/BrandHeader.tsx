@@ -74,6 +74,20 @@ export interface BrandHeaderProps {
   onOpenVerification?: () => void;
   /** v1.0.0 (Cycle 11 P2-2) 新增：Doctor 环境诊断入口回调 */
   onOpenDoctor?: () => void;
+  /** v1.0.0 (Cycle 13 P1-2) 新增：LLM-as-Judge 验证层入口回调 */
+  onOpenLlmJudge?: () => void;
+  /** v1.0.0 (Cycle 13 P1-3) 新增：Plugin Marketplace 入口回调 */
+  onOpenMarketplace?: () => void;
+  /** v1.0.0 (Cycle 14 P0-2) 新增：多模态支持入口回调 */
+  onOpenMultimodal?: () => void;
+  /** v1.0.0 (Cycle 14 P0-3) 新增：企业级 Plugin Hub 入口回调 */
+  onOpenEnterpriseHub?: () => void;
+  /** v1.0.0 (Cycle 14 P1-3) 新增：TRAE Work 多模态协作入口回调 */
+  onOpenTraeWork?: () => void;
+  /** v1.0.0 (Cycle 14 P1-4) 新增：Goal Automation 入口回调（独立路由 /goal-automation） */
+  onOpenGoalAutomation?: () => void;
+  /** v1.0.0 (Cycle 14 P1-5) 新增：Goal Templates 模板库入口回调（独立路由 /goal-templates） */
+  onOpenGoalTemplates?: () => void;
   /** v1.6.0 新增：打开 MCP 工具面板回调（可选，提供则菜单显示"MCP 工具"项） */
   onOpenMCP?: () => void;
   /** v1.6.0 新增：打开会话压缩面板回调（可选，提供则菜单显示"会话压缩"项） */
@@ -121,7 +135,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -311,6 +325,15 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <circle cx="15" cy="17" r="1.5" fill="currentColor" />
         </svg>
       );
+    case 'image':
+      // v1.0.0 (Cycle 14 P0-2) 新增：多模态支持（图框+山峰，表达 Vision 视觉）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <path d="M21 15l-5-5L5 21" />
+        </svg>
+      );
     case 'shield-check':
       // v2.9.0 (Cycle 7 P0-11) 新增：TRACE 规则管理（盾牌+勾, 表达 enforcement）
       return (
@@ -328,6 +351,15 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <circle cx="12" cy="18" r="2.5" />
           <circle cx="12" cy="12" r="3" />
           <path d="M8 8l3 3M16 8l-3 3M12 15v-1" />
+        </svg>
+      );
+    case 'target':
+      // v1.0.0 (Cycle 14 P1-4) 新增：Goal Automation（靶心+外圈，表达目标+轮转）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <circle cx="12" cy="12" r="10" />
+          <circle cx="12" cy="12" r="6" />
+          <circle cx="12" cy="12" r="2" fill="currentColor" />
         </svg>
       );
     default:
@@ -355,6 +387,13 @@ export default function BrandHeader({
   onOpenMemory,
   onOpenVerification,
   onOpenDoctor,
+  onOpenLlmJudge,
+  onOpenMarketplace,
+  onOpenMultimodal,
+  onOpenEnterpriseHub,
+  onOpenTraeWork,
+  onOpenGoalAutomation,
+  onOpenGoalTemplates,
   onOpenMCP,
   onOpenCompaction,
   onOpenSkills,
@@ -616,6 +655,118 @@ export default function BrandHeader({
                 >
                   <Icon name="folder" className="w-4 h-4" />
                   <span>🩺 Doctor 环境诊断</span>
+                </button>
+              )}
+
+              {/* v1.0.0 (Cycle 13 P1-2) 新增：LLM-as-Judge 验证层入口
+               *  行为：点击跳转 /llm-judge 路由打开 LLM Judge 页面
+               *  图标：folder，强调 5 维度评分与多 Judge 共识 */}
+              {onOpenLlmJudge && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenLlmJudge)}
+                  className="w-full px-4 py-2 text-left text-sm text-amber-700
+                             hover:bg-amber-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <Icon name="folder" className="w-4 h-4" />
+                  <span>⚖️ LLM-as-Judge</span>
+                </button>
+              )}
+
+              {/* v1.0.0 (Cycle 13 P1-3) 新增：Plugin Marketplace 入口
+               *  行为：点击跳转 /marketplace 路由打开 Plugin 商城
+               *  图标：folder，强调浏览/评分/发布插件 */}
+              {onOpenMarketplace && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMarketplace)}
+                  className="w-full px-4 py-2 text-left text-sm text-indigo-700
+                             hover:bg-indigo-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <Icon name="folder" className="w-4 h-4" />
+                  <span>🏪 Plugin Marketplace</span>
+                </button>
+              )}
+
+              {/* v1.0.0 (Cycle 14 P0-2) 新增：多模态支持入口
+               *  行为：点击跳转 /multimodal 路由打开多模态分析页
+               *  图标：image（新增），强调 Vision + Audio 智能分析 */}
+              {onOpenMultimodal && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMultimodal)}
+                  className="w-full px-4 py-2 text-left text-sm text-violet-700
+                             hover:bg-violet-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <Icon name="image" className="w-4 h-4" />
+                  <span>🎨 多模态支持</span>
+                </button>
+              )}
+
+              {/* v1.0.0 (Cycle 14 P0-3) 新增：企业级 Plugin Hub 入口
+               *  行为：点击跳转 /enterprise-hub 路由打开企业级 Plugin Hub 页
+               *  功能：90+ 插件目录、团队管理、RBAC、成本控制、审批、审计、Dashboard */}
+              {onOpenEnterpriseHub && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenEnterpriseHub)}
+                  className="w-full px-4 py-2 text-left text-sm text-indigo-700
+                             hover:bg-indigo-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <span>🏢</span>
+                  <span>Enterprise Plugin Hub</span>
+                </button>
+              )}
+
+              {/* v1.0.0 (Cycle 14 P1-3) 新增：TRAE Work 多模态协作入口
+               *  行为：点击跳转 /work 路由打开 TRAE Work 多模态协作页
+               *  功能：Design Mode + Voice Chat + Global Memory + Video Studio */}
+              {onOpenTraeWork && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenTraeWork)}
+                  className="w-full px-4 py-2 text-left text-sm text-pink-700
+                             hover:bg-pink-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <span>🧰</span>
+                  <span>TRAE Work 多模态协作</span>
+                </button>
+              )}
+
+              {/* v1.0.0 (Cycle 14 P1-4) 新增：Goal Automation 入口
+               *  行为：点击跳转 /goal-automation 路由打开 Goal Automation 页面
+               *  功能：Auto-Turn 自动轮转 + Agent 注册表 + 委派任务三合一 */}
+              {onOpenGoalAutomation && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenGoalAutomation)}
+                  className="w-full px-4 py-2 text-left text-sm text-blue-700
+                             hover:bg-blue-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <Icon name="target" className="w-4 h-4" />
+                  <span>🎯 Goal Automation</span>
+                </button>
+              )}
+
+              {/* v1.0.0 (Cycle 14 P1-5) 新增：Goal Templates 模板库入口
+               *  行为：点击跳转 /goal-templates 路由打开模板库页面
+               *  功能：6 类内置模板 + Fork + 一键实例化 */}
+              {onOpenGoalTemplates && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenGoalTemplates)}
+                  className="w-full px-4 py-2 text-left text-sm text-violet-700
+                             hover:bg-violet-50 flex items-center gap-2
+                             transition-colors duration-fast font-medium"
+                >
+                  <Icon name="book" className="w-4 h-4" />
+                  <span>📚 Goal 模板库</span>
                 </button>
               )}
 

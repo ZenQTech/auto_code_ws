@@ -43,6 +43,25 @@ const MemoryPage = lazy(() => import('../pages/MemoryPage'));
 const VerificationPage = lazy(() => import('../pages/VerificationPage'));
 // v1.0.0 (Cycle 11 P2-2) 新增：Doctor 环境诊断系统独立访问页面
 const DoctorPage = lazy(() => import('../pages/DoctorPage'));
+// v1.0.0 (Cycle 13 P1-2) 新增：LLM-as-Judge 验证层独立访问页面
+const LlmJudgePage = lazy(() => import('../pages/LlmJudgePage'));
+// v1.0.0 (Cycle 13 P1-3) 新增：Plugin Marketplace 独立访问页面
+const MarketplacePage = lazy(() => import('../pages/MarketplacePage'));
+
+// v1.0.0 (Cycle 14 P0-2) 新增：多模态支持独立访问页面
+const MultimodalPage = lazy(() => import('../pages/MultimodalPage'));
+
+// v1.0.0 (Cycle 14 P0-3) 新增：企业级 Plugin Hub 独立访问页面
+const EnterpriseHubPage = lazy(() => import('../pages/EnterpriseHubPage'));
+
+// v1.0.0 (Cycle 14 P1-3) 新增：TRAE Work 多模态协作独立访问页面
+const TraeWorkPage = lazy(() => import('../pages/TraeWorkPage'));
+
+// v1.0.0 (Cycle 14 P1-4) 新增：Goal Automation 自动轮转 + 多 Agent 委派独立访问页面
+const GoalAutomationPage = lazy(() => import('../pages/GoalAutomationPage'));
+
+// v1.0.0 (Cycle 14 P1-5) 新增：Goal Templates 模板库独立访问页面
+const GoalTemplatesPage = lazy(() => import('../pages/GoalTemplatesPage'));
 
 // ============================================================
 // Suspense 包装器: 懒加载页面统一显示 loading
@@ -94,6 +113,20 @@ export const AppRouter: React.FC = () => {
           <Route path="verification" element={lazyPage(VerificationPage)} />
           {/* v1.0.0 (Cycle 11 P2-2) 新增：Doctor 环境诊断系统独立访问路由 */}
           <Route path="doctor" element={lazyPage(DoctorPage)} />
+          {/* v1.0.0 (Cycle 13 P1-2) 新增：LLM-as-Judge 验证层独立访问路由 */}
+          <Route path="llm-judge" element={lazyPage(LlmJudgePage)} />
+          {/* v1.0.0 (Cycle 13 P1-3) 新增：Plugin Marketplace 独立访问路由 */}
+          <Route path="marketplace" element={lazyPage(MarketplacePage)} />
+          {/* v1.0.0 (Cycle 14 P0-2) 新增：多模态支持独立访问路由 */}
+          <Route path="multimodal" element={lazyPage(MultimodalPage)} />
+          {/* v1.0.0 (Cycle 14 P0-3) 新增：企业级 Plugin Hub 独立访问路由 */}
+          <Route path="enterprise-hub" element={lazyPage(EnterpriseHubPage)} />
+          {/* v1.0.0 (Cycle 14 P1-3) 新增：TRAE Work 多模态协作独立访问路由 */}
+          <Route path="work" element={lazyPage(TraeWorkPage)} />
+          {/* v1.0.0 (Cycle 14 P1-4) 新增：Goal Automation 独立访问路由 */}
+          <Route path="goal-automation" element={lazyPage(GoalAutomationPage)} />
+          {/* v1.0.0 (Cycle 14 P1-5) 新增：Goal Templates 模板库独立访问路由 */}
+          <Route path="goal-templates" element={lazyPage(GoalTemplatesPage)} />
 
           {/* 模式选择 - 保留独立路由 */}
           <Route path="select-mode" element={lazyPage(ModeSelectorPage)} />

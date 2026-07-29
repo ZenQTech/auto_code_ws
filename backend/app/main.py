@@ -67,6 +67,9 @@
 #     （/api/doctor）实现 6 大类环境诊断（environment/workspace/llm/database/mcp/dependencies）
 #     + 4 种输出模式（summary/json/all/no-color）
 #     + 修复建议生成器（40+ 模板）+ 历史报告存储（保留最近 50 份）
+#   - 2026-07-28 | v6.31.0 | Cycle 14 P1-3 新增：注册 TRAE Work 路由
+#     （/api/work）实现 Design Mode + Voice Chat + Global Memory + Video Studio
+#     四大多模态协作子系统（36 REST 端点）
 # ============================================================
 """
 
@@ -901,6 +904,79 @@ app.include_router(doctor_router, prefix="/api/doctor", tags=["doctor"])
 # Cycle 11 P2-1 Playwright 风格 E2E 自动化框架
 from .api.e2e import router as e2e_router
 app.include_router(e2e_router, prefix="/api/e2e", tags=["e2e"])
+
+# v6.26.0 Cycle 14 P0-1：Hermes Agent v2 自进化智能体
+# 实现 Proactive Memory + Thread Automations + Self-Directing 三大核心能力
+# 基于 OpenAI Codex 26.415 / rust-v0.145.0+ 设计
+from .core.agent_v2.api import router as agent_v2_router
+app.include_router(agent_v2_router, prefix="/api", tags=["agent-v2"])
+
+# v6.27.0 Cycle 14 P0-2：多模态支持 (Vision/Audio)
+# 实现图像上传 + Vision 分析（OCR/UI/对象）+ 音频转写 + 多模态消息
+# 基于 Codex v0.145.0+ / TRAE v0.1.39 多模态协作能力
+from .core.multimodal.api import router as multimodal_router
+app.include_router(multimodal_router, prefix="/api", tags=["multimodal"])
+
+# v6.28.0 Cycle 14 P0-3：企业级 Plugin Hub
+# 实现 90+ 插件目录、团队管理、RBAC、成本控制、审批、审计、Dashboard
+# 基于 Codex for (almost) everything 2026-04 / TRAE Enterprise 企业级能力
+from .core.enterprise_hub.api import router as enterprise_hub_router, ENDPOINT_COUNT as ENTERPRISE_HUB_ENDPOINTS
+app.include_router(enterprise_hub_router, prefix="/api/enterprise-hub", tags=["enterprise-hub"])
+import logging as _eh_logging
+_eh_logging.getLogger(__name__).info(
+    f"Enterprise Plugin Hub 已注册 (endpoints={ENTERPRISE_HUB_ENDPOINTS})"
+)
+
+# v6.29.0 Cycle 14 P1-1：Orchestrated Multi-Agent 阶段合约
+# 实现 Stage Contract + Pipeline DAG + SLA 监控 + 重试编排 + 6 预定义模板 + 23 REST 端点
+# 基于 Codex v0.142 Multi-Agent Orchestration / TRAE Solo Multi-Agent Pipeline
+from .core.orchestrate.api import router as orchestrate_router, ENDPOINT_COUNT as ORCHESTRATE_ENDPOINTS
+app.include_router(orchestrate_router, prefix="/api/orchestrate", tags=["orchestrate"])
+import logging as _orch_logging
+_orch_logging.getLogger(__name__).info(
+    f"Orchestrate Multi-Agent 已注册 (endpoints={ORCHESTRATE_ENDPOINTS})"
+)
+
+# v6.30.0 Cycle 14 P1-2：Auto-Compaction 引擎
+# 7 阶段流水线 Plan→Analyze→Slice→Summarize→Merge→Verify→Compress
+# 冷热分层 + 增量压缩 + 4 策略 + 22 REST 端点
+# 基于 Codex v0.142 Auto-Compaction / MiniCode 7-Stage Pipeline
+from .api.auto_compaction import router as auto_compaction_router
+app.include_router(auto_compaction_router, tags=["auto-compaction"])
+import logging as _ac_logging
+_ac_logging.getLogger(__name__).info(
+    "Auto-Compaction 引擎已注册 (endpoints=22)"
+)
+
+# v6.31.0 Cycle 14 P1-3：TRAE Work 多模态协作
+# 实现 Design Mode (6 模板 + NL 编辑 + 代码导出) + Voice Chat (会话+上下文+Web搜索) +
+# Global Memory (项目级知识库) + Video (元数据+关键帧+摘要+Mock生成) = 36 REST 端点
+# 基于 TRAE v0.1.18-v0.1.39 "TRAE Work" (原 SOLO 模式) 多模态协作能力
+from .core.work.api import router as work_router
+app.include_router(work_router, prefix="/api", tags=["trae-work"])
+import logging as _work_logging
+_work_logging.getLogger(__name__).info(
+    "TRAE Work 多模态协作已注册 (endpoints=36)"
+)
+
+# v6.32.0 Cycle 14 P1-4：Goal 自动轮转 + 多 Agent 委派策略
+# 实现 Auto-Turn 引擎 (4 触发器 + 3 策略 + 暂停/恢复) +
+# Multi-Agent Delegation (6 角色 + 7 AC 类型 + 4 风险等级 + 负载均衡 + 故障转移) = 24 REST 端点
+# 基于 Codex v0.135+ Auto-Goal / TRAE v0.1.36+ Multi-Agent 委派能力
+from .api.goal_automation import router as goal_automation_router
+app.include_router(goal_automation_router, prefix="/api", tags=["goal-automation"])
+import logging as _ga_logging
+_ga_logging.getLogger(__name__).info(
+    "Goal Automation 已注册 (endpoints=24)"
+)
+
+# Cycle 14 P1-5: Goal Templates 模板库（6 内置模板 + 14 REST 端点 + Fork/Import/Export）
+from .api.goal_templates import router as goal_templates_router
+app.include_router(goal_templates_router, prefix="/api", tags=["goal-templates"])
+import logging as _gt_logging
+_gt_logging.getLogger(__name__).info(
+    "Goal Templates 已注册 (endpoints=14)"
+)
 
 # 启动时初始化 Custom Models 服务 + Bearer Token 后台刷新任务
 @app.on_event("startup")

@@ -85,6 +85,20 @@ export interface AppLayoutProps {
   onOpenVerification: () => void;
   /** v1.0.0 (Cycle 11 P2-2) 新增：跳转 Doctor 环境诊断页面（独立路由 /doctor） */
   onOpenDoctor: () => void;
+  /** v1.0.0 (Cycle 13 P1-2) 新增：跳转 LLM-as-Judge 页面（独立路由 /llm-judge） */
+  onOpenLlmJudge: () => void;
+  /** v1.0.0 (Cycle 13 P1-3) 新增：跳转 Plugin Marketplace 页面（独立路由 /marketplace） */
+  onOpenMarketplace: () => void;
+  /** v1.0.0 (Cycle 14 P0-2) 新增：跳转多模态支持页面（独立路由 /multimodal） */
+  onOpenMultimodal: () => void;
+  /** v1.0.0 (Cycle 14 P0-3) 新增：跳转企业级 Plugin Hub 页面（独立路由 /enterprise-hub） */
+  onOpenEnterpriseHub: () => void;
+  /** v1.0.0 (Cycle 14 P1-3) 新增：跳转 TRAE Work 多模态协作页面（独立路由 /work） */
+  onOpenTraeWork: () => void;
+  /** v1.0.0 (Cycle 14 P1-4) 新增：跳转 Goal Automation 页面（独立路由 /goal-automation） */
+  onOpenGoalAutomation: () => void;
+  /** v1.0.0 (Cycle 14 P1-5) 新增：跳转 Goal Templates 模板库页面（独立路由 /goal-templates） */
+  onOpenGoalTemplates: () => void;
   /** v6.14.0 Cycle 2 新增：打开 MCP 工具面板 */
   onOpenMCP: () => void;
   /** v6.14.0 Cycle 2 新增：打开会话压缩面板 */
@@ -212,6 +226,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenMemory,
   onOpenVerification,
   onOpenDoctor,
+  onOpenLlmJudge,
+  onOpenMarketplace,
+  onOpenMultimodal,
+  onOpenEnterpriseHub,
+  onOpenTraeWork,
+  onOpenGoalAutomation,
+  onOpenGoalTemplates,
   onOpenMCP,
   onOpenCompaction,
   onOpenSkills,
@@ -395,6 +416,13 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenMemory={onOpenMemory}
         onOpenVerification={onOpenVerification}
         onOpenDoctor={onOpenDoctor}
+        onOpenLlmJudge={onOpenLlmJudge}
+        onOpenMarketplace={onOpenMarketplace}
+        onOpenMultimodal={onOpenMultimodal}
+        onOpenEnterpriseHub={onOpenEnterpriseHub}
+        onOpenTraeWork={onOpenTraeWork}
+        onOpenGoalAutomation={onOpenGoalAutomation}
+        onOpenGoalTemplates={onOpenGoalTemplates}
         onOpenMCP={onOpenMCP}
         onOpenCompaction={onOpenCompaction}
         onOpenSkills={onOpenSkills}
