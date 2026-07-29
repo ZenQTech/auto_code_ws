@@ -2025,14 +2025,23 @@ export default function App() {
       {/* Toast 通知容器（v6.35.0 P1-7：替换旧 Toast 组件，支持多 Toast 堆叠 + 撤销按钮） */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 
-      {/* PlanViewer 计划展示弹窗 - 仅在编程模式下显示 */}
-      {appMode === 'coding' && !selectedProject && (
+      {/* PlanViewer 计划展示弹窗 - v6.37.0 Cycle 17 P0-1: 
+          旧的 PlanViewer API（content/visible/onConfirm）已被 Composer Plan Mode 取代，
+          新的 PlanViewer 集成在 ComposerPanel 中。旧的 plan 确认流由 CodingPanel 处理。
+          此处保留 import 仅为兼容，新版 App 中已不再使用。 */}
+      {false && appMode === 'coding' && !selectedProject && (
         <PlanViewer
-          content={planContent}
-          visible={planVisible}
-          onConfirm={handleConfirmPlan}
+          plan={null}
+          stage="idle"
+          onApproveStep={() => undefined}
+          onRejectStep={() => undefined}
+          onModifyStep={() => undefined}
+          onApproveAll={() => undefined}
+          onRejectAll={() => undefined}
+          onApprovePlan={() => undefined}
+          onRejectPlan={() => undefined}
+          onExecutePlan={() => undefined}
           onClose={() => setPlanVisible(false)}
-          confirmLoading={isConfirmPlanLoading}
         />
       )}
 
@@ -2103,7 +2112,7 @@ export default function App() {
           {/* v6.36.0 P2-1：移动端顶栏（仅移动端显示） */}
           {isMobile && (
             <MobileHeader
-              title={currentSessionTitle || 'Hermes'}
+              title={currentSession?.title || 'Hermes'}
               onMenuClick={() => setMobileSidebarOpen(true)}
               onPrimaryAction={handleNewTask}
               primaryActionIcon="+"
