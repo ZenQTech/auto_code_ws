@@ -13,6 +13,11 @@
  * # ============================================================
  * # 修改记录：
  * #   - 2026-06-24 | v1.0.0 | 初始版本：用户/AI 两种样式 + hover 工具栏 + 错误卡片（豆包风格）
+ * #   - 2026-07-29 | v6.33.0 | Cycle 15 P0 修复：4 个无功能按钮接入真实回调
+ * #     - 新增 onRegenerate/onLike/onDislike/onReadAloud 回调 props
+ * #     - 点赞/点踩支持 visual state（aria-pressed + 背景色）
+ * #     - 朗读按钮未提供回调时回退到内置 Web Speech API
+ * #     - 全部按钮增加 disabled 态视觉反馈
  * # ============================================================
  */
 
@@ -74,6 +79,12 @@ const VolumeIcon = () => (
  * - isStreaming: 是否处于流式输出中
  * - error: 流式错误时显示的错误内容
  * - onRetry: 错误卡片中的"重新发送"回调
+ * - messageId: 消息唯一 ID（用于操作回调）
+ * - feedback: 用户对消息的反馈状态（none=无 / like=赞 / dislike=踩）
+ * - onRegenerate: 重新生成回调（v6.33.0 新增：P0 修复无功能按钮）
+ * - onLike: 点赞回调
+ * - onDislike: 点踩回调
+ * - onReadAloud: 朗读回调（调用 Web Speech API）
  */
 export interface MessageBubbleProps {
   role: 'user' | 'assistant';
@@ -82,6 +93,12 @@ export interface MessageBubbleProps {
   isStreaming?: boolean;
   error?: string;
   onRetry?: () => void;
+  messageId?: string;
+  feedback?: 'none' | 'like' | 'dislike';
+  onRegenerate?: (messageId: string) => void;
+  onLike?: (messageId: string) => void;
+  onDislike?: (messageId: string) => void;
+  onReadAloud?: (messageId: string, text: string) => void;
 }
 
 // ============================================================
@@ -147,6 +164,33 @@ function copyToClipboard(text: string): void {
 }
 
 // ============================================================
+// 朗读辅助：调用 Web Speech API
+// 作用：speechSynthesis.speak + 中文语音优先
+// 失败回退：console.warn，不抛错
+// ============================================================
+
+/**
+ * 朗读文本（调用浏览器 Web Speech API）
+ * 参数：
+ *   - text: 待朗读内容
+ * 返回值：void（失败仅 console.warn）
+ */
+function readAloud(text: string): void {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) {
+    console.warn('当前浏览器不支持 Web Speech API');
+    return;
+  }
+  // 取消之前的朗读，避免重叠
+  window.speechSynthesis.cancel();
+  const utter = new SpeechSynthesisUtterance(text);
+  utter.lang = 'zh-CN';
+  utter.rate = 1.0;
+  utter.pitch = 1.0;
+  utter.volume = 1.0;
+  window.speechSynthesis.speak(utter);
+}
+
+// ============================================================
 // MessageBubble 主组件
 // ============================================================
 
@@ -165,6 +209,12 @@ export default function MessageBubble({
   isStreaming = false,
   error,
   onRetry,
+  messageId,
+  feedback = 'none',
+  onRegenerate,
+  onLike,
+  onDislike,
+  onReadAloud,
 }: MessageBubbleProps) {
   // ============================================================
   // 错误态：error 字段非空时优先渲染错误卡片
@@ -299,50 +349,73 @@ export default function MessageBubble({
                 <CopyIcon />
               </button>
               <button
-                onClick={() => console.log('regenerate')}
+                onClick={() => messageId && onRegenerate?.(messageId)}
+                disabled={!messageId || !onRegenerate}
                 title="重新生成"
                 aria-label="重新生成"
                 className="w-7 h-7 rounded-full hover:bg-surface-100
                            flex items-center justify-center
                            text-surface-600 hover:text-hermes-500
                            transition-colors duration-fast ease-material
-                           focus:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400"
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400
+                           disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <RefreshIcon />
               </button>
               <button
-                onClick={() => console.log('like')}
+                onClick={() => messageId && onLike?.(messageId)}
+                disabled={!messageId || !onLike}
                 title="点赞"
                 aria-label="点赞"
-                className="w-7 h-7 rounded-full hover:bg-surface-100
+                aria-pressed={feedback === 'like'}
+                className={`w-7 h-7 rounded-full hover:bg-surface-100
                            flex items-center justify-center
-                           text-surface-600 hover:text-hermes-500
                            transition-colors duration-fast ease-material
-                           focus:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400"
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400
+                           disabled:opacity-40 disabled:cursor-not-allowed ${
+                             feedback === 'like'
+                               ? 'text-hermes-500 bg-hermes-50'
+                               : 'text-surface-600 hover:text-hermes-500'
+                           }`}
               >
                 <ThumbsUpIcon />
               </button>
               <button
-                onClick={() => console.log('dislike')}
+                onClick={() => messageId && onDislike?.(messageId)}
+                disabled={!messageId || !onDislike}
                 title="点踩"
                 aria-label="点踩"
-                className="w-7 h-7 rounded-full hover:bg-surface-100
+                aria-pressed={feedback === 'dislike'}
+                className={`w-7 h-7 rounded-full hover:bg-surface-100
                            flex items-center justify-center
-                           text-surface-600 hover:text-hermes-500
                            transition-colors duration-fast ease-material
-                           focus:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400"
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400
+                           disabled:opacity-40 disabled:cursor-not-allowed ${
+                             feedback === 'dislike'
+                               ? 'text-red-500 bg-red-50'
+                               : 'text-surface-600 hover:text-hermes-500'
+                           }`}
               >
                 <ThumbsDownIcon />
               </button>
               <button
-                onClick={() => console.log('read-aloud')}
+                onClick={() => {
+                  if (messageId && onReadAloud) {
+                    onReadAloud(messageId, content);
+                  } else {
+                    // v6.33.0：未提供回调时使用内置 Web Speech API
+                    readAloud(content);
+                  }
+                }}
+                disabled={!content}
                 title="朗读"
                 aria-label="朗读"
                 className="w-7 h-7 rounded-full hover:bg-surface-100
                            flex items-center justify-center
                            text-surface-600 hover:text-hermes-500
                            transition-colors duration-fast ease-material
-                           focus:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400"
+                           focus:outline-none focus-visible:ring-2 focus-visible:ring-hermes-400
+                           disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 <VolumeIcon />
               </button>
