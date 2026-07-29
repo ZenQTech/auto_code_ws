@@ -109,11 +109,11 @@ echo ""
 echo "=== 阶段 2: 智能体调度平台生成总架构师 ==="
 
 # 启动 Goal
-RESP=$(curl -s -X POST "$BASE_URL/api/goal" \
+RESP=$(curl -s -X POST "$BASE_URL/api/goal/goals" \
     -H "Content-Type: application/json" \
     -d "{\"goal_id\":\"$GOAL_ID\",\"title\":\"Loop Engineering E2E Test\",\"objective\":\"Validate end-to-end workflow\"}" 2>/dev/null || echo '{"success":false}')
 # 验证 goal 路由存在（不一定必须返回 success）
-assert_contains "POST /api/goal endpoint available" "$RESP" "success\|created\|error"
+assert_contains "POST /api/goal/goals endpoint available" "$RESP" "success"
 
 # ============================================================
 # 阶段 3: Auto-Turn + Multi-Agent 委派
@@ -122,16 +122,16 @@ echo ""
 echo "=== 阶段 3: Auto-Turn 轮转 + Agent 委派 ==="
 
 # 注册 Auto-Turn 配置
-RESP=$(curl -s -X POST "$BASE_URL/api/goal-automation/$GOAL_ID/auto-turn/config" \
+RESP=$(curl -s -X POST "$BASE_URL/api/goal-automation/goals/$GOAL_ID/auto-turn/config" \
     -H "Content-Type: application/json" \
     -d '{"goal_id":"'$GOAL_ID'","strategy":"standard","max_turns":3,"triggers":["manual"]}')
-assert_contains "POST register auto-turn" "$RESP" "registered\|success\|goal_id"
+assert_contains "POST register auto-turn" "$RESP" "success"
 
 # 触发轮转
-RESP=$(curl -s -X POST "$BASE_URL/api/goal-automation/$GOAL_ID/auto-turn/trigger" \
+RESP=$(curl -s -X POST "$BASE_URL/api/goal-automation/goals/$GOAL_ID/auto-turn/trigger" \
     -H "Content-Type: application/json" \
     -d '{"trigger":"manual"}')
-assert_contains "POST trigger turn" "$RESP" "success\|turn_id"
+assert_contains "POST trigger turn" "$RESP" "success"
 
 # ============================================================
 # 阶段 4: Goal Templates 集成
@@ -175,7 +175,7 @@ assert "GET llm-cost health status" \
 
 # P1-3: Judge Consensus (通过 LLM Judge API)
 RESP=$(curl -s "$BASE_URL/api/llm-judge/health" 2>/dev/null || echo '{"status":"ok"}')
-assert_contains "GET llm-judge health" "$RESP" "ok"
+assert_contains "GET llm-judge health" "$RESP" "success"
 
 # ============================================================
 # 阶段 6: 评测 + 验收
@@ -184,8 +184,8 @@ echo ""
 echo "=== 阶段 6: 评测与验收 ==="
 
 # 验证 Auto-Turn 历史
-RESP=$(curl -s "$BASE_URL/api/goal-automation/$GOAL_ID/auto-turn/history")
-assert_contains "GET auto-turn history" "$RESP" "history\|turn_id"
+RESP=$(curl -s "$BASE_URL/api/goal-automation/goals/$GOAL_ID/auto-turn/history")
+assert_contains "GET auto-turn history" "$RESP" "history"
 
 # 验证 Goal Sync 事件
 RESP=$(curl -s "$BASE_URL/api/cycle15/goal-sync/events?goal_id=$GOAL_ID")
