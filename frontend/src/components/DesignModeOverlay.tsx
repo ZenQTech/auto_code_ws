@@ -71,7 +71,7 @@ export function DesignModeOverlay({ isActive, rootElement, onExit, onSelect, onC
   }, [controller]);
 
   const handleSubmit = useCallback(() => {
-    onSelect(selected);
+    onSelect?.(selected);
     onExit();
   }, [selected, onSelect, onExit]);
 

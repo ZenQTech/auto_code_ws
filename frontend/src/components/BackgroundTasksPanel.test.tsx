@@ -40,7 +40,8 @@ describe('BackgroundTasksPanel', () => {
     const engine = getBackgroundTaskEngine({ maxConcurrent: 5 });
     engine.createTask({ type: 'composer', prompt: '重构代码' });
     render(<BackgroundTasksPanel isOpen={true} onClose={() => {}} />);
-    expect(screen.getByText('重构代码')).toBeInTheDocument();
+    // 任务默认 title 为 "Composer: 重构代码"，使用正则宽松匹配
+    expect(screen.getByText(/重构代码/)).toBeInTheDocument();
   });
 
   it('切换状态过滤器', () => {
@@ -59,8 +60,9 @@ describe('BackgroundTasksPanel', () => {
     render(<BackgroundTasksPanel isOpen={true} onClose={() => {}} />);
     const searchInput = screen.getByTestId('background-tasks-search') as HTMLInputElement;
     fireEvent.change(searchInput, { target: { value: '认证' } });
-    expect(screen.getByText('重构认证模块')).toBeInTheDocument();
-    expect(screen.queryByText('添加新功能')).not.toBeInTheDocument();
+    // 任务默认 title 为 "Composer: <prompt>"，使用正则宽松匹配
+    expect(screen.getByText(/重构认证模块/)).toBeInTheDocument();
+    expect(screen.queryByText(/添加新功能/)).not.toBeInTheDocument();
   });
 
   it('切换列数', () => {
