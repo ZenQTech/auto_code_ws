@@ -79,6 +79,13 @@ describe('BackgroundTasksPanel', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('Esc 键关闭面板', () => {
+    const onClose = vi.fn();
+    render(<BackgroundTasksPanel isOpen={true} onClose={onClose} />);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('点击背景关闭', () => {
     const onClose = vi.fn();
     const { container } = render(<BackgroundTasksPanel isOpen={true} onClose={onClose} />);

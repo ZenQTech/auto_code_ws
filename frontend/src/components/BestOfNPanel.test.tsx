@@ -89,6 +89,13 @@ describe('BestOfNPanel', () => {
     expect(onClose).toHaveBeenCalled();
   });
 
+  it('Esc 键关闭面板（非运行中）', () => {
+    const onClose = vi.fn();
+    render(<BestOfNPanel isOpen={true} onClose={onClose} />);
+    fireEvent.keyDown(window, { key: 'Escape' });
+    expect(onClose).toHaveBeenCalled();
+  });
+
   it('切换列数', () => {
     render(<BestOfNPanel isOpen={true} onClose={() => {}} />);
     fireEvent.click(screen.getByTestId('best-of-n-columns-toggle'));

@@ -145,6 +145,12 @@ export interface AppLayoutProps {
   onOpenBestOfN: () => void;
   /** v6.43.0 (Cycle 19 P0-3) 新增：Design Mode 设计模式覆盖层回调 */
   onOpenDesignMode: () => void;
+  /** v6.45.0 (Cycle 20 P0-1) 新增：Worktree 隔离管理面板回调 */
+  onOpenWorktree: () => void;
+  /** v6.46.0 (Cycle 20 P0-2) 新增：模型路由面板回调 */
+  onOpenModelRouter: () => void;
+  /** v6.47.0 (Cycle 20 P0-3) 新增：事件钩子面板回调 */
+  onOpenHooks20: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -264,6 +270,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenBackgroundTasks,  // v6.41.0 (Cycle 19 P0-1) 透传 BrandHeader
   onOpenBestOfN,  // v6.42.0 (Cycle 19 P0-2) 透传 BrandHeader
   onOpenDesignMode,  // v6.43.0 (Cycle 19 P0-3) 透传 BrandHeader
+  onOpenWorktree,  // v6.45.0 (Cycle 20 P0-1) 透传 BrandHeader
+  onOpenModelRouter,  // v6.46.0 (Cycle 20 P0-2) 透传 BrandHeader
+  onOpenHooks20,  // v6.47.0 (Cycle 20 P0-3) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -458,6 +467,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenBackgroundTasks={onOpenBackgroundTasks}
         onOpenBestOfN={onOpenBestOfN}
         onOpenDesignMode={onOpenDesignMode}
+        onOpenWorktree={onOpenWorktree}
+        onOpenModelRouter={onOpenModelRouter}
+        onOpenHooks20={onOpenHooks20}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

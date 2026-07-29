@@ -134,6 +134,12 @@ export interface BrandHeaderProps {
   onOpenBestOfN?: () => void;
   /** v6.43.0 (Cycle 19 P0-3) 新增：打开 Design Mode 设计模式覆盖层回调（可选） */
   onOpenDesignMode?: () => void;
+  /** v6.45.0 (Cycle 20 P0-1) 新增：打开 Worktree 隔离管理面板回调（可选） */
+  onOpenWorktree?: () => void;
+  /** v6.46.0 (Cycle 20 P0-2) 新增：打开智能模型路由面板回调（可选） */
+  onOpenModelRouter?: () => void;
+  /** v6.47.0 (Cycle 20 P0-3) 新增：打开事件钩子管理面板回调（可选） */
+  onOpenHooks20?: () => void;
 }
 
 /**
@@ -143,7 +149,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -415,6 +421,43 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M9 6h6M9 18h6M6 9v6M18 9v6" />
         </svg>
       );
+    case 'git-branch':
+      // v6.45.0 (Cycle 20 P0-1) 新增：Git 分支（树形分支 + 节点）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <line x1="6" y1="3" x2="6" y2="15" />
+          <circle cx="18" cy="6" r="3" />
+          <circle cx="6" cy="18" r="3" />
+          <path d="M18 9a9 9 0 0 1-9 9" />
+        </svg>
+      );
+    case 'git-commit':
+      // Git 提交 - 备用图标
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <circle cx="12" cy="12" r="4" />
+          <line x1="1.05" y1="12" x2="7" y2="12" />
+          <line x1="17.01" y1="12" x2="22.96" y2="12" />
+        </svg>
+      );
+    case 'webhook':
+      // v6.47.0 (Cycle 20 P0-3) 新增：Webhook（钩子+链接）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M18 16.98h-5.99c-1.1 0-1.95.94-2.48 1.9A4 4 0 0 1 2 17c.01-.7.2-1.4.57-2" />
+          <path d="m6 17 3.13-5.78c.53-.97.1-2.18-.5-3.1a4 4 0 1 1 6.89-4.06" />
+          <path d="m12 6 3.13 5.73C15.66 12.7 16.9 13 18 13a4 4 0 0 1 0 8" />
+        </svg>
+      );
+    case 'route':
+      // 路由 - 备用图标
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <circle cx="6" cy="19" r="3" />
+          <path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15" />
+          <circle cx="18" cy="5" r="3" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -486,6 +529,12 @@ export default function BrandHeader({
   onOpenBestOfN,
   /** v6.43.0 (Cycle 19 P0-3) 新增：Design Mode */
   onOpenDesignMode,
+  /** v6.45.0 (Cycle 20 P0-1) 新增：Worktree 隔离 */
+  onOpenWorktree,
+  /** v6.46.0 (Cycle 20 P0-2) 新增：智能模型路由 */
+  onOpenModelRouter,
+  /** v6.47.0 (Cycle 20 P0-3) 新增：事件钩子 */
+  onOpenHooks20,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1225,6 +1274,57 @@ export default function BrandHeader({
                 >
                   <Icon name="design-mode" className="w-4 h-4 text-purple-500" />
                   <span>🎨 Design Mode 设计模式</span>
+                </button>
+              )}
+
+              {/* v6.45.0 (Cycle 20 P0-1) 新增：Worktree 隔离管理（菜单项）
+               *  行为：点击调 onOpenWorktree() 弹出 WorktreePanel
+               *       支持 worktree 创建 / 合并 / 丢弃 / diff / cleanup
+               *  图标：worktree（树形分支），表达 git worktree 隔离 */}
+              {onOpenWorktree && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenWorktree)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-emerald-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="git-branch" className="w-4 h-4 text-emerald-500" />
+                  <span>🌳 Worktree 隔离</span>
+                </button>
+              )}
+
+              {/* v6.46.0 (Cycle 20 P0-2) 新增：智能模型路由（菜单项）
+               *  行为：点击调 onOpenModelRouter() 弹出 ModelRouterPanel
+               *       支持任务分类 + 复杂度评估 + 路由模式（cost/balance/intelligence）
+               *  图标：cpu（CPU芯片），表达智能选择 */}
+              {onOpenModelRouter && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenModelRouter)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-pink-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="cpu" className="w-4 h-4 text-pink-500" />
+                  <span>🧠 智能模型路由</span>
+                </button>
+              )}
+
+              {/* v6.47.0 (Cycle 20 P0-3) 新增：事件钩子管理（菜单项）
+               *  行为：点击调 onOpenHooks20() 弹出 HooksPanel
+               *       支持钩子注册（callback/webhook/command/script） + 触发 + 执行历史
+               *  图标：zap（闪电），表达事件触发 */}
+              {onOpenHooks20 && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenHooks20)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-amber-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="zap" className="w-4 h-4 text-amber-500" />
+                  <span>🪝 事件钩子</span>
                 </button>
               )}
 

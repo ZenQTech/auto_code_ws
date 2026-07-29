@@ -210,6 +210,12 @@ import { BackgroundTasksPanel } from './components/BackgroundTasksPanel';
 import { BestOfNPanel } from './components/BestOfNPanel';
 /** v6.43.0 (Cycle 19 P0-3) 新增：Design Mode 设计模式覆盖层 */
 import { DesignModeOverlay } from './components/DesignModeOverlay';
+/** v6.45.0 (Cycle 20 P0-1) 新增：Git Worktree 隔离管理面板 */
+import { WorktreePanel } from './components/WorktreePanel';
+/** v6.46.0 (Cycle 20 P0-2) 新增：智能模型路由面板 */
+import { ModelRouterPanel } from './components/ModelRouterPanel';
+/** v6.47.0 (Cycle 20 P0-3) 新增：事件钩子管理面板（新 v2 版本） */
+import { HooksManagerPanel } from './components/HooksManagerPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1194,6 +1200,36 @@ export default function App() {
   const [designModeOpen, setDesignModeOpen] = useState(false);
   const handleOpenDesignMode = useCallback(() => {
     setDesignModeOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.45.0 (Cycle 20 P0-1) 新增：Git Worktree 隔离管理面板开关状态
+   * 作用：控制 WorktreePanel 弹窗显隐
+   *       worktree 通过 WorktreeManager 单例管理
+   */
+  const [worktreeOpen, setWorktreeOpen] = useState(false);
+  const handleOpenWorktree = useCallback(() => {
+    setWorktreeOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.46.0 (Cycle 20 P0-2) 新增：智能模型路由面板开关状态
+   * 作用：控制 ModelRouterPanel 弹窗显隐
+   *       路由决策通过 ModelRouter 单例管理
+   */
+  const [modelRouterOpen, setModelRouterOpen] = useState(false);
+  const handleOpenModelRouter = useCallback(() => {
+    setModelRouterOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.47.0 (Cycle 20 P0-3) 新增：事件钩子管理面板开关状态
+   * 作用：控制 HooksPanel 弹窗显隐
+   *       钩子通过 HooksEngine 单例管理
+   */
+  const [hooks20Open, setHooks20Open] = useState(false);
+  const handleOpenHooks20 = useCallback(() => {
+    setHooks20Open((prev) => !prev);
   }, []);
 
   /**
@@ -2213,6 +2249,9 @@ export default function App() {
           onOpenBackgroundTasks={handleOpenBackgroundTasks}
           onOpenBestOfN={handleOpenBestOfN}
           onOpenDesignMode={handleOpenDesignMode}
+          onOpenWorktree={handleOpenWorktree}
+          onOpenModelRouter={handleOpenModelRouter}
+          onOpenHooks20={handleOpenHooks20}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -2616,6 +2655,42 @@ export default function App() {
         <DesignModeOverlay
           isActive={designModeOpen}
           onExit={() => setDesignModeOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.45.0 (Cycle 20 P0-1) 新增：Git Worktree 隔离管理面板
+       *  触发：BrandHeader 菜单"🌳 Worktree 隔离"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  worktree 状态由 WorktreeManager 单例管理（带持久化）
+       *  v6.45.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="Worktree">
+        <WorktreePanel
+          isOpen={worktreeOpen}
+          onClose={() => setWorktreeOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.46.0 (Cycle 20 P0-2) 新增：智能模型路由面板
+       *  触发：BrandHeader 菜单"🧠 模型路由"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  路由决策由 ModelRouter 单例管理
+       *  v6.46.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="ModelRouter">
+        <ModelRouterPanel
+          isOpen={modelRouterOpen}
+          onClose={() => setModelRouterOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.47.0 (Cycle 20 P0-3) 新增：事件钩子管理面板
+       *  触发：BrandHeader 菜单"🪝 事件钩子"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  钩子状态由 HooksEngine 单例管理
+       *  v6.47.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="Hooks20">
+        <HooksManagerPanel
+          isOpen={hooks20Open}
+          onClose={() => setHooks20Open(false)}
         />
       </ErrorBoundary>
     </div>

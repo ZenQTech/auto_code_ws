@@ -157,6 +157,19 @@ export function BackgroundTasksPanel({ isOpen, onClose, onTaskClick }: Backgroun
     engine.clearHistory();
   }, [engine]);
 
+  // v6.41.0 P5 UI 优化：Esc 键关闭面板
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !showConfirm) {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isOpen, onClose, showConfirm]);
+
   if (!isOpen) return null;
 
   return (
@@ -167,7 +180,7 @@ export function BackgroundTasksPanel({ isOpen, onClose, onTaskClick }: Backgroun
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-surface-900 border border-surface-700 rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+      <div className="bg-gradient-to-br from-surface-900 to-surface-950 border border-surface-700 rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col animate-in fade-in duration-200">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-surface-700">
           <div>

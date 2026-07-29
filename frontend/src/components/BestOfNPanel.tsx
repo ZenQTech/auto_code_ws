@@ -181,6 +181,18 @@ export function BestOfNPanel({ isOpen, onClose, initialPrompt, onSelect, onMerge
 
   if (!isOpen) return null;
 
+  // v6.42.0 P5 UI 优化：Esc 键关闭面板（运行中禁用）
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !isRunning) {
+        e.preventDefault();
+        onClose();
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [isRunning, onClose]);
+
   return (
     <div
       data-testid="best-of-n-panel"
@@ -189,7 +201,7 @@ export function BestOfNPanel({ isOpen, onClose, initialPrompt, onSelect, onMerge
         if (e.target === e.currentTarget && !isRunning) onClose();
       }}
     >
-      <div className="bg-surface-900 border border-surface-700 rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col">
+      <div className="bg-gradient-to-br from-surface-900 to-surface-950 border border-surface-700 rounded-lg shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col animate-in fade-in duration-200">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-surface-700">
           <div>
