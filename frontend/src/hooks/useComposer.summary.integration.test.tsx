@@ -122,7 +122,7 @@ describe('useComposer - Summary 集成层 (Cycle 18 P0-2)', () => {
       act(() => {
         summary = result.current.summarize({ force: true });
       });
-      let success: boolean;
+      let success: boolean = false;
       act(() => {
         success = result.current.applySummary(summary.id);
       });
@@ -138,7 +138,7 @@ describe('useComposer - Summary 集成层 (Cycle 18 P0-2)', () => {
           <ComposerProvider engine={engine}>{children}</ComposerProvider>
         ),
       });
-      let success: boolean;
+      let success: boolean = false;
       act(() => {
         success = result.current.applySummary('invalid_id');
       });
@@ -163,7 +163,7 @@ describe('useComposer - Summary 集成层 (Cycle 18 P0-2)', () => {
       act(() => {
         result.current.applySummary(summary.id);
       });
-      let success: boolean;
+      let success: boolean = false;
       act(() => {
         success = result.current.unapplySummary();
       });
@@ -178,7 +178,7 @@ describe('useComposer - Summary 集成层 (Cycle 18 P0-2)', () => {
           <ComposerProvider engine={engine}>{children}</ComposerProvider>
         ),
       });
-      let success: boolean;
+      let success: boolean = false;
       act(() => {
         success = result.current.unapplySummary();
       });
