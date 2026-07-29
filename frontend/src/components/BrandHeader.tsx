@@ -146,6 +146,14 @@ export interface BrandHeaderProps {
   onOpenModelRouterStats?: () => void;
   /** v6.50.0 (Cycle 21 P0-4) 新增：打开 Hook 模板市场面板回调（可选） */
   onOpenHooksMarketplace?: () => void;
+  /** v6.51.0 (Cycle 22 G22-01) 新增：打开 Side Chat 多子对话面板回调（可选） */
+  onOpenSideChat?: () => void;
+  /** v6.52.0 (Cycle 22 G22-02) 新增：打开成本预测面板回调（可选） */
+  onOpenCostPrediction?: () => void;
+  /** v6.53.0 (Cycle 22 G22-03) 新增：打开 Hook 性能分析面板回调（可选） */
+  onOpenHookPerformance?: () => void;
+  /** v6.54.0 (Cycle 22 G22-04) 新增：打开模型路由管理面板回调（可选） */
+  onOpenModelRouterAdmin?: () => void;
 }
 
 /**
@@ -155,7 +163,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -464,6 +472,38 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <circle cx="18" cy="5" r="3" />
         </svg>
       );
+    case 'side-chat':
+      // Side Chat - 多子对话图标（聊天气泡 + 分支）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          <path d="M8 9h8" />
+          <path d="M8 13h6" />
+        </svg>
+      );
+    case 'predict':
+      // 成本预测 - 折线上箭头
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+        </svg>
+      );
+    case 'performance':
+      // 性能分析 - 时速表
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 14l4-4" />
+          <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+        </svg>
+      );
+    case 'admin':
+      // 模型路由管理 - 盾牌 + 勾
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -547,6 +587,14 @@ export default function BrandHeader({
   onOpenModelRouterStats,
   /** v6.50.0 (Cycle 21 P0-4) 新增：Hook 模板市场 */
   onOpenHooksMarketplace,
+  /** v6.51.0 (Cycle 22 G22-01) 新增：Side Chat 多子对话 */
+  onOpenSideChat,
+  /** v6.52.0 (Cycle 22 G22-02) 新增：成本预测 */
+  onOpenCostPrediction,
+  /** v6.53.0 (Cycle 22 G22-03) 新增：Hook 性能分析 */
+  onOpenHookPerformance,
+  /** v6.54.0 (Cycle 22 G22-04) 新增：模型路由管理 */
+  onOpenModelRouterAdmin,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1388,6 +1436,74 @@ export default function BrandHeader({
                 >
                   <Icon name="sparkles" className="w-4 h-4 text-violet-500" />
                   <span>🛒 Hook 模板市场</span>
+                </button>
+              )}
+
+              {/* v6.51.0 (Cycle 22 G22-01) 新增：Side Chat 多子对话（菜单项）
+               *  行为：点击调 onOpenSideChat() 弹出 SideChatPanel
+               *       支持在主对话之外开启轻量子对话，可晋升/合并/归档
+               *  图标：side-chat（聊天气泡） */}
+              {onOpenSideChat && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSideChat)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="side-chat" className="w-4 h-4 text-cyan-500" />
+                  <span>💬 Side Chat 多子对话</span>
+                </button>
+              )}
+
+              {/* v6.52.0 (Cycle 22 G22-02) 新增：成本预测（菜单项）
+               *  行为：点击调 onOpenCostPrediction() 弹出 CostPredictionPanel
+               *       支持 4 种预测算法 + 预算设置 + 实时告警 + 趋势图表
+               *  图标：predict（折线上箭头） */}
+              {onOpenCostPrediction && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCostPrediction)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-emerald-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="predict" className="w-4 h-4 text-emerald-500" />
+                  <span>📈 成本预测</span>
+                </button>
+              )}
+
+              {/* v6.53.0 (Cycle 22 G22-03) 新增：Hook 性能分析（菜单项）
+               *  行为：点击调 onOpenHookPerformance() 弹出 HookPerformancePanel
+               *       支持慢节点分析 + 失败率分析 + 5 类优化建议 + 报告导出
+               *  图标：performance（时速表） */}
+              {onOpenHookPerformance && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenHookPerformance)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-orange-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="performance" className="w-4 h-4 text-orange-500" />
+                  <span>⚡ Hook 性能分析</span>
+                </button>
+              )}
+
+              {/* v6.54.0 (Cycle 22 G22-04) 新增：模型路由管理（菜单项）
+               *  行为：点击调 onOpenModelRouterAdmin() 弹出 ModelRouterAdminPanel
+               *       支持团队策略 CRUD + 模型白/黑名单 + 显示控制 + 路由历史
+               *  图标：admin（盾牌 + 勾） */}
+              {onOpenModelRouterAdmin && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenModelRouterAdmin)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-sky-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="admin" className="w-4 h-4 text-sky-500" />
+                  <span>🛡️ 模型路由管理</span>
                 </button>
               )}
 

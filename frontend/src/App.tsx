@@ -129,6 +129,14 @@
 #     ⑤ 4 个面板均通过 ErrorBoundary 嵌套 + 显隐 state + onClose 回调
 #     ⑥ BrandHeader 新增对应菜单项：🎯 Best-of-N 协同 / 💰 模型成本统计 /
 #        🛒 Hook 模板市场
+#   - 2026-07-29 | v6.54.0 | Cycle 22 G22-01~G22-04 集成 4 个新功能面板：
+#     ① SideChatPanel (v1.0.0/Cycle 22 G22-01) Side Chat 多子对话管理
+#     ② CostPredictionPanel (v1.0.0/Cycle 22 G22-02) 成本预测 + 预算告警
+#     ③ HookPerformancePanel (v1.0.0/Cycle 22 G22-03) Hook 性能分析 + 报告导出
+#     ④ ModelRouterAdminPanel (v1.0.0/Cycle 22 G22-04) 模型路由策略管理
+#     ⑤ 4 个面板均通过 ErrorBoundary 嵌套 + 显隐 state + onClose 回调
+#     ⑥ BrandHeader 新增 4 个菜单项 + 4 个 SVG 图标
+#     ⑦ AppLayout 新增 4 个回调 prop 透传
 # ============================================================
  */
 
@@ -230,6 +238,14 @@ import { BestOfNCoordinatorPanel } from './components/BestOfNCoordinatorPanel';
 import { ModelRouterStatsPanel } from './components/ModelRouterStatsPanel';
 /** v6.50.0 (Cycle 21 P0-4) 新增：Hook 模板市场面板 */
 import { HooksMarketplacePanel } from './components/HooksMarketplacePanel';
+/** v6.51.0 (Cycle 22 G22-01) 新增：Side Chat 多子对话面板 */
+import { SideChatPanel } from './components/SideChatPanel';
+/** v6.52.0 (Cycle 22 G22-02) 新增：成本预测面板 */
+import { CostPredictionPanel } from './components/CostPredictionPanel';
+/** v6.53.0 (Cycle 22 G22-03) 新增：Hook 性能分析面板 */
+import { HookPerformancePanel } from './components/HookPerformancePanel';
+/** v6.54.0 (Cycle 22 G22-04) 新增：模型路由管理面板 */
+import { ModelRouterAdminPanel } from './components/ModelRouterAdminPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1277,6 +1293,46 @@ export default function App() {
   }, []);
 
   /**
+   * v6.51.0 (Cycle 22 G22-01) 新增：Side Chat 多子对话面板开关状态
+   * 作用：控制 SideChatPanel 弹窗显隐
+   *       子对话由 SideChatManager 单例管理
+   */
+  const [sideChatOpen, setSideChatOpen] = useState(false);
+  const handleOpenSideChat = useCallback(() => {
+    setSideChatOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.52.0 (Cycle 22 G22-02) 新增：成本预测面板开关状态
+   * 作用：控制 CostPredictionPanel 弹窗显隐
+   *       成本预测由 CostPredictor 单例管理
+   */
+  const [costPredictionOpen, setCostPredictionOpen] = useState(false);
+  const handleOpenCostPrediction = useCallback(() => {
+    setCostPredictionOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.53.0 (Cycle 22 G22-03) 新增：Hook 性能分析面板开关状态
+   * 作用：控制 HookPerformancePanel 弹窗显隐
+   *       性能分析由 HookPerformanceAnalyzer 单例管理
+   */
+  const [hookPerformanceOpen, setHookPerformanceOpen] = useState(false);
+  const handleOpenHookPerformance = useCallback(() => {
+    setHookPerformanceOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.54.0 (Cycle 22 G22-04) 新增：模型路由管理面板开关状态
+   * 作用：控制 ModelRouterAdminPanel 弹窗显隐
+   *       路由策略由 ModelRouterEnhance 单例管理
+   */
+  const [modelRouterAdminOpen, setModelRouterAdminOpen] = useState(false);
+  const handleOpenModelRouterAdmin = useCallback(() => {
+    setModelRouterAdminOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2299,6 +2355,10 @@ export default function App() {
           onOpenBestOfNCoordinator={handleOpenBestOfNCoordinator}
           onOpenModelRouterStats={handleOpenModelRouterStats}
           onOpenHooksMarketplace={handleOpenHooksMarketplace}
+          onOpenSideChat={handleOpenSideChat}
+          onOpenCostPrediction={handleOpenCostPrediction}
+          onOpenHookPerformance={handleOpenHookPerformance}
+          onOpenModelRouterAdmin={handleOpenModelRouterAdmin}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -2774,6 +2834,54 @@ export default function App() {
         <HooksMarketplacePanel
           isOpen={hooksMarketplaceOpen}
           onClose={() => setHooksMarketplaceOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.51.0 (Cycle 22 G22-01) 新增：Side Chat 多子对话面板
+       *  触发：BrandHeader 菜单"💬 Side Chat 多子对话"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  子对话由 SideChatManager 单例管理
+       *  v6.51.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="SideChat">
+        <SideChatPanel
+          isOpen={sideChatOpen}
+          onClose={() => setSideChatOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.52.0 (Cycle 22 G22-02) 新增：成本预测面板
+       *  触发：BrandHeader 菜单"📈 成本预测"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  成本预测由 CostPredictor 单例管理
+       *  v6.52.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="CostPrediction">
+        <CostPredictionPanel
+          isOpen={costPredictionOpen}
+          onClose={() => setCostPredictionOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.53.0 (Cycle 22 G22-03) 新增：Hook 性能分析面板
+       *  触发：BrandHeader 菜单"⚡ Hook 性能分析"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  性能分析由 HookPerformanceAnalyzer 单例管理
+       *  v6.53.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="HookPerformance">
+        <HookPerformancePanel
+          isOpen={hookPerformanceOpen}
+          onClose={() => setHookPerformanceOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.54.0 (Cycle 22 G22-04) 新增：模型路由管理面板
+       *  触发：BrandHeader 菜单"🛡️ 模型路由管理"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  路由策略由 ModelRouterEnhance 单例管理
+       *  v6.54.0: ErrorBoundary 嵌套 */}
+      <ErrorBoundary level="panel" name="ModelRouterAdmin">
+        <ModelRouterAdminPanel
+          isOpen={modelRouterAdminOpen}
+          onClose={() => setModelRouterAdminOpen(false)}
         />
       </ErrorBoundary>
     </div>
