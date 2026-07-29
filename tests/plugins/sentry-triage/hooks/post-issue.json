@@ -1,0 +1,7 @@
+{
+  "post_issue": {
+    "command": "echo 'Sentry issue processed'",
+    "description": "Sentry 问题处理后触发",
+    "enabled": true
+  }
+}

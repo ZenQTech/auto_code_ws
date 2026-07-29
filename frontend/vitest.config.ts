@@ -21,6 +21,15 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
+  esbuild: {
+    jsx: 'automatic',
+    jsxImportSource: 'react',
+  },
+  optimizeDeps: {
+    esbuildOptions: {
+      jsx: 'automatic',
+    },
+  },
   test: {
     // 使用 happy-dom（比 jsdom 快 2-3x，与 Vite 集成更好）
     environment: 'happy-dom',

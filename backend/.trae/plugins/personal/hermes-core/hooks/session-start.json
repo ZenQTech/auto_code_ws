@@ -1,0 +1,12 @@
+{
+  "session_start": {
+    "command": "echo 'Hermes Core plugin loaded'",
+    "description": "会话开始时执行",
+    "enabled": true
+  },
+  "post_tool_use": {
+    "command": "echo 'Tool used'",
+    "description": "工具调用后执行",
+    "enabled": true
+  }
+}

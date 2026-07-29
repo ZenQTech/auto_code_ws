@@ -978,6 +978,22 @@ _gt_logging.getLogger(__name__).info(
     "Goal Templates 已注册 (endpoints=14)"
 )
 
+# Cycle 15 P1-1: 健康端点补齐（ready/live/startup/components/cycle15/metrics）
+from .api.cycle15_health import router as cycle15_health_router
+app.include_router(cycle15_health_router, prefix="/api", tags=["health"])
+import logging as _cy15_logging
+_cy15_logging.getLogger(__name__).info(
+    "Cycle 15 Health 已注册 (endpoints=8)"
+)
+
+# Cycle 15 P0-1/P0-2/P1-2: Goal Sync + Scheduler + LLM Cost REST API（28 端点）
+from .api.cycle15 import router as cycle15_router
+app.include_router(cycle15_router, prefix="/api", tags=["cycle15"])
+import logging as _cy15api_logging
+_cy15api_logging.getLogger(__name__).info(
+    "Cycle 15 API 已注册 (goal_sync=8, scheduler=10, llm_cost=10, total=28)"
+)
+
 # 启动时初始化 Custom Models 服务 + Bearer Token 后台刷新任务
 @app.on_event("startup")
 async def _init_custom_models():

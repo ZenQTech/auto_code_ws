@@ -1,0 +1,34 @@
+{
+  "id": "sentry-triage",
+  "name": "Sentry Triage",
+  "version": "1.0.0",
+  "description": "Auto-triage Sentry issues and create PR fixes",
+  "author": {
+    "name": "Hermes Community",
+    "email": "community@hermes.local"
+  },
+  "license": "Apache-2.0",
+  "keywords": ["sentry", "triage", "monitoring", "ci-cd"],
+  "categories": ["monitoring", "ci-cd"],
+  "hermes_version": ">=6.17.0",
+  "dependencies": {
+    "plugins": ["hermes-core"],
+    "python": ">=3.10"
+  },
+  "components": {
+    "skills": [
+      "skills/triage"
+    ],
+    "agents": [
+      "agents/sentry-analyzer.md"
+    ],
+    "hooks": [
+      "hooks/post-issue.json"
+    ]
+  },
+  "permissions": {
+    "network": ["sentry.io"],
+    "filesystem": ["/tmp/sentry-cache"],
+    "tools": ["read", "write", "execute"]
+  }
+}

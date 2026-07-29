@@ -1,0 +1,11 @@
+{
+  "id": "test-e2e-plugin",
+  "name": "E2E Test Plugin",
+  "version": "1.0.0",
+  "description": "Plugin for E2E testing",
+  "author": {"name": "E2E Tester"},
+  "license": "MIT",
+  "components": {
+    "skills": ["skills/test-skill.md"]
+  }
+}

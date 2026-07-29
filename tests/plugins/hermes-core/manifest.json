@@ -1,0 +1,47 @@
+{
+  "id": "hermes-core",
+  "name": "Hermes Core",
+  "version": "1.0.0",
+  "description": "Hermes 核心 Plugin，包含 Memory、Verification 等基础技能",
+  "author": {
+    "name": "Hermes Team",
+    "email": "team@hermes.local"
+  },
+  "license": "MIT",
+  "homepage": "https://hermes.local/plugins/hermes-core",
+  "keywords": ["memory", "verification", "core"],
+  "categories": ["core", "memory"],
+  "icon": "icon.png",
+  "hermes_version": ">=6.17.0",
+  "dependencies": {
+    "plugins": [],
+    "python": ">=3.10",
+    "node": null
+  },
+  "components": {
+    "skills": [
+      "skills/memory-kernel",
+      "skills/verification-loop"
+    ],
+    "agents": [
+      "agents/architect.md",
+      "agents/critic.md"
+    ],
+    "hooks": [
+      "hooks/session-start.json"
+    ],
+    "mcp_servers": [],
+    "rules": [],
+    "commands": []
+  },
+  "permissions": {
+    "network": [],
+    "filesystem": ["/home/qizheng/auto_code_data"],
+    "tools": ["read", "write", "edit"]
+  },
+  "verification": {
+    "checksum": "sha256:demo",
+    "signature": null,
+    "publisher": "Hermes Team"
+  }
+}
