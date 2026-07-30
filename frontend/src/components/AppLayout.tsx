@@ -171,6 +171,10 @@ export interface AppLayoutProps {
   onOpenSessionReplay: () => void;
   /** v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议面板回调 */
   onOpenProactiveSuggestion: () => void;
+  onOpenGlobalMemory?: () => void;
+  onOpenMultiTask?: () => void;
+  /** v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码面板回调 */
+  onOpenFigmaImport?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -303,6 +307,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenCandidateLearning,  // v6.55.0 (Cycle 23 G23-01) 透传 BrandHeader
   onOpenSessionReplay,  // v6.56.0 (Cycle 23 G23-02) 透传 BrandHeader
   onOpenProactiveSuggestion,  // v6.57.0 (Cycle 23 G23-04) 透传 BrandHeader
+  onOpenGlobalMemory,  // v6.58.0 (Cycle 24 G24-01) 透传 BrandHeader
+  onOpenMultiTask,  // v6.59.0 (Cycle 24 G24-02) 透传 BrandHeader
+  onOpenFigmaImport,  // v6.60.0 (Cycle 24 G24-04) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -510,6 +517,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenCandidateLearning={onOpenCandidateLearning}
         onOpenSessionReplay={onOpenSessionReplay}
         onOpenProactiveSuggestion={onOpenProactiveSuggestion}
+        onOpenGlobalMemory={onOpenGlobalMemory}
+        onOpenMultiTask={onOpenMultiTask}
+        onOpenFigmaImport={onOpenFigmaImport}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

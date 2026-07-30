@@ -160,6 +160,12 @@ export interface BrandHeaderProps {
   onOpenSessionReplay?: () => void;
   /** v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议面板回调（可选） */
   onOpenProactiveSuggestion?: () => void;
+  /** v6.58.0 (Cycle 24 G24-01) 新增：全局记忆面板回调（可选） */
+  onOpenGlobalMemory?: () => void;
+  /** v6.59.0 (Cycle 24 G24-02) 新增：多任务并行编排面板回调（可选） */
+  onOpenMultiTask?: () => void;
+  /** v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码面板回调（可选） */
+  onOpenFigmaImport?: () => void;
 }
 
 /**
@@ -169,7 +175,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -632,6 +638,12 @@ export default function BrandHeader({
   onOpenSessionReplay,
   /** v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议 */
   onOpenProactiveSuggestion,
+  /** v6.58.0 (Cycle 24 G24-01) 新增：全局记忆 */
+  onOpenGlobalMemory,
+  /** v6.59.0 (Cycle 24 G24-02) 新增：多任务并行编排 */
+  onOpenMultiTask,
+  /** v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码 */
+  onOpenFigmaImport,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1595,6 +1607,60 @@ export default function BrandHeader({
                 >
                   <Icon name="suggestion" className="w-4 h-4 text-amber-500" />
                   <span>💡 AI 主动建议</span>
+                </button>
+              )}
+
+              {/* v6.58.0 (Cycle 24 G24-01) 新增：全局记忆（菜单项）
+               *  行为：点击调 onOpenGlobalMemory() 弹出 GlobalMemoryPanel
+               *       支持跨会话持久化用户偏好/决策/事实/规则
+               *  图标：brain（记忆） */}
+              {onOpenGlobalMemory && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenGlobalMemory)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-emerald-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-global-memory"
+                >
+                  <Icon name="brain" className="w-4 h-4 text-emerald-500" />
+                  <span>🧠 全局记忆</span>
+                </button>
+              )}
+
+              {/* v6.59.0 (Cycle 24 G24-02) 新增：多任务并行编排（菜单项）
+               *  行为：点击调 onOpenMultiTask() 弹出 MultiTaskOrchestrationPanel
+               *       支持 5-10 个任务并行执行 + 依赖编排 + 冲突检测 + 预算控制
+               *  图标：brain-network（神经网络） */}
+              {onOpenMultiTask && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMultiTask)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-blue-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-multi-task"
+                >
+                  <Icon name="brain-network" className="w-4 h-4 text-blue-500" />
+                  <span>🧠 多任务编排</span>
+                </button>
+              )}
+
+              {/* v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码（菜单项）
+               *  行为：点击调 onOpenFigmaImport() 弹出 FigmaImportPanel
+               *       URL 解析 + 节点拉取 + React/Vue/HTML 自动生成
+               *  图标：figma（Figma logo 风格） */}
+              {onOpenFigmaImport && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenFigmaImport)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-pink-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-figma-import"
+                >
+                  <Icon name="figma" className="w-4 h-4 text-pink-500" />
+                  <span>🎨 Figma 转代码</span>
                 </button>
               )}
 

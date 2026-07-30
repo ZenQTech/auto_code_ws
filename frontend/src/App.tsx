@@ -260,6 +260,12 @@ import { CandidateLearningPanel } from './components/CandidateLearningPanel';
 import { SessionReplayPanel } from './components/SessionReplayPanel';
 /** v6.57.0 (Cycle 23 G23-04) 新增：AI 主动建议面板（含浮动气泡） */
 import { ProactiveSuggestionPanel, FloatingSuggestionBubble } from './components/ProactiveSuggestionPanel';
+/** v6.58.0 (Cycle 24 G24-01) 新增：跨会话记忆面板 */
+import { GlobalMemoryPanel } from './components/GlobalMemoryPanel';
+/** v6.59.0 (Cycle 24 G24-02) 新增：多任务并行编排面板 */
+import { MultiTaskOrchestrationPanel } from './components/MultiTaskOrchestrationPanel';
+/** v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码面板 */
+import { FigmaImportPanel } from './components/FigmaImportPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1377,6 +1383,36 @@ export default function App() {
   }, []);
 
   /**
+   * v6.58.0 (Cycle 24 G24-01) 全局记忆面板开关
+   * 作用：控制 GlobalMemoryPanel 弹窗显隐
+   *       记忆引擎由 GlobalMemoryEngine 单例管理
+   */
+  const [globalMemoryOpen, setGlobalMemoryOpen] = useState(false);
+  const handleOpenGlobalMemory = useCallback(() => {
+    setGlobalMemoryOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.59.0 (Cycle 24 G24-02) 多任务并行编排面板开关
+   * 作用：控制 MultiTaskOrchestrationPanel 弹窗显隐
+   *       编排器由 MultiTaskOrchestrator 单例管理
+   */
+  const [multiTaskOpen, setMultiTaskOpen] = useState(false);
+  const handleOpenMultiTask = useCallback(() => {
+    setMultiTaskOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.60.0 (Cycle 24 G24-04) Figma 设计稿转代码面板开关
+   * 作用：控制 FigmaImportPanel 弹窗显隐
+   *       适配器由 FigmaAdapter 单例管理
+   */
+  const [figmaImportOpen, setFigmaImportOpen] = useState(false);
+  const handleOpenFigmaImport = useCallback(() => {
+    setFigmaImportOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2406,6 +2442,9 @@ export default function App() {
           onOpenCandidateLearning={handleOpenCandidateLearning}
           onOpenSessionReplay={handleOpenSessionReplay}
           onOpenProactiveSuggestion={handleOpenProactiveSuggestion}
+          onOpenGlobalMemory={handleOpenGlobalMemory}
+          onOpenMultiTask={handleOpenMultiTask}
+          onOpenFigmaImport={handleOpenFigmaImport}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -2965,7 +3004,40 @@ export default function App() {
         />
       </ErrorBoundary>
 
-      {/* v6.57.0 (Cycle 23 G23-04) 新增：浮动建议气泡
+      {/* v6.58.0 (Cycle 24 G24-01) 新增：跨会话记忆面板
+       *  触发：BrandHeader 菜单"🧠 全局记忆"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  记忆引擎由 GlobalMemoryEngine 单例管理 */}
+      <ErrorBoundary level="panel" name="GlobalMemory">
+        <GlobalMemoryPanel
+          isOpen={globalMemoryOpen}
+          onClose={() => setGlobalMemoryOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.59.0 (Cycle 24 G24-02) 新增：多任务并行编排面板
+       *  触发：BrandHeader 菜单"🧠 多任务编排"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  编排器由 MultiTaskOrchestrator 单例管理 */}
+      <ErrorBoundary level="panel" name="MultiTaskOrchestration">
+        <MultiTaskOrchestrationPanel
+          isOpen={multiTaskOpen}
+          onClose={() => setMultiTaskOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码面板
+       *  触发：BrandHeader 菜单"🎨 Figma 转代码"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  适配器由 FigmaAdapter 单例管理，支持 URL 解析 + 节点拉取 + React/Vue/HTML 自动生成 */}
+      <ErrorBoundary level="panel" name="FigmaImport">
+        <FigmaImportPanel
+          isOpen={figmaImportOpen}
+          onClose={() => setFigmaImportOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.57.0 (Cycle 23 G24-04) 新增：浮动建议气泡
        *  位置：右下角，仅在有活跃建议时显示
        *  点击展开 AI 主动建议面板 */}
       <FloatingSuggestionBubble onOpenPanel={handleOpenProactiveSuggestion} />
