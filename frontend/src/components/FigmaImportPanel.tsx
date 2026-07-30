@@ -128,6 +128,10 @@ export function FigmaImportPanel({ isOpen, onClose }: FigmaImportPanelProps) {
   const [parsedInfo, setParsedInfo] = useState<{ fileKey: string; nodeId?: string } | null>(null);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
   const [copySuccess, setCopySuccess] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastError, setLastError] = useState<string | null>(null);
   const unsubsRef = useRef<Array<() => void>>([]);
 
   // 加载 localStorage 持久化
@@ -367,6 +371,63 @@ export function FigmaImportPanel({ isOpen, onClose }: FigmaImportPanelProps) {
     setInfo('缓存已清空');
   }, [adapter]);
 
+  // 重试上次失败操作
+  const handleRetry = useCallback(() => {
+    setError(null);
+    setInfo(null);
+    setLastError(null);
+    setRetryCount((c) => c + 1);
+    if (lastError === 'fetch' && parsedInfo) {
+      handleFetch();
+    } else {
+      handleGenerate();
+    }
+  }, [lastError, parsedInfo, handleFetch, handleGenerate]);
+
+  // 键盘快捷键支持
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Esc 关闭面板
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      // Cmd/Ctrl + Enter = 生成代码
+      if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+        e.preventDefault();
+        if (currentNode) handleGenerate();
+        return;
+      }
+      // Cmd/Ctrl + K = 复制代码
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        if (generated) handleCopy();
+        return;
+      }
+      // ? 显示快捷键
+      if (e.key === '?' && !e.shiftKey) {
+        const target = e.target as HTMLElement;
+        if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
+        e.preventDefault();
+        setShowShortcuts((s) => !s);
+        return;
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, currentNode, generated, handleGenerate, handleCopy]);
+
+  // 记录错误以便重试
+  useEffect(() => {
+    if (error && (error.includes('拉取') || error.includes('fetch') || error.includes('API'))) {
+      setLastError('fetch');
+    } else if (error) {
+      setLastError('generate');
+    }
+  }, [error]);
+
   // 重置全部
   const handleReset = useCallback(() => {
     if (typeof window !== 'undefined' && !(window as { confirm?: (msg: string) => boolean }).confirm?.('确认重置 FigmaAdapter？所有配置和缓存将清空')) {
@@ -384,6 +445,16 @@ export function FigmaImportPanel({ isOpen, onClose }: FigmaImportPanelProps) {
   if (!isOpen) return null;
 
   const flatNodes = currentNode ? flattenNodes(currentNode) : [];
+  const filteredFlatNodes = searchQuery.trim()
+    ? flatNodes.filter(({ node, path }) => {
+        const q = searchQuery.toLowerCase();
+        return (
+          node.name.toLowerCase().includes(q) ||
+          node.type.toLowerCase().includes(q) ||
+          path.toLowerCase().includes(q)
+        );
+      })
+    : flatNodes;
   const mockPresets = Object.keys(FIGMA_MOCK_PRESETS);
 
   return (
@@ -425,6 +496,15 @@ export function FigmaImportPanel({ isOpen, onClose }: FigmaImportPanelProps) {
             >
               ×
             </button>
+            <button
+              onClick={() => setShowShortcuts(true)}
+              data-testid="figma-shortcuts-btn"
+              title="快捷键 (?)"
+              className="text-slate-400 hover:text-white text-sm w-7 h-7 flex items-center justify-center rounded hover:bg-surface-700 transition border border-surface-700"
+              aria-label="快捷键"
+            >
+              ?
+            </button>
           </div>
         </div>
 
@@ -432,13 +512,66 @@ export function FigmaImportPanel({ isOpen, onClose }: FigmaImportPanelProps) {
         {(error || info) && (
           <div
             data-testid="figma-status"
-            className={`px-5 py-2 text-xs border-b ${
+            className={`px-5 py-2 text-xs border-b flex items-center justify-between ${
               error
                 ? 'bg-rose-500/10 text-rose-300 border-rose-500/20'
                 : 'bg-emerald-500/10 text-emerald-300 border-emerald-500/20'
             }`}
           >
-            {error || info}
+            <div className="flex items-center gap-2">
+              {error && <span>⚠️</span>}
+              {info && !error && <span>✓</span>}
+              <span>{error || info}</span>
+              {retryCount > 0 && !error && (
+                <span className="text-[10px] text-slate-500">重试 #{retryCount}</span>
+              )}
+            </div>
+            {error && (
+              <button
+                onClick={handleRetry}
+                data-testid="figma-retry"
+                className="px-2 py-0.5 text-[10px] bg-rose-500/20 border border-rose-500/30 rounded hover:bg-rose-500/30"
+              >
+                🔄 重试
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* 快捷键帮助 */}
+        {showShortcuts && (
+          <div
+            data-testid="figma-shortcuts-panel"
+            className="absolute top-14 right-4 z-50 bg-surface-900 border border-surface-700 rounded-lg shadow-2xl p-3 min-w-[260px]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-white">⌨️ 快捷键</span>
+              <button
+                onClick={() => setShowShortcuts(false)}
+                className="text-slate-400 hover:text-white text-sm w-5 h-5"
+              >
+                ✕
+              </button>
+            </div>
+            <ul className="space-y-1.5 text-[11px]">
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">关闭面板</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">Esc</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">生成代码</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">⌘/Ctrl + ↵</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">复制代码</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">⌘/Ctrl + K</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">显示快捷键</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">?</kbd>
+              </li>
+            </ul>
           </div>
         )}
 
@@ -470,8 +603,14 @@ export function FigmaImportPanel({ isOpen, onClose }: FigmaImportPanelProps) {
                   onClick={handleFetch}
                   disabled={loading || !parsedInfo}
                   data-testid="figma-fetch"
-                  className="px-3 py-1.5 text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded hover:bg-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-3 py-1.5 text-xs bg-blue-500/20 text-blue-300 border border-blue-500/30 rounded hover:bg-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
+                  {loading && (
+                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
                   {loading ? '拉取中...' : '拉取'}
                 </button>
               </div>
@@ -530,33 +669,66 @@ export function FigmaImportPanel({ isOpen, onClose }: FigmaImportPanelProps) {
               ))}
             </div>
 
+            {/* 节点搜索 */}
+            {currentNode && (
+              <div className="px-4 py-2 border-b border-surface-700 bg-surface-800/20 flex items-center gap-2">
+                <span className="text-[10px] text-slate-500">🔍</span>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="搜索节点名称、类型、路径..."
+                  data-testid="figma-node-search"
+                  className="flex-1 px-2 py-1 bg-surface-900 border border-surface-700 rounded text-[10px] text-slate-200 placeholder-slate-500 focus:border-primary-500 focus:outline-none"
+                />
+                {searchQuery && (
+                  <button
+                    onClick={() => setSearchQuery('')}
+                    data-testid="figma-node-search-clear"
+                    className="px-1.5 py-0.5 text-[10px] text-slate-400 hover:text-white"
+                  >
+                    ✕
+                  </button>
+                )}
+                <span className="text-[10px] text-slate-500" data-testid="figma-node-count">
+                  {filteredFlatNodes.length}/{flatNodes.length}
+                </span>
+              </div>
+            )}
+
             {/* 节点树 */}
             <div className="flex-1 overflow-auto p-3 min-h-0">
               {currentNode ? (
                 <div className="space-y-0.5" data-testid="figma-node-tree">
-                  {flatNodes.map(({ node, depth, path }) => (
-                    <button
-                      key={node.id}
-                      onClick={() => handleSelectNode(node)}
-                      data-testid={`figma-node-${node.id}`}
-                      className={`w-full text-left flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-mono transition ${
-                        selectedNodeId === node.id
-                          ? 'bg-primary-500/20 text-primary-200 border border-primary-500/30'
-                          : 'hover:bg-surface-800 text-slate-300 border border-transparent'
-                      }`}
-                      style={{ paddingLeft: `${depth * 16 + 8}px` }}
-                      title={path}
-                    >
-                      <span className="text-amber-400 w-4 text-center">{getNodeIcon(node.type)}</span>
-                      <span className="text-slate-400 w-16 truncate text-[10px]">{node.type}</span>
-                      <span className="truncate">{node.name}</span>
-                      {node.width && node.height && (
-                        <span className="ml-auto text-[10px] text-slate-500">
-                          {Math.round(node.width)}×{Math.round(node.height)}
-                        </span>
-                      )}
-                    </button>
-                  ))}
+                  {filteredFlatNodes.length === 0 ? (
+                    <div className="text-center text-[11px] text-slate-500 py-4" data-testid="figma-node-empty">
+                      没有匹配的节点
+                    </div>
+                  ) : (
+                    filteredFlatNodes.map(({ node, depth, path }) => (
+                      <button
+                        key={node.id}
+                        onClick={() => handleSelectNode(node)}
+                        data-testid={`figma-node-${node.id}`}
+                        className={`w-full text-left flex items-center gap-1.5 px-2 py-1 rounded text-[11px] font-mono transition ${
+                          selectedNodeId === node.id
+                            ? 'bg-primary-500/20 text-primary-200 border border-primary-500/30'
+                            : 'hover:bg-surface-800 text-slate-300 border border-transparent'
+                        }`}
+                        style={{ paddingLeft: `${depth * 16 + 8}px` }}
+                        title={path}
+                      >
+                        <span className="text-amber-400 w-4 text-center">{getNodeIcon(node.type)}</span>
+                        <span className="text-slate-400 w-16 truncate text-[10px]">{node.type}</span>
+                        <span className="truncate">{node.name}</span>
+                        {node.width && node.height && (
+                          <span className="ml-auto text-[10px] text-slate-500">
+                            {Math.round(node.width)}×{Math.round(node.height)}
+                          </span>
+                        )}
+                      </button>
+                    ))
+                  )}
                 </div>
               ) : (
                 <EmptyState
@@ -633,8 +805,14 @@ export function FigmaImportPanel({ isOpen, onClose }: FigmaImportPanelProps) {
                   onClick={handleGenerate}
                   disabled={generating}
                   data-testid="figma-generate"
-                  className="ml-auto px-3 py-1 text-xs bg-gradient-to-r from-primary-500 to-pink-500 text-white rounded hover:from-primary-400 hover:to-pink-400 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="ml-auto px-3 py-1 text-xs bg-gradient-to-r from-primary-500 to-pink-500 text-white rounded hover:from-primary-400 hover:to-pink-400 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
                 >
+                  {generating && (
+                    <svg className="w-3 h-3 animate-spin" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                    </svg>
+                  )}
                   {generating ? '生成中...' : '生成代码'}
                 </button>
               </div>

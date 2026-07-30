@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * # MultiTaskOrchestrationPanel - 多任务编排 UI (v1.0.0 Cycle 24 G24-02)
+ * # MultiTaskOrchestrationPanel - 多任务编排 UI (v1.1.0 Cycle 24 P2-2)
  * # ============================================================
  * # 核心作用：MultiTaskOrchestrator 的可视化控制面板
  * # 主要功能：
@@ -11,13 +11,16 @@
  * #   5. 依赖图视图（任务顺序与依赖关系）
  * #   6. 冲突监控
  * #   7. 配置（并发/预算/策略）
+ * #   8. 快捷键系统（Esc/?/Cmd+N/Cmd+B/Cmd+Shift+C）
+ * #   9. 状态持久化 + 加载动画 + 错误重试 + 任务搜索防抖
  * # ============================================================
  * # 修改记录：
  * #   - 2026-07-30 | v1.0.0 | Cycle 24 G24-02 初次创建
+ * #   - 2026-07-30 | v1.1.0 | P2-2 UI/UX 一致性增强
  * # ============================================================
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   getMultiTaskOrchestrator,
   MULTI_TASK_TYPE_LABELS,
@@ -62,6 +65,35 @@ const STATUS_LABELS: Record<MultiTaskStatus, string> = {
 const TYPE_FILTERS: FilterType[] = ['all', 'requirement', 'architecture', 'implementation', 'testing', 'review', 'documentation', 'refactor', 'deployment'];
 const STATUS_FILTERS: FilterStatus[] = ['all', 'pending', 'running', 'paused', 'completed', 'failed', 'cancelled'];
 
+const STORAGE_KEY = 'hermes.multiTaskPanel';
+const SEARCH_DEBOUNCE_MS = 200;
+
+interface PersistedState {
+  tab: TabKey;
+  filterStatus: FilterStatus;
+  filterType: FilterType;
+}
+
+function safeGet<T>(key: string, fallback: T): T {
+  try {
+    if (typeof localStorage === 'undefined') return fallback;
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function safeSet(key: string, value: unknown): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // ignore
+  }
+}
+
 export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrchestrationPanelProps) {
   const engine = useMemo(() => getMultiTaskOrchestrator(), []);
   const [tab, setTab] = useState<TabKey>('tasks');
@@ -71,9 +103,46 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
   const [config, setConfig] = useState<MultiTaskConfig>(engine.getConfig());
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
   const [filterType, setFilterType] = useState<FilterType>('all');
+  const [searchInput, setSearchInput] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [info, setInfo] = useState<string | null>(null);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastFailedAction, setLastFailedAction] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // 恢复持久化
+  useEffect(() => {
+    if (!isOpen) return;
+    const persisted = safeGet<PersistedState | null>(STORAGE_KEY, null);
+    if (persisted) {
+      if (persisted.tab) setTab(persisted.tab);
+      if (persisted.filterStatus) setFilterStatus(persisted.filterStatus);
+      if (persisted.filterType) setFilterType(persisted.filterType);
+    }
+  }, [isOpen]);
+
+  // 持久化
+  useEffect(() => {
+    if (!isOpen) return;
+    safeSet(STORAGE_KEY, { tab, filterStatus, filterType });
+  }, [isOpen, tab, filterStatus, filterType]);
+
+  // 搜索防抖
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchInput]);
 
   const refresh = useCallback(() => {
     setTasks(engine.listTasks());
@@ -103,31 +172,47 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
     };
   }, [isOpen, engine, refresh]);
 
+  // 自动清除消息
   useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
+    if (error) {
+      const t = setTimeout(() => setError(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [error]);
+  useEffect(() => {
+    if (info) {
+      const t = setTimeout(() => setInfo(null), 3000);
+      return () => clearTimeout(t);
+    }
+  }, [info]);
 
-  // 过滤
+  // 过滤 + 搜索
   const filtered = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
     return tasks.filter((t) => {
       if (filterStatus !== 'all' && t.status !== filterStatus) return false;
       if (filterType !== 'all' && t.type !== filterType) return false;
+      if (q) {
+        return (
+          t.name.toLowerCase().includes(q) ||
+          t.description.toLowerCase().includes(q) ||
+          t.id.toLowerCase().includes(q) ||
+          MULTI_TASK_TYPE_LABELS[t.type].toLowerCase().includes(q)
+        );
+      }
       return true;
     });
-  }, [tasks, filterStatus, filterType]);
+  }, [tasks, filterStatus, filterType, searchQuery]);
 
   // 操作
   const handleStart = useCallback(
     (id: string) => {
       if (!engine.start(id)) {
         setError('无法启动（依赖未完成/并发数已满/预算超限/文件冲突）');
+        setLastFailedAction('start');
       } else {
         setError(null);
+        setInfo('已启动');
       }
     },
     [engine]
@@ -137,26 +222,45 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
   const handleResume = useCallback((id: string) => { engine.resume(id); }, [engine]);
   const handleCancel = useCallback(
     (id: string) => {
-      if (confirm('确认取消此任务？')) engine.cancel(id);
+      if (!(globalThis as { confirm?: (msg: string) => boolean }).confirm?.('确认取消此任务？')) return;
+      engine.cancel(id);
+      setInfo('已取消');
     },
     [engine]
   );
   const handleRetry = useCallback(
     (id: string) => {
-      if (!engine.retry(id)) setError('无法重试（次数用尽或状态不允许）');
+      if (!engine.retry(id)) {
+        setError('无法重试（次数用尽或状态不允许）');
+        setLastFailedAction('retry');
+      } else {
+        setInfo('已重新启动');
+      }
     },
     [engine]
   );
 
-  const handleBatchStart = useCallback(() => {
-    const n = engine.startBatch();
-    setError(n === 0 ? '无可启动任务' : null);
+  const handleBatchStart = useCallback(async () => {
+    setBusyAction('batch-start');
+    try {
+      await new Promise((r) => setTimeout(r, 30));
+      const n = engine.startBatch();
+      if (n === 0) {
+        setError('无可启动任务');
+        setLastFailedAction('batch-start');
+      } else {
+        setInfo(`已批量启动 ${n} 个任务`);
+      }
+    } finally {
+      setBusyAction(null);
+    }
   }, [engine]);
 
   const handleBatchCancel = useCallback(() => {
-    if (!confirm('确认取消所有运行中的任务？')) return;
+    if (!(globalThis as { confirm?: (msg: string) => boolean }).confirm?.('确认取消所有运行中的任务？')) return;
     const running = engine.getRunningTasks();
     running.forEach((t) => engine.cancel(t.id));
+    setInfo(`已取消 ${running.length} 个任务`);
   }, [engine]);
 
   const handleUpdateConfig = useCallback(
@@ -165,6 +269,67 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
     },
     [engine]
   );
+
+  // 重试上次失败操作
+  const handleRetryLast = useCallback(() => {
+    if (!lastFailedAction) return;
+    setRetryCount((c) => c + 1);
+    setError(null);
+    setLastFailedAction(null);
+    if (lastFailedAction === 'batch-start') handleBatchStart();
+  }, [lastFailedAction, handleBatchStart]);
+
+  // 键盘快捷键
+  useEffect(() => {
+    if (!isOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const inInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA' || target?.tagName === 'SELECT';
+
+      // Esc 关闭 / 退出
+      if (e.key === 'Escape') {
+        if (showShortcuts) { setShowShortcuts(false); return; }
+        if (showCreateForm) { setShowCreateForm(false); return; }
+        if (selectedId) { setSelectedId(null); return; }
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      // ? 显示快捷键
+      if (e.key === '?' && !e.shiftKey && !inInput) {
+        e.preventDefault();
+        setShowShortcuts((s) => !s);
+        return;
+      }
+      // Cmd/Ctrl + N = 新建任务
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        setShowCreateForm(true);
+        return;
+      }
+      // Cmd/Ctrl + B = 批量启动
+      if ((e.metaKey || e.ctrlKey) && !e.shiftKey && e.key === 'b') {
+        e.preventDefault();
+        handleBatchStart();
+        return;
+      }
+      // Cmd/Ctrl + Shift + C = 批量取消
+      if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'C') {
+        e.preventDefault();
+        handleBatchCancel();
+        return;
+      }
+      // Cmd/Ctrl + F = 聚焦搜索
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+    };
+    document.addEventListener('keydown', handler);
+    return () => document.removeEventListener('keydown', handler);
+  }, [isOpen, onClose, selectedId, showCreateForm, showShortcuts, handleBatchStart, handleBatchCancel]);
 
   if (!isOpen) return null;
 
@@ -177,7 +342,7 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
       data-testid="multi-task-panel"
       onClick={onClose}
     >
@@ -198,14 +363,24 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
               </p>
             </div>
           </div>
-          <button
-            onClick={onClose}
-            data-testid="multi-task-close"
-            className="text-slate-400 hover:text-white text-2xl leading-none w-8 h-8 flex items-center justify-center rounded hover:bg-surface-700 transition"
-            aria-label="关闭"
-          >
-            ×
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowShortcuts(!showShortcuts)}
+              data-testid="multi-task-shortcuts-btn"
+              className="w-7 h-7 text-xs text-slate-400 hover:text-white border border-surface-700 rounded-full bg-surface-900 hover:bg-surface-700 transition flex items-center justify-center"
+              title="快捷键 (?)"
+            >
+              ?
+            </button>
+            <button
+              onClick={onClose}
+              data-testid="multi-task-close"
+              className="text-slate-400 hover:text-white text-2xl leading-none w-8 h-8 flex items-center justify-center rounded hover:bg-surface-700 transition"
+              aria-label="关闭"
+            >
+              ×
+            </button>
+          </div>
         </div>
 
         {/* Top Stats Bar */}
@@ -242,15 +417,38 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
           ))}
         </div>
 
+        {/* Toast 消息区域（顶部居中） */}
+        {(error || info) && (
+          <div
+            data-testid="multi-task-toast"
+            className={`absolute top-32 left-1/2 -translate-x-1/2 z-20 p-3 rounded text-sm flex items-center gap-2 shadow-lg animate-in slide-in-from-top-2 duration-200 ${
+              error
+                ? 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+            }`}
+          >
+            {error && lastFailedAction && (
+              <button
+                onClick={handleRetryLast}
+                data-testid="multi-task-retry"
+                className="px-2 py-0.5 bg-rose-500/30 hover:bg-rose-500/40 text-rose-200 text-xs rounded"
+              >
+                🔄 重试 {retryCount > 0 && `(${retryCount})`}
+              </button>
+            )}
+            <span>{error || info}</span>
+            <button
+              onClick={() => { setError(null); setInfo(null); setLastFailedAction(null); }}
+              data-testid="multi-task-toast-close"
+              className="ml-2 text-slate-400 hover:text-white"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
         {/* Body */}
         <div className="flex-1 overflow-hidden flex">
-          {error && (
-            <div className="absolute top-32 left-1/2 -translate-x-1/2 z-10 p-3 bg-rose-500/10 border border-rose-500/30 rounded text-rose-300 text-sm">
-              {error}
-              <button onClick={() => setError(null)} className="ml-2 text-rose-400 hover:text-rose-200">×</button>
-            </div>
-          )}
-
           {tab === 'tasks' && (
             <TasksTab
               tasks={filtered}
@@ -259,6 +457,10 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
               setFilterStatus={setFilterStatus}
               filterType={filterType}
               setFilterType={setFilterType}
+              searchInput={searchInput}
+              setSearchInput={setSearchInput}
+              searchQuery={searchQuery}
+              searchInputRef={searchInputRef}
               selectedId={selectedId}
               onSelect={setSelectedId}
               onStart={handleStart}
@@ -269,6 +471,7 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
               onCreateNew={() => setShowCreateForm(true)}
               onBatchStart={handleBatchStart}
               onBatchCancel={handleBatchCancel}
+              busyAction={busyAction}
             />
           )}
 
@@ -293,6 +496,7 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
             onCreate={(input) => {
               engine.createTask(input);
               setShowCreateForm(false);
+              setInfo('任务已创建');
             }}
           />
         )}
@@ -309,6 +513,52 @@ export function MultiTaskOrchestrationPanel({ isOpen, onClose }: MultiTaskOrches
             onCancel={handleCancel}
             onRetry={handleRetry}
           />
+        )}
+
+        {/* 快捷键帮助面板 */}
+        {showShortcuts && (
+          <div
+            data-testid="multi-task-shortcuts-panel"
+            className="absolute top-14 right-12 z-50 bg-surface-900 border border-surface-700 rounded-lg shadow-2xl p-3 min-w-[280px] animate-in fade-in slide-in-from-top-2 duration-200"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-white">⌨️ 快捷键</span>
+              <button
+                onClick={() => setShowShortcuts(false)}
+                data-testid="multi-task-shortcuts-close"
+                className="text-slate-400 hover:text-white text-sm w-5 h-5"
+                aria-label="关闭"
+              >
+                ✕
+              </button>
+            </div>
+            <ul className="space-y-1.5 text-[11px]">
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">关闭面板</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">Esc</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">显示快捷键</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">?</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">新建任务</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">⌘/Ctrl + N</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">批量启动</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">⌘/Ctrl + B</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">批量取消</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">⌘/Ctrl + ⇧ + C</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">聚焦搜索</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">⌘/Ctrl + F</kbd>
+              </li>
+            </ul>
+          </div>
         )}
       </div>
     </div>
@@ -333,6 +583,10 @@ function TasksTab(props: {
   setFilterStatus: (s: FilterStatus) => void;
   filterType: FilterType;
   setFilterType: (t: FilterType) => void;
+  searchInput: string;
+  setSearchInput: (v: string) => void;
+  searchQuery: string;
+  searchInputRef: React.RefObject<HTMLInputElement>;
   selectedId: string | null;
   onSelect: (id: string) => void;
   onStart: (id: string) => void;
@@ -343,8 +597,9 @@ function TasksTab(props: {
   onCreateNew: () => void;
   onBatchStart: () => void;
   onBatchCancel: () => void;
+  busyAction: string | null;
 }) {
-  const { tasks, allTasks, filterStatus, setFilterStatus, filterType, setFilterType, onSelect, onStart, onPause, onResume, onCancel, onRetry, onCreateNew, onBatchStart, onBatchCancel } = props;
+  const { tasks, allTasks, filterStatus, setFilterStatus, filterType, setFilterType, searchInput, setSearchInput, searchQuery, searchInputRef, onSelect, onStart, onPause, onResume, onCancel, onRetry, onCreateNew, onBatchStart, onBatchCancel, busyAction } = props;
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -354,24 +609,54 @@ function TasksTab(props: {
           onClick={onCreateNew}
           data-testid="create-task"
           className="px-3 py-1.5 bg-primary-500 text-white rounded text-sm hover:bg-primary-600"
+          title="新建任务 (Cmd/Ctrl+N)"
         >
           ➕ 创建任务
         </button>
         <button
           onClick={onBatchStart}
+          disabled={busyAction === 'batch-start'}
           data-testid="batch-start"
-          className="px-3 py-1.5 bg-emerald-500/80 text-white rounded text-sm hover:bg-emerald-600"
+          className="px-3 py-1.5 bg-emerald-500/80 text-white rounded text-sm hover:bg-emerald-600 disabled:opacity-50 flex items-center gap-1"
+          title="批量启动 (Cmd/Ctrl+B)"
         >
+          {busyAction === 'batch-start' && (
+            <span className="inline-block w-2.5 h-2.5 border border-white border-t-transparent rounded-full animate-spin" />
+          )}
           ▶ 批量启动
         </button>
         <button
           onClick={onBatchCancel}
           data-testid="batch-cancel"
           className="px-3 py-1.5 bg-rose-500/80 text-white rounded text-sm hover:bg-rose-600"
+          title="批量取消 (Cmd/Ctrl+Shift+C)"
         >
           ⏹ 全部取消
         </button>
-        <div className="flex items-center gap-1 ml-2">
+        <input
+          ref={searchInputRef}
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          placeholder="🔍 搜索任务名/描述/类型..."
+          data-testid="task-search"
+          className="flex-1 min-w-[200px] px-2 py-1.5 bg-surface-800 border border-surface-700 rounded text-xs text-white focus:border-primary-500 focus:outline-none"
+        />
+        {searchInput && (
+          <button
+            onClick={() => setSearchInput('')}
+            data-testid="task-search-clear"
+            className="px-1.5 py-0.5 text-[10px] text-slate-400 hover:text-white border border-surface-700 rounded"
+          >
+            ✕
+          </button>
+        )}
+        {searchInput !== searchQuery && (
+          <span data-testid="task-search-debounce" className="text-[10px] text-slate-500 animate-pulse">
+            搜索中...
+          </span>
+        )}
+        <div className="flex items-center gap-1">
           <label className="text-xs text-slate-400">状态</label>
           <select
             value={filterStatus}
@@ -836,6 +1121,7 @@ function CreateTaskDrawer(props: {
 
   const handleSubmit = () => {
     if (!name.trim()) {
+      // eslint-disable-next-line no-alert
       alert('请输入任务名');
       return;
     }
@@ -856,12 +1142,12 @@ function CreateTaskDrawer(props: {
 
   return (
     <div
-      className="absolute inset-0 z-10 bg-black/40 flex items-center justify-center"
+      className="absolute inset-0 z-10 bg-black/40 flex items-center justify-center animate-in fade-in duration-200"
       data-testid="create-task-drawer"
       onClick={onClose}
     >
       <div
-        className="bg-surface-900 border border-surface-700 rounded-lg p-5 w-[480px] max-w-[90vw] max-h-[80vh] overflow-y-auto"
+        className="bg-surface-900 border border-surface-700 rounded-lg p-5 w-[480px] max-w-[90vw] max-h-[80vh] overflow-y-auto animate-in slide-in-from-bottom-2 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="text-base font-semibold text-white mb-3">创建任务</h3>
@@ -1002,7 +1288,7 @@ function TaskDetailDrawer(props: {
 
   return (
     <div
-      className="absolute right-0 top-0 bottom-0 w-[420px] bg-surface-900 border-l border-surface-700 flex flex-col z-10"
+      className="absolute right-0 top-0 bottom-0 w-[420px] bg-surface-900 border-l border-surface-700 flex flex-col z-10 animate-in slide-in-from-right-2 duration-200"
       data-testid="task-detail"
     >
       <div className="flex items-center justify-between p-3 border-b border-surface-700">

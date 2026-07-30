@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * # GlobalMemoryPanel - 跨会话记忆 UI (v1.0.0 Cycle 24 G24-01)
+ * # GlobalMemoryPanel - 跨会话记忆 UI (v1.1.0 Cycle 24 P2-2)
  * # ============================================================
  * # 核心作用：GlobalMemoryEngine 的可视化控制面板
  * # 主要功能：
@@ -10,13 +10,16 @@
  * #   4. 标签管理与过滤
  * #   5. 导入导出（JSON / Markdown）
  * #   6. 智能压缩与清理
+ * #   7. 快捷键系统（Esc/?/Cmd+Enter/Cmd+F/Cmd+E）
+ * #   8. 搜索防抖 + 状态持久化 + 加载动画 + 错误重试
  * # ============================================================
  * # 修改记录：
  * #   - 2026-07-29 | v1.0.0 | Cycle 24 G24-01 初次创建
+ * #   - 2026-07-30 | v1.1.0 | P2-2 UI/UX 一致性增强
  * # ============================================================
  */
 
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import {
   getGlobalMemoryEngine,
   resetGlobalMemoryEngine,
@@ -62,12 +65,42 @@ const SORT_OPTIONS: Array<{ key: MemorySortBy; label: string }> = [
 const ALL_TYPES: MemoryType[] = ['preference', 'decision', 'fact', 'context', 'feedback', 'rule'];
 const ALL_SCOPES: MemoryScope[] = ['user', 'project', 'cycle'];
 
+const STORAGE_KEY = 'hermes.globalMemoryPanel';
+const SEARCH_DEBOUNCE_MS = 200;
+
+interface PersistedFilters {
+  filterType: MemoryType | 'all';
+  filterScope: MemoryScope | 'all';
+  sortBy: MemorySortBy;
+}
+
+function safeGet<T>(key: string, fallback: T): T {
+  try {
+    if (typeof localStorage === 'undefined') return fallback;
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    return JSON.parse(raw) as T;
+  } catch {
+    return fallback;
+  }
+}
+
+function safeSet(key: string, value: unknown): void {
+  try {
+    if (typeof localStorage === 'undefined') return;
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // 忽略
+  }
+}
+
 export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
   const engine = useMemo(() => getGlobalMemoryEngine(), []);
   const [stats, setStats] = useState<GlobalMemoryStats>(engine.getStats());
   const [config, setConfig] = useState<GlobalMemoryConfig>(engine.getConfig());
   const [entries, setEntries] = useState<GlobalMemoryEntry[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState(''); // 即时输入
+  const [searchQuery, setSearchQuery] = useState(''); // 防抖后生效
   const [filterType, setFilterType] = useState<MemoryType | 'all'>('all');
   const [filterScope, setFilterScope] = useState<MemoryScope | 'all'>('all');
   const [sortBy, setSortBy] = useState<MemorySortBy>('recency');
@@ -76,6 +109,12 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
   const [error, setError] = useState<string | null>(null);
   const [info, setInfo] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [showShortcuts, setShowShortcuts] = useState(false);
+  const [busyAction, setBusyAction] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const [lastFailedAction, setLastFailedAction] = useState<string | null>(null);
+  const searchInputRef = useRef<HTMLInputElement | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [addForm, setAddForm] = useState<{
     type: MemoryType;
     content: string;
@@ -89,6 +128,35 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
     scope: 'user',
     importance: 0.5,
   });
+
+  // 恢复持久化过滤器
+  useEffect(() => {
+    if (!isOpen) return;
+    const persisted = safeGet<PersistedFilters | null>(STORAGE_KEY, null);
+    if (persisted) {
+      if (persisted.filterType) setFilterType(persisted.filterType);
+      if (persisted.filterScope) setFilterScope(persisted.filterScope);
+      if (persisted.sortBy) setSortBy(persisted.sortBy);
+    }
+  }, [isOpen]);
+
+  // 持久化过滤器变更
+  useEffect(() => {
+    if (!isOpen) return;
+    const data: PersistedFilters = { filterType, filterScope, sortBy };
+    safeSet(STORAGE_KEY, data);
+  }, [isOpen, filterType, filterScope, sortBy]);
+
+  // 搜索输入防抖
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => {
+      setSearchQuery(searchInput);
+    }, SEARCH_DEBOUNCE_MS);
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, [searchInput]);
 
   const refresh = useCallback(() => {
     setStats(engine.getStats());
@@ -123,15 +191,6 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
     loadEntries();
   }, [searchQuery, filterType, filterScope, sortBy, loadEntries, isOpen]);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose();
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [isOpen, onClose]);
-
   // 清除 info/error 3 秒后
   useEffect(() => {
     if (error) {
@@ -145,6 +204,25 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
       return () => clearTimeout(t);
     }
   }, [info]);
+
+  // 通用错误处理
+  const handleError = useCallback((action: string, err: unknown) => {
+    const msg = err instanceof Error ? err.message : `${action}失败`;
+    setError(msg);
+    setLastFailedAction(action);
+  }, []);
+
+  // 重试上次失败的操作
+  const handleRetry = useCallback(() => {
+    if (!lastFailedAction) return;
+    setRetryCount((c) => c + 1);
+    setError(null);
+    setLastFailedAction(null);
+    if (lastFailedAction === 'compress') handleCompressInternal();
+    else if (lastFailedAction === 'export') handleExportInternal('json');
+    else if (lastFailedAction === 'import') handleImportInternal('json');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastFailedAction]);
 
   // 创建记忆
   const handleAdd = useCallback(() => {
@@ -167,9 +245,9 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
       setShowAddForm(false);
       setInfo('已添加记忆');
     } catch (err) {
-      setError(err instanceof Error ? err.message : '添加失败');
+      handleError('add', err);
     }
-  }, [engine, addForm]);
+  }, [engine, addForm, handleError]);
 
   // 编辑
   const handleStartEdit = useCallback((entry: GlobalMemoryEntry) => {
@@ -185,9 +263,9 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
       setEditingDraft(null);
       setInfo('已更新');
     } catch (err) {
-      setError(err instanceof Error ? err.message : '更新失败');
+      handleError('edit', err);
     }
-  }, [engine, editingId, editingDraft]);
+  }, [engine, editingId, editingDraft, handleError]);
 
   const handleCancelEdit = useCallback(() => {
     setEditingId(null);
@@ -196,67 +274,127 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
 
   // 删除
   const handleDelete = useCallback((id: string) => {
-    if (!confirm('确认删除此记忆？')) return;
-    engine.forget(id);
-    setInfo('已删除');
-  }, [engine]);
+    if (!(globalThis as { confirm?: (msg: string) => boolean }).confirm?.('确认删除此记忆？')) return;
+    try {
+      engine.forget(id);
+      setInfo('已删除');
+    } catch (err) {
+      handleError('delete', err);
+    }
+  }, [engine, handleError]);
 
   // 提升重要性
   const handleBoost = useCallback((id: string) => {
-    engine.boostImportance(id, 0.1);
-  }, [engine]);
+    try {
+      engine.boostImportance(id, 0.1);
+    } catch (err) {
+      handleError('boost', err);
+    }
+  }, [engine, handleError]);
 
   // 导出
+  const handleExportInternal = useCallback(async (format: 'json' | 'markdown', scope?: MemoryScope) => {
+    setBusyAction(`export-${format}`);
+    setError(null);
+    try {
+      await new Promise((r) => setTimeout(r, 30));
+      const content = engine.export(format, scope);
+      const blob = new Blob([content], { type: format === 'json' ? 'application/json' : 'text/markdown' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `global-memory-${new Date().toISOString().slice(0, 10)}.${format === 'json' ? 'json' : 'md'}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      setInfo(`已导出 ${format.toUpperCase()}`);
+    } catch (err) {
+      handleError('export', err);
+    } finally {
+      setBusyAction(null);
+    }
+  }, [engine, handleError]);
+
   const handleExport = useCallback((format: 'json' | 'markdown', scope?: MemoryScope) => {
-    const content = engine.export(format, scope);
-    const blob = new Blob([content], { type: format === 'json' ? 'application/json' : 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `global-memory-${new Date().toISOString().slice(0, 10)}.${format === 'json' ? 'json' : 'md'}`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    setInfo(`已导出 ${format.toUpperCase()}`);
-  }, [engine]);
+    void handleExportInternal(format, scope);
+  }, [handleExportInternal]);
 
   // 导入
-  const handleImport = useCallback((format: 'json' | 'markdown') => {
-    const input = document.createElement('input');
-    input.type = 'file';
-    input.accept = format === 'json' ? '.json' : '.md,.markdown';
-    input.onchange = async (e) => {
-      const file = (e.target as HTMLInputElement).files?.[0];
-      if (!file) return;
+  const handleImportInternal = useCallback(async (format: 'json' | 'markdown') => {
+    setBusyAction(`import-${format}`);
+    setError(null);
+    try {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = format === 'json' ? '.json' : '.md,.markdown';
+      const file = await new Promise<File | null>((resolve) => {
+        input.onchange = (e) => {
+          const file = (e.target as HTMLInputElement).files?.[0];
+          resolve(file ?? null);
+        };
+        input.click();
+      });
+      if (!file) {
+        setBusyAction(null);
+        return;
+      }
       const text = await file.text();
       const count = engine.import(text, format);
       setInfo(`已导入 ${count} 条记忆`);
-    };
-    input.click();
-  }, [engine]);
+    } catch (err) {
+      handleError('import', err);
+    } finally {
+      setBusyAction(null);
+    }
+  }, [engine, handleError]);
+
+  const handleImport = useCallback((format: 'json' | 'markdown') => {
+    void handleImportInternal(format);
+  }, [handleImportInternal]);
 
   // 压缩
+  const handleCompressInternal = useCallback(async () => {
+    setBusyAction('compress');
+    setError(null);
+    try {
+      await new Promise((r) => setTimeout(r, 50));
+      const result = engine.compress();
+      setInfo(`压缩完成：合并 ${result.merged} 条，删除 ${result.removed} 条`);
+    } catch (err) {
+      handleError('compress', err);
+    } finally {
+      setBusyAction(null);
+    }
+  }, [engine, handleError]);
+
   const handleCompress = useCallback(() => {
-    if (!confirm('确认执行智能压缩？将合并相似记忆。')) return;
-    const result = engine.compress();
-    setInfo(`压缩完成：合并 ${result.merged} 条，删除 ${result.removed} 条`);
-  }, [engine]);
+    if (!(globalThis as { confirm?: (msg: string) => boolean }).confirm?.('确认执行智能压缩？将合并相似记忆。')) return;
+    void handleCompressInternal();
+  }, [handleCompressInternal]);
 
   // 清理过期
   const handleCleanExpired = useCallback(() => {
-    const count = engine.cleanExpired();
-    setInfo(`清理过期 ${count} 条`);
-  }, [engine]);
+    try {
+      const count = engine.cleanExpired();
+      setInfo(`清理过期 ${count} 条`);
+    } catch (err) {
+      handleError('clean', err);
+    }
+  }, [engine, handleError]);
 
   // 清空
   const handleClear = useCallback(() => {
     const scope = filterScope === 'all' ? undefined : filterScope;
     const label = scope ? `范围 ${MEMORY_SCOPE_LABELS[scope]}` : '全部';
-    if (!confirm(`确认清空${label}记忆？`)) return;
-    const count = engine.clear(scope);
-    setInfo(`已清空 ${count} 条`);
-  }, [engine, filterScope]);
+    if (!(globalThis as { confirm?: (msg: string) => boolean }).confirm?.(`确认清空${label}记忆？`)) return;
+    try {
+      const count = engine.clear(scope);
+      setInfo(`已清空 ${count} 条`);
+    } catch (err) {
+      handleError('clear', err);
+    }
+  }, [engine, filterScope, handleError]);
 
   // 更新配置
   const handleUpdateConfig = useCallback((patch: Partial<GlobalMemoryConfig>) => {
@@ -266,11 +404,65 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
 
   // 重置整个引擎
   const handleResetAll = useCallback(() => {
-    if (!confirm('确认重置整个记忆引擎？所有数据将丢失。')) return;
+    if (!(globalThis as { confirm?: (msg: string) => boolean }).confirm?.('确认重置整个记忆引擎？所有数据将丢失。')) return;
     resetGlobalMemoryEngine();
     setInfo('已重置');
     setTimeout(() => window.location.reload(), 500);
   }, []);
+
+  // 键盘快捷键
+  useEffect(() => {
+    if (!isOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement;
+      const inInput = target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA';
+
+      // Esc 关闭 / 退出编辑 / 关闭帮助
+      if (e.key === 'Escape') {
+        if (showShortcuts) { setShowShortcuts(false); return; }
+        if (editingId) { setEditingId(null); setEditingDraft(null); return; }
+        if (showAddForm) { setShowAddForm(false); return; }
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      // ? 显示快捷键
+      if (e.key === '?' && !e.shiftKey && !inInput) {
+        e.preventDefault();
+        setShowShortcuts((s) => !s);
+        return;
+      }
+      // Cmd/Ctrl + N = 新增
+      if ((e.metaKey || e.ctrlKey) && e.key === 'n') {
+        e.preventDefault();
+        setShowAddForm(true);
+        return;
+      }
+      // Cmd/Ctrl + F = 聚焦搜索
+      if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        searchInputRef.current?.select();
+        return;
+      }
+      // Cmd/Ctrl + S = 保存编辑
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        if (editingId) {
+          e.preventDefault();
+          handleSaveEdit();
+        }
+        return;
+      }
+      // Cmd/Ctrl + E = 压缩
+      if ((e.metaKey || e.ctrlKey) && e.key === 'e') {
+        e.preventDefault();
+        handleCompress();
+        return;
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [isOpen, onClose, editingId, showAddForm, showShortcuts, handleSaveEdit, handleCompress]);
 
   if (!isOpen) return null;
 
@@ -297,6 +489,14 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
           </div>
           <div className="flex items-center gap-2">
             <button
+              onClick={() => setShowShortcuts(!showShortcuts)}
+              data-testid="memory-shortcuts-btn"
+              className="w-7 h-7 text-xs text-slate-400 hover:text-white border border-surface-700 rounded-full bg-surface-900 hover:bg-surface-700 transition flex items-center justify-center"
+              title="快捷键 (?)"
+            >
+              ?
+            </button>
+            <button
               onClick={() => setShowAddForm(!showAddForm)}
               data-testid="memory-add"
               className="px-3 py-1 bg-primary-500 hover:bg-primary-600 text-white text-xs rounded transition"
@@ -305,10 +505,14 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
             </button>
             <button
               onClick={handleCompress}
+              disabled={busyAction === 'compress'}
               data-testid="memory-compress"
-              className="px-3 py-1 bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 text-xs rounded transition"
-              title="合并相似记忆"
+              className="px-3 py-1 bg-violet-500/20 hover:bg-violet-500/30 text-violet-300 text-xs rounded transition disabled:opacity-50 flex items-center gap-1"
+              title="合并相似记忆 (Cmd/Ctrl+E)"
             >
+              {busyAction === 'compress' && (
+                <span className="inline-block w-2.5 h-2.5 border border-violet-300 border-t-transparent rounded-full animate-spin" />
+              )}
               压缩
             </button>
             <button
@@ -321,26 +525,34 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
             </button>
             <div className="relative group">
               <button
+                disabled={busyAction?.startsWith('export')}
                 data-testid="memory-export"
-                className="px-3 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs rounded transition"
+                className="px-3 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs rounded transition disabled:opacity-50 flex items-center gap-1"
               >
+                {busyAction?.startsWith('export') && (
+                  <span className="inline-block w-2.5 h-2.5 border border-cyan-300 border-t-transparent rounded-full animate-spin" />
+                )}
                 导出
               </button>
               <div className="absolute right-0 mt-1 w-40 bg-surface-800 border border-surface-700 rounded shadow-lg hidden group-hover:block z-10">
-                <button onClick={() => handleExport('json')} className="block w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-surface-700">JSON</button>
-                <button onClick={() => handleExport('markdown')} className="block w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-surface-700">Markdown</button>
+                <button onClick={() => handleExport('json')} data-testid="memory-export-json" className="block w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-surface-700">JSON</button>
+                <button onClick={() => handleExport('markdown')} data-testid="memory-export-md" className="block w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-surface-700">Markdown</button>
               </div>
             </div>
             <div className="relative group">
               <button
+                disabled={busyAction?.startsWith('import')}
                 data-testid="memory-import"
-                className="px-3 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs rounded transition"
+                className="px-3 py-1 bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs rounded transition disabled:opacity-50 flex items-center gap-1"
               >
+                {busyAction?.startsWith('import') && (
+                  <span className="inline-block w-2.5 h-2.5 border border-cyan-300 border-t-transparent rounded-full animate-spin" />
+                )}
                 导入
               </button>
               <div className="absolute right-0 mt-1 w-40 bg-surface-800 border border-surface-700 rounded shadow-lg hidden group-hover:block z-10">
-                <button onClick={() => handleImport('json')} className="block w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-surface-700">JSON</button>
-                <button onClick={() => handleImport('markdown')} className="block w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-surface-700">Markdown</button>
+                <button onClick={() => handleImport('json')} data-testid="memory-import-json" className="block w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-surface-700">JSON</button>
+                <button onClick={() => handleImport('markdown')} data-testid="memory-import-md" className="block w-full text-left px-3 py-1.5 text-xs text-slate-200 hover:bg-surface-700">Markdown</button>
               </div>
             </div>
             <button
@@ -371,13 +583,29 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
         {/* Toolbar */}
         <div className="flex flex-wrap items-center gap-2 p-3 border-b border-surface-700">
           <input
+            ref={searchInputRef}
             type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="🔍 搜索内容/标签..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="🔍 搜索内容/标签... (Cmd/Ctrl+F)"
             data-testid="memory-search"
-            className="flex-1 min-w-[200px] px-3 py-1.5 bg-surface-900 border border-surface-700 rounded text-white text-sm"
+            className="flex-1 min-w-[200px] px-3 py-1.5 bg-surface-900 border border-surface-700 rounded text-white text-sm focus:border-primary-500 focus:outline-none transition"
           />
+          {searchInput && (
+            <button
+              onClick={() => setSearchInput('')}
+              data-testid="memory-search-clear"
+              className="px-1.5 py-0.5 text-[10px] text-slate-400 hover:text-white border border-surface-700 rounded"
+              title="清空搜索"
+            >
+              ✕
+            </button>
+          )}
+          {searchInput !== searchQuery && (
+            <span data-testid="memory-search-debounce" className="text-[10px] text-slate-500 animate-pulse">
+              搜索中...
+            </span>
+          )}
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value as MemoryType | 'all')}
@@ -495,15 +723,37 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
         )}
 
         {/* Body */}
-        <div className="flex-1 overflow-y-auto p-4" data-testid="memory-list">
-          {error && (
-            <div className="mb-3 p-2 bg-rose-500/10 border border-rose-500/30 rounded text-rose-300 text-sm">
-              {error}
-            </div>
-          )}
-          {info && (
-            <div className="mb-3 p-2 bg-emerald-500/10 border border-emerald-500/30 rounded text-emerald-300 text-sm">
-              {info}
+        <div className="flex-1 overflow-y-auto p-4 relative" data-testid="memory-list">
+          {/* 顶部居中 Toast */}
+          {(error || info) && (
+            <div
+              data-testid="memory-toast"
+              className={`sticky top-0 z-10 mb-3 p-2 rounded text-sm flex items-center justify-between gap-2 animate-in slide-in-from-top-2 duration-200 ${
+                error
+                  ? 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+                  : 'bg-emerald-500/10 border border-emerald-500/30 text-emerald-300'
+              }`}
+            >
+              <span className="flex-1">
+                {error && lastFailedAction && (
+                  <button
+                    onClick={handleRetry}
+                    data-testid="memory-retry"
+                    className="mr-2 px-2 py-0.5 bg-rose-500/30 hover:bg-rose-500/40 text-rose-200 text-[10px] rounded"
+                  >
+                    🔄 重试 {retryCount > 0 && `(${retryCount})`}
+                  </button>
+                )}
+                {error || info}
+              </span>
+              <button
+                onClick={() => { setError(null); setInfo(null); setLastFailedAction(null); }}
+                className="text-slate-400 hover:text-white"
+                data-testid="memory-toast-close"
+                aria-label="关闭提示"
+              >
+                ✕
+              </button>
             </div>
           )}
 
@@ -566,6 +816,52 @@ export function GlobalMemoryPanel({ isOpen, onClose }: GlobalMemoryPanelProps) {
             </button>
           </div>
         </div>
+
+        {/* 快捷键帮助面板 */}
+        {showShortcuts && (
+          <div
+            data-testid="memory-shortcuts-panel"
+            className="absolute top-14 right-4 z-50 bg-surface-900 border border-surface-700 rounded-lg shadow-2xl p-3 min-w-[280px] animate-in fade-in slide-in-from-top-2 duration-200"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs font-medium text-white">⌨️ 快捷键</span>
+              <button
+                onClick={() => setShowShortcuts(false)}
+                data-testid="memory-shortcuts-close"
+                className="text-slate-400 hover:text-white text-sm w-5 h-5"
+                aria-label="关闭"
+              >
+                ✕
+              </button>
+            </div>
+            <ul className="space-y-1.5 text-[11px]">
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">关闭面板</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">Esc</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">显示快捷键</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">?</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">新增记忆</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">⌘/Ctrl + N</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">聚焦搜索</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">⌘/Ctrl + F</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">保存编辑</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">⌘/Ctrl + S</kbd>
+              </li>
+              <li className="flex items-center justify-between">
+                <span className="text-slate-300">智能压缩</span>
+                <kbd className="px-1.5 py-0.5 bg-surface-800 border border-surface-700 rounded text-slate-400">⌘/Ctrl + E</kbd>
+              </li>
+            </ul>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -643,6 +939,7 @@ function EntryCard({
         <div className="flex items-center justify-end gap-2 mt-2">
           <button
             onClick={onCancelEdit}
+            data-testid={`memory-cancel-${entry.id}`}
             className="px-2 py-1 text-xs bg-surface-700 hover:bg-surface-600 text-slate-300 rounded"
           >
             取消
