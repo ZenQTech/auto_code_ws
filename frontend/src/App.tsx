@@ -320,6 +320,12 @@ import { CostThresholdAlertPanel } from './components/CostThresholdAlertPanel';
 import { DynamicWorkflowPanel } from './components/DynamicWorkflowPanel';
 /** v6.85.0 (Cycle 30 G30-03) 新增：编排多代理面板 */
 import { OrchestratedAgentPanel } from './components/OrchestratedAgentPanel';
+/** v6.86.0 (Cycle 31 G31-01) 新增：成本归因面板 */
+import { CostAttributionPanel } from './components/CostAttributionPanel';
+/** v6.87.0 (Cycle 31 G31-02) 新增：远程 Worktree 面板 */
+import { RemoteWorktreePanel } from './components/RemoteWorktreePanel';
+/** v6.88.0 (Cycle 31 G31-03) 新增：Worktree 状态同步面板 */
+import { WorktreeSyncPanel } from './components/WorktreeSyncPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1687,6 +1693,36 @@ export default function App() {
   }, []);
 
   /**
+   * v6.86.0 (Cycle 31 G31-01) 成本归因面板开关
+   * 作用：控制 CostAttributionPanel 弹窗显隐
+   *       引擎由 CostAttributionEngine 单例管理，支持 org/team/project/repo/user 五维归因
+   */
+  const [costAttributionOpen, setCostAttributionOpen] = useState(false);
+  const handleOpenCostAttribution = useCallback(() => {
+    setCostAttributionOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.87.0 (Cycle 31 G31-02) 远程 Worktree 面板开关
+   * 作用：控制 RemoteWorktreePanel 弹窗显隐
+   *       引擎由 RemoteWorktreeAdapter 单例管理，支持 local/remote/hybrid 后端抽象
+   */
+  const [remoteWorktreeOpen, setRemoteWorktreeOpen] = useState(false);
+  const handleOpenRemoteWorktree = useCallback(() => {
+    setRemoteWorktreeOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.88.0 (Cycle 31 G31-03) Worktree 状态同步面板开关
+   * 作用：控制 WorktreeSyncPanel 弹窗显隐
+   *       引擎由 WorktreeSyncEngine 单例管理，支持快照/状态广播/冲突检测/跨设备同步
+   */
+  const [worktreeSyncOpen, setWorktreeSyncOpen] = useState(false);
+  const handleOpenWorktreeSync = useCallback(() => {
+    setWorktreeSyncOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2741,6 +2777,9 @@ export default function App() {
           onOpenCostThreshold={handleOpenCostThreshold}
           onOpenDynamicWorkflow={handleOpenDynamicWorkflow}
           onOpenOrchestratedAgent={handleOpenOrchestratedAgent}
+          onOpenCostAttribution={handleOpenCostAttribution}
+          onOpenRemoteWorktree={handleOpenRemoteWorktree}
+          onOpenWorktreeSync={handleOpenWorktreeSync}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3556,6 +3595,36 @@ export default function App() {
         <OrchestratedAgentPanel
           isOpen={orchestratedAgentOpen}
           onClose={() => setOrchestratedAgentOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.86.0 (Cycle 31 G31-01) 新增：成本归因面板
+       *  引擎由 CostAttributionEngine 单例管理，支持 org/team/project/repo/user 五维归因
+       *  对应 Cursor Per-Repository Cost Attribution + Future AGI per-developer virtual keys */}
+      <ErrorBoundary level="panel" name="CostAttribution">
+        <CostAttributionPanel
+          isOpen={costAttributionOpen}
+          onClose={() => setCostAttributionOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.87.0 (Cycle 31 G31-02) 新增：远程 Worktree 面板
+       *  引擎由 RemoteWorktreeAdapter 单例管理，支持 local/remote/hybrid 后端抽象
+       *  对应 Cursor 3 Cloud Agent Handoff + Codex App 跨会话迁移 */}
+      <ErrorBoundary level="panel" name="RemoteWorktree">
+        <RemoteWorktreePanel
+          isOpen={remoteWorktreeOpen}
+          onClose={() => setRemoteWorktreeOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.88.0 (Cycle 31 G31-03) 新增：Worktree 状态同步面板
+       *  引擎由 WorktreeSyncEngine 单例管理，支持快照/状态广播/冲突检测/跨设备同步
+       *  对应 CodexMonitor 多设备同步 + Codex App 跨设备状态广播 */}
+      <ErrorBoundary level="panel" name="WorktreeSync">
+        <WorktreeSyncPanel
+          isOpen={worktreeSyncOpen}
+          onClose={() => setWorktreeSyncOpen(false)}
         />
       </ErrorBoundary>
 

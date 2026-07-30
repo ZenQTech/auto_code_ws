@@ -26,6 +26,7 @@
  *   - 2026-07-27 | v6.13.0 | Cycle 7 P0-10 新增 onOpenMultiAgentTree 回调 + 透传 BrandHeader
  *   - 2026-07-30 | v6.66.0 | Cycle 26 G26-01/02/03 新增 onOpenCsvBatch/onOpenSmartApproval/onOpenMTC 透传
  *   - 2026-07-30 | v6.71.0 | Cycle 27 G27-01/02/04/05/06 新增 onOpenNestedSubAgent/onOpenAgentCheckpoint/onOpenAgentMessaging/onOpenAgentTemplate/onOpenRemoteControl 透传
+ *   - 2026-07-30 | v6.86.0 | Cycle 31 G31-01/02/03 新增 onOpenCostAttribution/onOpenRemoteWorktree/onOpenWorktreeSync 透传
  * ============================================================
  */
 
@@ -221,6 +222,12 @@ export interface AppLayoutProps {
   onOpenDynamicWorkflow?: () => void;
   /** v6.85.0 (Cycle 30 G30-03) 新增：编排多代理 */
   onOpenOrchestratedAgent?: () => void;
+  /** v6.86.0 (Cycle 31 G31-01) 新增：成本归因 */
+  onOpenCostAttribution?: () => void;
+  /** v6.87.0 (Cycle 31 G31-02) 新增：远程 Worktree */
+  onOpenRemoteWorktree?: () => void;
+  /** v6.88.0 (Cycle 31 G31-03) 新增：Worktree 状态同步 */
+  onOpenWorktreeSync?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -378,6 +385,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenCostThreshold,  // v6.83.0 (Cycle 30 G30-01) 透传 BrandHeader
   onOpenDynamicWorkflow,  // v6.84.0 (Cycle 30 G30-02) 透传 BrandHeader
   onOpenOrchestratedAgent,  // v6.85.0 (Cycle 30 G30-03) 透传 BrandHeader
+  onOpenCostAttribution,  // v6.86.0 (Cycle 31 G31-01) 透传 BrandHeader
+  onOpenRemoteWorktree,  // v6.87.0 (Cycle 31 G31-02) 透传 BrandHeader
+  onOpenWorktreeSync,  // v6.88.0 (Cycle 31 G31-03) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -610,6 +620,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenCostThreshold={onOpenCostThreshold}
         onOpenDynamicWorkflow={onOpenDynamicWorkflow}
         onOpenOrchestratedAgent={onOpenOrchestratedAgent}
+        onOpenCostAttribution={onOpenCostAttribution}
+        onOpenRemoteWorktree={onOpenRemoteWorktree}
+        onOpenWorktreeSync={onOpenWorktreeSync}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

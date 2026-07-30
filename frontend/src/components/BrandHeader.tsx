@@ -49,6 +49,10 @@
 #   - 2026-07-30 | v2.12.0 | Cycle 30 新增：菜单项 成本阈值告警 / 动态工作流 / 编排多代理
 #     新增 onOpenCostThreshold / onOpenDynamicWorkflow / onOpenOrchestratedAgent 回调
 #     对应 Claude Code Admin Console 75%/90%/100% 阈值告警 + Codex Dynamic Workflows + Codex Orchestrated Mode
+#   - 2026-07-30 | v2.13.0 | Cycle 31 新增：菜单项 成本归因 / 远程 Worktree / Worktree 状态同步
+#     新增 onOpenCostAttribution / onOpenRemoteWorktree / onOpenWorktreeSync 回调
+#     新增 attribution (饼图) / cloud (云) / sync (双向箭头) 内联 SVG 图标
+#     对应 Cursor Per-Repository Cost Attribution + Cursor 3 Cloud Agent Handoff + CodexMonitor 多设备同步
 # ============================================================
  */
 
@@ -220,6 +224,12 @@ export interface BrandHeaderProps {
   onOpenDynamicWorkflow?: () => void;
   /** v6.85.0 (Cycle 30 G30-03) 新增：编排多代理 */
   onOpenOrchestratedAgent?: () => void;
+  /** v6.86.0 (Cycle 31 G31-01) 新增：成本归因 */
+  onOpenCostAttribution?: () => void;
+  /** v6.87.0 (Cycle 31 G31-02) 新增：远程 Worktree */
+  onOpenRemoteWorktree?: () => void;
+  /** v6.88.0 (Cycle 31 G31-03) 新增：Worktree 状态同步 */
+  onOpenWorktreeSync?: () => void;
 }
 
 /**
@@ -229,7 +239,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -725,6 +735,30 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <circle cx="18" cy="16" r="3" />
         </svg>
       );
+    case 'attribution':
+      // v6.86.0 (Cycle 31 G31-01) 新增：成本归因（饼图分布）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M21 12a9 9 0 1 1-9-9v9h9z" />
+          <path d="M21 12a9 9 0 0 0-9-9" />
+        </svg>
+      );
+    case 'cloud':
+      // v6.87.0 (Cycle 31 G31-02) 新增：远程 Worktree（云端）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+        </svg>
+      );
+    case 'sync':
+      // v6.88.0 (Cycle 31 G31-03) 新增：Worktree 状态同步（双向箭头）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -872,6 +906,12 @@ export default function BrandHeader({
   onOpenDynamicWorkflow,
   /** v6.85.0 (Cycle 30 G30-03) 新增：编排多代理 */
   onOpenOrchestratedAgent,
+  /** v6.86.0 (Cycle 31 G31-01) 新增：成本归因 */
+  onOpenCostAttribution,
+  /** v6.87.0 (Cycle 31 G31-02) 新增：远程 Worktree */
+  onOpenRemoteWorktree,
+  /** v6.88.0 (Cycle 31 G31-03) 新增：Worktree 状态同步 */
+  onOpenWorktreeSync,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2222,6 +2262,45 @@ export default function BrandHeader({
                 >
                   <Icon name="orchestrate" className="w-4 h-4" />
                   <span>🎼 编排多代理</span>
+                </button>
+              )}
+
+              {/* v2.13.0 (Cycle 31) 新增：成本归因（菜单项） */}
+              {onOpenCostAttribution && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCostAttribution)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-amber-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-cost-attribution"
+                >
+                  <Icon name="attribution" className="w-4 h-4" />
+                  <span>📊 成本归因</span>
+                </button>
+              )}
+
+              {/* v2.13.0 (Cycle 31) 新增：远程 Worktree（菜单项） */}
+              {onOpenRemoteWorktree && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenRemoteWorktree)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-sky-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-remote-worktree"
+                >
+                  <Icon name="cloud" className="w-4 h-4" />
+                  <span>☁️ 远程 Worktree</span>
+                </button>
+              )}
+
+              {/* v2.13.0 (Cycle 31) 新增：Worktree 状态同步（菜单项） */}
+              {onOpenWorktreeSync && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenWorktreeSync)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-indigo-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-worktree-sync"
+                >
+                  <Icon name="sync" className="w-4 h-4" />
+                  <span>🔄 状态同步</span>
                 </button>
               )}
 
