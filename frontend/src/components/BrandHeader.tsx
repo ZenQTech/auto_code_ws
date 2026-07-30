@@ -39,6 +39,10 @@
 #   - 2026-07-27 | v2.8.0 | Cycle 7 P0-10 新增：菜单项 Multi-Agent v2 Path Tree
 #     新增 onOpenMultiAgentTree 回调 + tree（树状）图标
 #     对应 Codex v0.121+ path-based addressing + TRAE "对话流节点自动折叠"
+#   - 2026-07-30 | v2.9.0 | Cycle 25 新增：菜单项 自动化代码评审 / PR 自动机器人 / AI 性能优化器
+#     新增 onOpenAutoCodeReview / onOpenPRBot / onOpenPerfOptimizer 回调
+#     新增 search-check (代码评审) / bot (机器人) / gauge (性能计) 内联 SVG 图标
+#     对应 Codex PR review + TRAE 实时代码质量分析 + AI 主动性能建议
 # ============================================================
  */
 
@@ -164,8 +168,14 @@ export interface BrandHeaderProps {
   onOpenGlobalMemory?: () => void;
   /** v6.59.0 (Cycle 24 G24-02) 新增：多任务并行编排面板回调（可选） */
   onOpenMultiTask?: () => void;
-  /** v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码面板回调（可选） */
+  /** v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码 */
   onOpenFigmaImport?: () => void;
+  /** v6.61.0 (Cycle 25 G25-01) 新增：自动化代码评审 */
+  onOpenAutoCodeReview?: () => void;
+  /** v6.62.0 (Cycle 25 G25-02) 新增：PR 自动机器人 */
+  onOpenPRBot?: () => void;
+  /** v6.63.0 (Cycle 25 G25-03) 新增：AI 性能优化器 */
+  onOpenPerfOptimizer?: () => void;
 }
 
 /**
@@ -175,7 +185,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -541,6 +551,35 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M15.09 14c.18-.98.65-1.74 1.41-2.5A4.65 4.65 0 0 0 18 8 6 6 0 0 0 6 8c0 1 .23 2.23 1.5 3.5A4.61 4.61 0 0 1 8.91 14" />
         </svg>
       );
+    case 'search-check':
+      // 自动化代码评审 - 放大镜+对勾
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M11 17a6 6 0 1 0 0-12 6 6 0 0 0 0 12Z" />
+          <path d="m21 21-4.3-4.3" />
+          <path d="m9 11 2 2 4-4" />
+        </svg>
+      );
+    case 'bot':
+      // PR 自动机器人 - 机器人图标
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 8V4H8" />
+          <rect width="16" height="12" x="4" y="8" rx="2" />
+          <path d="M2 14h2" />
+          <path d="M20 14h2" />
+          <path d="M15 13v2" />
+          <path d="M9 13v2" />
+        </svg>
+      );
+    case 'gauge':
+      // AI 性能优化器 - 仪表盘
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="m12 14 4-4" />
+          <path d="M3.34 19a10 10 0 1 1 17.32 0" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -644,6 +683,12 @@ export default function BrandHeader({
   onOpenMultiTask,
   /** v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码 */
   onOpenFigmaImport,
+  /** v6.61.0 (Cycle 25 G25-01) 新增：自动化代码评审 */
+  onOpenAutoCodeReview,
+  /** v6.62.0 (Cycle 25 G25-02) 新增：PR 自动机器人 */
+  onOpenPRBot,
+  /** v6.63.0 (Cycle 25 G25-03) 新增：AI 性能优化器 */
+  onOpenPerfOptimizer,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1661,6 +1706,60 @@ export default function BrandHeader({
                 >
                   <Icon name="figma" className="w-4 h-4 text-pink-500" />
                   <span>🎨 Figma 转代码</span>
+                </button>
+              )}
+
+              {/* v6.61.0 (Cycle 25 G25-01) 新增：自动化代码评审（菜单项）
+               *  行为：点击调 onOpenAutoCodeReview() 弹出 AutoCodeReviewPanel
+               *       100+ 内置规则 + 严重度分级 + JSON/Markdown/SARIF 导出
+               *  图标：search-check（放大镜+对勾） */}
+              {onOpenAutoCodeReview && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenAutoCodeReview)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-indigo-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-auto-code-review"
+                >
+                  <Icon name="search-check" className="w-4 h-4 text-indigo-500" />
+                  <span>🔍 自动化代码评审</span>
+                </button>
+              )}
+
+              {/* v6.62.0 (Cycle 25 G25-02) 新增：PR 自动机器人（菜单项）
+               *  行为：点击调 onOpenPRBot() 弹出 PRBotPanel
+               *       PR 事件触发 + 自动 review + 审计日志
+               *  图标：bot（机器人） */}
+              {onOpenPRBot && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenPRBot)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-pr-bot"
+                >
+                  <Icon name="bot" className="w-4 h-4 text-cyan-500" />
+                  <span>🤖 PR 自动机器人</span>
+                </button>
+              )}
+
+              {/* v6.63.0 (Cycle 25 G25-03) 新增：AI 性能优化器（菜单项）
+               *  行为：点击调 onOpenPerfOptimizer() 弹出 PerfOptimizerPanel
+               *       20+ 反模式规则 + 重构 diff + 性能预算检查
+               *  图标：gauge（仪表盘） */}
+              {onOpenPerfOptimizer && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenPerfOptimizer)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-amber-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-perf-optimizer"
+                >
+                  <Icon name="gauge" className="w-4 h-4 text-amber-500" />
+                  <span>⚡ AI 性能优化器</span>
                 </button>
               )}
 

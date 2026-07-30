@@ -175,6 +175,12 @@ export interface AppLayoutProps {
   onOpenMultiTask?: () => void;
   /** v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码面板回调 */
   onOpenFigmaImport?: () => void;
+  /** v6.61.0 (Cycle 25 G25-01) 新增：自动化代码评审面板回调 */
+  onOpenAutoCodeReview?: () => void;
+  /** v6.62.0 (Cycle 25 G25-02) 新增：PR 自动机器人面板回调 */
+  onOpenPRBot?: () => void;
+  /** v6.63.0 (Cycle 25 G25-03) 新增：AI 性能优化器面板回调 */
+  onOpenPerfOptimizer?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -310,6 +316,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenGlobalMemory,  // v6.58.0 (Cycle 24 G24-01) 透传 BrandHeader
   onOpenMultiTask,  // v6.59.0 (Cycle 24 G24-02) 透传 BrandHeader
   onOpenFigmaImport,  // v6.60.0 (Cycle 24 G24-04) 透传 BrandHeader
+  onOpenAutoCodeReview,  // v6.61.0 (Cycle 25 G25-01) 透传 BrandHeader
+  onOpenPRBot,  // v6.62.0 (Cycle 25 G25-02) 透传 BrandHeader
+  onOpenPerfOptimizer,  // v6.63.0 (Cycle 25 G25-03) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -520,6 +529,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenGlobalMemory={onOpenGlobalMemory}
         onOpenMultiTask={onOpenMultiTask}
         onOpenFigmaImport={onOpenFigmaImport}
+        onOpenAutoCodeReview={onOpenAutoCodeReview}
+        onOpenPRBot={onOpenPRBot}
+        onOpenPerfOptimizer={onOpenPerfOptimizer}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

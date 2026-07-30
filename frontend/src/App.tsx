@@ -266,6 +266,12 @@ import { GlobalMemoryPanel } from './components/GlobalMemoryPanel';
 import { MultiTaskOrchestrationPanel } from './components/MultiTaskOrchestrationPanel';
 /** v6.60.0 (Cycle 24 G24-04) 新增：Figma 设计稿转代码面板 */
 import { FigmaImportPanel } from './components/FigmaImportPanel';
+/** v6.61.0 (Cycle 25 G25-01) 新增：自动化代码评审面板 */
+import { AutoCodeReviewPanel } from './components/AutoCodeReviewPanel';
+/** v6.62.0 (Cycle 25 G25-02) 新增：PR 自动机器人面板 */
+import { PRBotPanel } from './components/PRBotPanel';
+/** v6.63.0 (Cycle 25 G25-03) 新增：AI 性能优化器面板 */
+import { PerfOptimizerPanel } from './components/PerfOptimizerPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1413,6 +1419,36 @@ export default function App() {
   }, []);
 
   /**
+   * v6.61.0 (Cycle 25 G25-01) 自动化代码评审面板开关
+   * 作用：控制 AutoCodeReviewPanel 弹窗显隐
+   *       评审引擎由 AutoCodeReviewEngine 单例管理
+   */
+  const [autoCodeReviewOpen, setAutoCodeReviewOpen] = useState(false);
+  const handleOpenAutoCodeReview = useCallback(() => {
+    setAutoCodeReviewOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.62.0 (Cycle 25 G25-02) PR 自动机器人面板开关
+   * 作用：控制 PRBotPanel 弹窗显隐
+   *       评审机器人由 PRBotEngine 单例管理
+   */
+  const [prBotOpen, setPRBotOpen] = useState(false);
+  const handleOpenPRBot = useCallback(() => {
+    setPRBotOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.63.0 (Cycle 25 G25-03) AI 性能优化器面板开关
+   * 作用：控制 PerfOptimizerPanel 弹窗显隐
+   *       优化器由 PerfOptimizerEngine 单例管理
+   */
+  const [perfOptimizerOpen, setPerfOptimizerOpen] = useState(false);
+  const handleOpenPerfOptimizer = useCallback(() => {
+    setPerfOptimizerOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2445,6 +2481,9 @@ export default function App() {
           onOpenGlobalMemory={handleOpenGlobalMemory}
           onOpenMultiTask={handleOpenMultiTask}
           onOpenFigmaImport={handleOpenFigmaImport}
+          onOpenAutoCodeReview={handleOpenAutoCodeReview}
+          onOpenPRBot={handleOpenPRBot}
+          onOpenPerfOptimizer={handleOpenPerfOptimizer}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3034,6 +3073,39 @@ export default function App() {
         <FigmaImportPanel
           isOpen={figmaImportOpen}
           onClose={() => setFigmaImportOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.61.0 (Cycle 25 G25-01) 新增：自动化代码评审面板
+       *  触发：BrandHeader 菜单"🔍 代码评审"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  评审引擎由 AutoCodeReviewEngine 单例管理，支持 100+ 内置规则 + JSON/Markdown/SARIF 导出 */}
+      <ErrorBoundary level="panel" name="AutoCodeReview">
+        <AutoCodeReviewPanel
+          isOpen={autoCodeReviewOpen}
+          onClose={() => setAutoCodeReviewOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.62.0 (Cycle 25 G25-02) 新增：PR 自动机器人面板
+       *  触发：BrandHeader 菜单"🤖 PR Bot"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  PR Bot 引擎由 PRBotEngine 单例管理，支持 PR 事件触发 + 自动 review + 审计日志 */}
+      <ErrorBoundary level="panel" name="PRBot">
+        <PRBotPanel
+          isOpen={prBotOpen}
+          onClose={() => setPRBotOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.63.0 (Cycle 25 G25-03) 新增：AI 性能优化器面板
+       *  触发：BrandHeader 菜单"⚡ 性能优化"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  优化器由 PerfOptimizerEngine 单例管理，支持 20+ 反模式规则 + 重构 diff + 性能预算 */}
+      <ErrorBoundary level="panel" name="PerfOptimizer">
+        <PerfOptimizerPanel
+          isOpen={perfOptimizerOpen}
+          onClose={() => setPerfOptimizerOpen(false)}
         />
       </ErrorBoundary>
 
