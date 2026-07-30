@@ -40,14 +40,14 @@ describe('Cycle 28 E2E 集成测试', () => {
 
   describe('G28-02: 成本预算端到端', () => {
     it('CostBudgetEngine 创建预算 → 检查预算 → 拒绝超额请求', async () => {
-      const { CostBudgetEngine, getDefaultCostBudgetEngine } = await import('../utils/costBudgetEngine');
-      const engine = new CostBudgetEngine();
+      const { getDefaultCostBudgetEngine } = await import('../utils/costBudgetEngine');
+      const engine = getDefaultCostBudgetEngine();
       engine.createBudget({
-        level: 'session',
+        level: 'request',
         limitUsd: 0.1,
         enforcement: 'strict',
       });
-      const result = engine.checkBudget({ level: 'session', estimatedCostUsd: 0.5 });
+      const result = engine.checkBudget({ level: 'request', estimatedCostUsd: 0.5 });
       expect(result.allowed).toBe(false);
       // 验证全局单例
       expect(getDefaultCostBudgetEngine()).toBeDefined();
@@ -72,6 +72,7 @@ describe('Cycle 28 E2E 集成测试', () => {
       const engine = new UsageAttributionEngine();
       engine.addRecord({
         sessionId: 's1',
+        agentPath: '/root/test',
         projectId: 'p1',
         modelId: 'claude-sonnet',
         inputTokens: 100,
@@ -93,7 +94,7 @@ describe('Cycle 28 E2E 集成测试', () => {
       engine.createScope('/root/worker', {
         tools: [{ tool: 'read', mode: 'allow' }],
         paths: [{ pattern: '/workspace/**', mode: 'allow' }],
-        networks: [{ host: '*.openai.com', port: 443, mode: 'allow' }],
+        networks: [{ host: '*.openai.com', ports: [443], mode: 'allow' }],
       });
       const toolCheck = engine.checkToolPermission('/root/worker', 'read');
       expect(toolCheck.allowed).toBe(true);
@@ -132,8 +133,8 @@ describe('Cycle 28 E2E 集成测试', () => {
   describe('跨引擎协同场景', () => {
     it('技能调用 → 记录成本 → 用量归因', async () => {
       const { resetDefaultSkillEngine, getDefaultSkillEngine } = await import('../utils/skillEngine');
-      const { CostBudgetEngine, getDefaultCostBudgetEngine, DEFAULT_MODEL_SPEC } = await import('../utils/costBudgetEngine');
-      const { UsageAttributionEngine, getDefaultUsageAttributionEngine } = await import('../utils/usageAttributionEngine');
+      const { getDefaultCostBudgetEngine, DEFAULT_MODEL_SPEC } = await import('../utils/costBudgetEngine');
+      const { getDefaultUsageAttributionEngine } = await import('../utils/usageAttributionEngine');
 
       resetDefaultSkillEngine();
       const skillEngine = getDefaultSkillEngine();
@@ -153,6 +154,7 @@ describe('Cycle 28 E2E 集成测试', () => {
       // 用量归因添加
       usageEngine.addRecord({
         sessionId: 'cycle28-e2e',
+        agentPath: '/root/test',
         projectId: 'hermes',
         modelId: DEFAULT_MODEL_SPEC.id,
         inputTokens: 200,
@@ -180,7 +182,7 @@ describe('Cycle 28 E2E 集成测试', () => {
       const { CostBudgetEngine } = await import('../utils/costBudgetEngine');
       const engine = new CostBudgetEngine();
       engine.createBudget({
-        level: 'session',
+        level: 'request',
         limitUsd: 1.0,
         enforcement: 'balanced',
       });
