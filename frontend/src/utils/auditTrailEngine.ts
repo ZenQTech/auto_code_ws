@@ -383,8 +383,8 @@ export function canonicalJSON(obj: any): string {
  * Compute hash for an audit event
  */
 export function computeEventHash(
-  event: Omit<AuditEvent, 'hash'>,
-  algorithm: 'sha256' | 'sha512' = 'sha256'
+  event: Partial<Omit<AuditEvent, 'hash'>> & { who: AuditEvent['who']; what: string; resource: AuditEvent['resource']; outcome: AuditEvent['outcome']; eventType: AuditEvent['eventType']; prevHash: string },
+  _algorithm: 'sha256' | 'sha512' = 'sha256'
 ): string {
   const canonical = canonicalJSON({
     id: event.id,
@@ -563,7 +563,7 @@ export class AuditTrailEngine {
   // ============ 事件记录 ============
 
   log(
-    input: Omit<AuditEvent, 'id' | 'sequenceNumber' | 'timestamp' | 'timezone' | 'prevHash' | 'hash' | 'schemaVersion' | 'when'>
+    input: Omit<AuditEvent, 'id' | 'sequenceNumber' | 'timestamp' | 'timezone' | 'prevHash' | 'hash' | 'schemaVersion' | 'when' | 'where' | 'how' | 'gdprRelevant'> & { where?: AuditEvent['where']; how?: AuditEvent['how']; gdprRelevant?: boolean }
   ): AuditEvent {
     // PII 脱敏
     const who = pseudonymizeActor(input.who, this.config);

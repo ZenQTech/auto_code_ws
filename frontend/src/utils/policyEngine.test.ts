@@ -30,7 +30,6 @@ import {
   getDefaultPolicyEngine,
   setDefaultPolicyEngine,
   DEFAULT_POLICY_CONFIG,
-  POLICY_TEMPLATES,
   generatePolicyId,
   generateRuleId,
   generateVersionId,
@@ -792,7 +791,7 @@ describe('PolicyEngine - 决策评估', () => {
 
   it('evaluate 指定 policyIds', () => {
     const p1 = engine.createPolicy({ ...makePolicy({ name: 'P1', defaultEffect: 'allow' }), id: undefined as any });
-    const p2 = engine.createPolicy({ ...makePolicy({ name: 'P2', defaultEffect: 'deny' }), id: undefined as any });
+    engine.createPolicy({ ...makePolicy({ name: 'P2', defaultEffect: 'deny' }), id: undefined as any });
     const decision = engine.evaluate(makeContext(), { policyIds: [p1.id] });
     expect(decision.evaluatedPolicies).toBe(1);
   });
@@ -951,7 +950,7 @@ describe('PolicyEngine - guard', () => {
       id: undefined as any,
     });
     const guard = engine.guard('agent.execute');
-    const decision = guard.check({ user: { id: 'u1', email: 'u1@x.com', roles: [], groups: [] } as any });
+    const decision = guard.check({ action: 'agent.execute', user: { id: 'u1', email: 'u1@x.com', roles: [], groups: [] } as any });
     expect(decision.effect).toBe('allow');
   });
 });

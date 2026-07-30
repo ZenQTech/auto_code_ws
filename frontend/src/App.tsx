@@ -326,6 +326,12 @@ import { CostAttributionPanel } from './components/CostAttributionPanel';
 import { RemoteWorktreePanel } from './components/RemoteWorktreePanel';
 /** v6.88.0 (Cycle 31 G31-03) 新增：Worktree 状态同步面板 */
 import { WorktreeSyncPanel } from './components/WorktreeSyncPanel';
+/** v6.89.0 (Cycle 32 G32-01) 新增：审计追踪面板 */
+import { AuditTrailPanel } from './components/AuditTrailPanel';
+/** v6.90.0 (Cycle 32 G32-02) 新增：单点登录面板 */
+import { SSOPanel } from './components/SSOPanel';
+/** v6.91.0 (Cycle 32 G32-03) 新增：策略规则面板 */
+import { PolicyPanel } from './components/PolicyPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1723,6 +1729,39 @@ export default function App() {
   }, []);
 
   /**
+   * v6.89.0 (Cycle 32 G32-01) 新增：审计追踪面板
+   * 作用：控制 AuditTrailPanel 弹窗显隐
+   *       引擎由 AuditTrailEngine 单例管理，支持不可篡改 hash chain + 合规报告（SOC2/ISO27001/GDPR/EU AI Act）
+   *       对应 SOC 2 / GDPR / EU AI Act 自动事件记录
+   */
+  const [auditTrailOpen, setAuditTrailOpen] = useState(false);
+  const handleOpenAuditTrail = useCallback(() => {
+    setAuditTrailOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.90.0 (Cycle 32 G32-02) 新增：单点登录面板
+   * 作用：控制 SSOPanel 弹窗显隐
+   *       引擎由 SSOEngine 单例管理，支持 OIDC/OAuth 2.0/SAML 2.0/SCIM 2.0
+   *       对应 Okta/Azure AD/Auth0 企业级身份认证
+   */
+  const [ssoOpen, setSSOOpen] = useState(false);
+  const handleOpenSSO = useCallback(() => {
+    setSSOOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.91.0 (Cycle 32 G32-03) 新增：策略规则面板
+   * 作用：控制 PolicyPanel 弹窗显隐
+   *       引擎由 PolicyEngine 单例管理，支持 JSON DSL + Rego 子集双语法 + 多维度作用域
+   *       对应 OPA / Cerbos / Casbin 企业级统一策略执行
+   */
+  const [policyOpen, setPolicyOpen] = useState(false);
+  const handleOpenPolicy = useCallback(() => {
+    setPolicyOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2780,6 +2819,9 @@ export default function App() {
           onOpenCostAttribution={handleOpenCostAttribution}
           onOpenRemoteWorktree={handleOpenRemoteWorktree}
           onOpenWorktreeSync={handleOpenWorktreeSync}
+          onOpenAuditTrail={handleOpenAuditTrail}
+          onOpenSSO={handleOpenSSO}
+          onOpenPolicy={handleOpenPolicy}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3625,6 +3667,36 @@ export default function App() {
         <WorktreeSyncPanel
           isOpen={worktreeSyncOpen}
           onClose={() => setWorktreeSyncOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.89.0 (Cycle 32 G32-01) 新增：审计追踪面板
+       *  引擎由 AuditTrailEngine 单例管理，支持 HMAC-SHA256 hash chain + SOC 2/ISO 27001/GDPR/EU AI Act 合规报告
+       *  对应 SOC 2 CC6.1/CC7.2 + GDPR Art.30 + EU AI Act Art.12 自动事件记录 */}
+      <ErrorBoundary level="panel" name="AuditTrail">
+        <AuditTrailPanel
+          isOpen={auditTrailOpen}
+          onClose={() => setAuditTrailOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.90.0 (Cycle 32 G32-02) 新增：单点登录面板
+       *  引擎由 SSOEngine 单例管理，支持 OIDC/OAuth 2.0/SAML 2.0/SCIM 2.0
+       *  对应 Okta/Azure AD/Auth0 企业级身份认证 + 跨 IdP Federation */}
+      <ErrorBoundary level="panel" name="SSO">
+        <SSOPanel
+          isOpen={ssoOpen}
+          onClose={() => setSSOOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.91.0 (Cycle 32 G32-03) 新增：策略规则面板
+       *  引擎由 PolicyEngine 单例管理，支持 JSON DSL + Rego 子集双语法 + 5 维作用域
+       *  对应 OPA/Cerbos/Casbin 企业级统一策略执行 + Audit Trail 联动 */}
+      <ErrorBoundary level="panel" name="Policy">
+        <PolicyPanel
+          isOpen={policyOpen}
+          onClose={() => setPolicyOpen(false)}
         />
       </ErrorBoundary>
 

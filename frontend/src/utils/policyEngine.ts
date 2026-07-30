@@ -1094,7 +1094,7 @@ export class PolicyEngine {
 
   // ============ 策略管理 ============
 
-  createPolicy(policy: Omit<Policy, 'id' | 'createdAt' | 'updatedAt'>): Policy {
+  createPolicy(policy: Omit<Policy, 'id' | 'createdAt' | 'updatedAt'> & { id?: string }): Policy {
     const full: Policy = {
       ...policy,
       id: generatePolicyId(),
@@ -1481,16 +1481,17 @@ export class PolicyEngine {
   /**
    * 守卫：返回 guard 对象
    */
-  guard(action: string): PolicyGuard {
+  guard(_action: string): PolicyGuard {
     return {
       check: (ctx: Partial<PolicyContext> & { action: string }) => {
+        const { action, ...rest } = ctx;
         const fullContext: PolicyContext = {
           user: ctx.user || { id: 'anonymous', email: '', roles: [], groups: [] },
-          action: ctx.action,
+          action,
           resource: ctx.resource || { type: 'unknown', id: 'unknown' },
           environment: ctx.environment || { timestamp: Date.now() },
-          ...ctx,
-        };
+          ...rest,
+        } as PolicyContext;
         return this.evaluate(fullContext);
       },
     };

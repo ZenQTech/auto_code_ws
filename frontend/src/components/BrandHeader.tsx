@@ -53,6 +53,10 @@
 #     新增 onOpenCostAttribution / onOpenRemoteWorktree / onOpenWorktreeSync 回调
 #     新增 attribution (饼图) / cloud (云) / sync (双向箭头) 内联 SVG 图标
 #     对应 Cursor Per-Repository Cost Attribution + Cursor 3 Cloud Agent Handoff + CodexMonitor 多设备同步
+#   - 2026-07-30 | v2.14.0 | Cycle 32 新增：菜单项 审计追踪 / 单点登录 / 策略规则
+#     新增 onOpenAuditTrail / onOpenSSO / onOpenPolicy 回调
+#     新增 audit (盾牌 + 勾) / sso (钥匙) / policy (文档) 内联 SVG 图标
+#     对应 SOC 2 / GDPR / EU AI Act 审计 + OIDC/SAML/SCIM 单点登录 + OPA/Rego 策略引擎
 # ============================================================
  */
 
@@ -230,6 +234,12 @@ export interface BrandHeaderProps {
   onOpenRemoteWorktree?: () => void;
   /** v6.88.0 (Cycle 31 G31-03) 新增：Worktree 状态同步 */
   onOpenWorktreeSync?: () => void;
+  /** v6.89.0 (Cycle 32 G32-01) 新增：审计追踪 */
+  onOpenAuditTrail?: () => void;
+  /** v6.90.0 (Cycle 32 G32-02) 新增：单点登录 */
+  onOpenSSO?: () => void;
+  /** v6.91.0 (Cycle 32 G32-03) 新增：策略规则 */
+  onOpenPolicy?: () => void;
 }
 
 /**
@@ -239,7 +249,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -759,6 +769,33 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
         </svg>
       );
+    case 'audit':
+      // v6.89.0 (Cycle 32 G32-01) 新增：审计追踪（盾牌 + 勾）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      );
+    case 'sso':
+      // v6.90.0 (Cycle 32 G32-02) 新增：单点登录（钥匙 + 圆环）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <circle cx="8" cy="15" r="4" />
+          <path d="M10.85 12.15L19 4" />
+          <path d="M18 5l3 3" />
+          <path d="M15 8l3 3" />
+        </svg>
+      );
+    case 'policy':
+      // v6.91.0 (Cycle 32 G32-03) 新增：策略规则（文档 + 勾）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <path d="M9 15l2 2 4-4" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -912,6 +949,12 @@ export default function BrandHeader({
   onOpenRemoteWorktree,
   /** v6.88.0 (Cycle 31 G31-03) 新增：Worktree 状态同步 */
   onOpenWorktreeSync,
+  /** v6.89.0 (Cycle 32 G32-01) 新增：审计追踪 */
+  onOpenAuditTrail,
+  /** v6.90.0 (Cycle 32 G32-02) 新增：单点登录 */
+  onOpenSSO,
+  /** v6.91.0 (Cycle 32 G32-03) 新增：策略规则 */
+  onOpenPolicy,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2301,6 +2344,45 @@ export default function BrandHeader({
                 >
                   <Icon name="sync" className="w-4 h-4" />
                   <span>🔄 状态同步</span>
+                </button>
+              )}
+
+              {/* v2.14.0 (Cycle 32 G32-01) 新增：审计追踪（菜单项） */}
+              {onOpenAuditTrail && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenAuditTrail)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-rose-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-audit-trail"
+                >
+                  <Icon name="audit" className="w-4 h-4 text-rose-500" />
+                  <span>🛡️ 审计追踪</span>
+                </button>
+              )}
+
+              {/* v2.14.0 (Cycle 32 G32-02) 新增：单点登录（菜单项） */}
+              {onOpenSSO && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSSO)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-indigo-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-sso"
+                >
+                  <Icon name="sso" className="w-4 h-4 text-indigo-500" />
+                  <span>🔐 单点登录</span>
+                </button>
+              )}
+
+              {/* v2.14.0 (Cycle 32 G32-03) 新增：策略规则（菜单项） */}
+              {onOpenPolicy && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenPolicy)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-fuchsia-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-policy"
+                >
+                  <Icon name="policy" className="w-4 h-4 text-fuchsia-500" />
+                  <span>📋 策略规则</span>
                 </button>
               )}
 

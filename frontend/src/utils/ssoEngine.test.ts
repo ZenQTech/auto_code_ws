@@ -2,7 +2,7 @@
  * SSO Engine - 单元测试 (Cycle 32 G32-02)
  */
 
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import {
   SSOEngine,
   SSOLibraryError,
@@ -16,9 +16,7 @@ import {
   generateState,
   generateNonce,
   generateUserId,
-  DEFAULT_SSO_CONFIG,
   getDefaultSSOEngine,
-  setDefaultSSOEngine,
   type OIDCConfig,
   type SAMLConfig,
   type SCIMConfig,

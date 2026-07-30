@@ -1120,7 +1120,7 @@ export class SSOEngine {
     return { url, samlRequest: encoded, relayState };
   }
 
-  async processSAMLResponse(samlResponse: string, providerId: string, relayState?: string): Promise<{ session: SSOSession; user: SSOSessionUser }> {
+  async processSAMLResponse(samlResponse: string, providerId: string, _relayState?: string): Promise<{ session: SSOSession; user: SSOSessionUser }> {
     const provider = this.samlProviders.get(providerId);
     if (!provider) throw new SSOLibraryError('PROVIDER_NOT_FOUND', `SAML provider ${providerId} not found`);
 

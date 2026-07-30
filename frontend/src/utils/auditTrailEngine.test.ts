@@ -28,7 +28,6 @@ import {
   setDefaultAuditTrailEngine,
   COMPLIANCE_CONTROLS,
   DEFAULT_AUDIT_CONFIG,
-  type AuditEvent,
   type AuditActor,
   type AuditResource,
   type Period,

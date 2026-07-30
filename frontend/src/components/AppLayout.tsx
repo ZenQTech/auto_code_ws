@@ -228,6 +228,12 @@ export interface AppLayoutProps {
   onOpenRemoteWorktree?: () => void;
   /** v6.88.0 (Cycle 31 G31-03) 新增：Worktree 状态同步 */
   onOpenWorktreeSync?: () => void;
+  /** v6.89.0 (Cycle 32 G32-01) 新增：审计追踪 */
+  onOpenAuditTrail?: () => void;
+  /** v6.90.0 (Cycle 32 G32-02) 新增：单点登录 */
+  onOpenSSO?: () => void;
+  /** v6.91.0 (Cycle 32 G32-03) 新增：策略规则 */
+  onOpenPolicy?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -388,6 +394,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenCostAttribution,  // v6.86.0 (Cycle 31 G31-01) 透传 BrandHeader
   onOpenRemoteWorktree,  // v6.87.0 (Cycle 31 G31-02) 透传 BrandHeader
   onOpenWorktreeSync,  // v6.88.0 (Cycle 31 G31-03) 透传 BrandHeader
+  onOpenAuditTrail,  // v6.89.0 (Cycle 32 G32-01) 透传 BrandHeader
+  onOpenSSO,  // v6.90.0 (Cycle 32 G32-02) 透传 BrandHeader
+  onOpenPolicy,  // v6.91.0 (Cycle 32 G32-03) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -623,6 +632,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenCostAttribution={onOpenCostAttribution}
         onOpenRemoteWorktree={onOpenRemoteWorktree}
         onOpenWorktreeSync={onOpenWorktreeSync}
+        onOpenAuditTrail={onOpenAuditTrail}
+        onOpenSSO={onOpenSSO}
+        onOpenPolicy={onOpenPolicy}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}
