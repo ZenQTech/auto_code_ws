@@ -358,19 +358,28 @@ export function createSSEStream(options: SSEStreamOptions): SSEStream {
 
     try {
       while (active) {
+        // 检查 signal（在循环开始时检查）
+        if (signal.aborted) {
+          throw new SSEError('流被中止', 'aborted');
+        }
+
         const readPromise = reader.read();
-        const timeoutPromise = new Promise<{ done: boolean; value: undefined; timeout: true }>(
+        const timeoutPromise = new Promise<{ done: boolean; value: undefined; timeout: true } | { aborted: true }>(
           (resolve) => {
             const timer = window.setTimeout(() => {
               resolve({ done: false, value: undefined, timeout: true });
             }, heartbeatMs);
             signal.addEventListener('abort', () => {
               window.clearTimeout(timer);
+              resolve({ aborted: true });
             });
           },
         );
 
         const result = await Promise.race([readPromise, timeoutPromise]);
+        if ('aborted' in result && result.aborted) {
+          throw new SSEError('流被中止', 'aborted');
+        }
         if ('timeout' in result && result.timeout) {
           // 心跳超时
           throw new SSEError('心跳超时', 'timeout');
