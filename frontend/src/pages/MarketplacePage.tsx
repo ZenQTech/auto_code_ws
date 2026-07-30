@@ -30,7 +30,7 @@ const MarketplacePage: React.FC = () => {
         </span>
       </div>
       <div className="flex-1 overflow-hidden p-4">
-        <MarketplacePanel standalone />
+        <MarketplacePanel isOpen={true} onClose={() => navigate('/')} standalone />
       </div>
     </div>
   );

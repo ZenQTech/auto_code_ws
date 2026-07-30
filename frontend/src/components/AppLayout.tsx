@@ -209,6 +209,12 @@ export interface AppLayoutProps {
   onOpenScopedPermissions?: () => void;
   /** v6.76.0 (Cycle 28 G28-05) 新增：斜杠命令面板 */
   onOpenCommandPalette?: () => void;
+  /** v6.77.0 (Cycle 29 G29-01) 新增：堆叠技能 */
+  onOpenStackedSkills?: () => void;
+  /** v6.78.0 (Cycle 29 G29-02) 新增：技能市场面板（区别于 Cycle 13 onOpenMarketplace 路由） */
+  onOpenSkillsMarket?: () => void;
+  /** v6.79.0 (Cycle 29 G29-03) 新增：分析聊天 */
+  onOpenAnalyticsChat?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -360,6 +366,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenUsageAttribution,  // v6.74.0 (Cycle 28 G28-03) 透传 BrandHeader
   onOpenScopedPermissions,  // v6.75.0 (Cycle 28 G28-04) 透传 BrandHeader
   onOpenCommandPalette,  // v6.76.0 (Cycle 28 G28-05) 透传 BrandHeader
+  onOpenStackedSkills,  // v6.77.0 (Cycle 29 G29-01) 透传 BrandHeader
+  onOpenSkillsMarket,  // v6.78.0 (Cycle 29 G29-02) 透传 BrandHeader
+  onOpenAnalyticsChat,  // v6.79.0 (Cycle 29 G29-03) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -586,6 +595,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenUsageAttribution={onOpenUsageAttribution}
         onOpenScopedPermissions={onOpenScopedPermissions}
         onOpenCommandPalette={onOpenCommandPalette}
+        onOpenStackedSkills={onOpenStackedSkills}
+        onOpenSkillsMarket={onOpenSkillsMarket}
+        onOpenAnalyticsChat={onOpenAnalyticsChat}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

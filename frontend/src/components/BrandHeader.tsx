@@ -209,6 +209,12 @@ export interface BrandHeaderProps {
   onOpenScopedPermissions?: () => void;
   /** v6.76.0 (Cycle 28 G28-05) 新增：斜杠命令面板 */
   onOpenCommandPalette?: () => void;
+  /** v6.77.0 (Cycle 29 G29-01) 新增：堆叠技能 */
+  onOpenStackedSkills?: () => void;
+  /** v6.78.0 (Cycle 29 G29-02) 新增：技能市场面板（区别于 Cycle 13 onOpenMarketplace 路由） */
+  onOpenSkillsMarket?: () => void;
+  /** v6.79.0 (Cycle 29 G29-03) 新增：分析聊天 */
+  onOpenAnalyticsChat?: () => void;
 }
 
 /**
@@ -822,6 +828,12 @@ export default function BrandHeader({
   onOpenScopedPermissions,
   /** v6.76.0 (Cycle 28 G28-05) 新增：斜杠命令面板 */
   onOpenCommandPalette,
+  /** v6.77.0 (Cycle 29 G29-01) 新增：堆叠技能 */
+  onOpenStackedSkills,
+  /** v6.78.0 (Cycle 29 G29-02) 新增：技能市场面板 */
+  onOpenSkillsMarket,
+  /** v6.79.0 (Cycle 29 G29-03) 新增：分析聊天 */
+  onOpenAnalyticsChat,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2097,6 +2109,42 @@ export default function BrandHeader({
                   data-testid="menu-command-palette"
                 >
                   <span>⌨️ 斜杠命令</span>
+                </button>
+              )}
+
+              {/* v6.77.0 (Cycle 29 G29-01) 新增：堆叠技能（菜单项） */}
+              {onOpenStackedSkills && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenStackedSkills)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-indigo-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-stacked-skills"
+                >
+                  <span>📚 堆叠技能</span>
+                </button>
+              )}
+
+              {/* v6.78.0 (Cycle 29 G29-02) 新增：技能市场（菜单项） */}
+              {onOpenSkillsMarket && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSkillsMarket)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-pink-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-skills-market"
+                >
+                  <span>🛍️ 技能市场</span>
+                </button>
+              )}
+
+              {/* v6.79.0 (Cycle 29 G29-03) 新增：分析聊天（菜单项） */}
+              {onOpenAnalyticsChat && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenAnalyticsChat)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-teal-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-analytics-chat"
+                >
+                  <span>📊 分析聊天</span>
                 </button>
               )}
 

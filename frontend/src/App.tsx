@@ -153,6 +153,13 @@
 #     ⑤ AppLayout 新增 5 个回调 prop 透传
 #     ⑥ 对应 Codex v0.130+ Nested Sub-Agents + Claude Code 2026-06 Agent Checkpointing
 #     ⑦ 对应 Codex v0.130+ Structured Messaging + Agent Templates + Remote Control
+#   - 2026-07-30 | v6.78.0 | Cycle 29 G29-02/03 新增 2 个面板集成
+#     ① MarketplacePanel (技能市场) - 浏览/安装/评分/评论
+#     ② AnalyticsChatPanel (分析聊天) - 自然语言查询用量数据
+#     ③ 2 个面板均通过 ErrorBoundary 嵌套 + 显隐 state + onClose 回调
+#     ④ BrandHeader 新增 2 个菜单项 (🛍️/📊)
+#     ⑤ AppLayout 新增 2 个回调 prop 透传
+#     ⑥ 对应 Codex Skills Marketplace + Claude Code Analytics Chat
 # ============================================================
  */
 
@@ -301,6 +308,12 @@ import { CostBudgetPanel } from './components/CostBudgetPanel';
 import { UsageAttributionPanel } from './components/UsageAttributionPanel';
 import { ScopedPermissionsPanel } from './components/ScopedPermissionsPanel';
 import { SlashCommandPanel } from './components/SlashCommandPanel';
+/** v6.77.0 (Cycle 29 G29-01) 新增：堆叠技能面板 */
+import { StackedSkillsPanel } from './components/StackedSkillsPanel';
+/** v6.78.0 (Cycle 29 G29-02) 新增：技能市场面板 */
+import { MarketplacePanel } from './components/MarketplacePanel';
+/** v6.79.0 (Cycle 29 G29-03) 新增：分析聊天面板 */
+import { AnalyticsChatPanel } from './components/AnalyticsChatPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1608,6 +1621,36 @@ export default function App() {
   }, []);
 
   /**
+   * v6.77.0 (Cycle 29 G29-01) 堆叠技能面板开关
+   * 作用：控制 StackedSkillsPanel 弹窗显隐
+   *       引擎由 StackedSkillEngine 单例管理，支持一次最多 5 个技能堆叠
+   */
+  const [stackedSkillsOpen, setStackedSkillsOpen] = useState(false);
+  const handleOpenStackedSkills = useCallback(() => {
+    setStackedSkillsOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.78.0 (Cycle 29 G29-02) 技能市场面板开关
+   * 作用：控制 MarketplacePanel 弹窗显隐
+   *       引擎由 SkillsMarketplace 单例管理，支持浏览/安装/评分/评论
+   */
+  const [skillsMarketOpen, setSkillsMarketOpen] = useState(false);
+  const handleOpenSkillsMarket = useCallback(() => {
+    setSkillsMarketOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.79.0 (Cycle 29 G29-03) 分析聊天面板开关
+   * 作用：控制 AnalyticsChatPanel 弹窗显隐
+   *       引擎由 AnalyticsChat 单例管理，支持自然语言查询用量数据
+   */
+  const [analyticsChatOpen, setAnalyticsChatOpen] = useState(false);
+  const handleOpenAnalyticsChat = useCallback(() => {
+    setAnalyticsChatOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2656,6 +2699,9 @@ export default function App() {
           onOpenUsageAttribution={handleOpenUsageAttribution}
           onOpenScopedPermissions={handleOpenScopedPermissions}
           onOpenCommandPalette={handleOpenSlashCommand}
+          onOpenStackedSkills={handleOpenStackedSkills}
+          onOpenSkillsMarket={handleOpenSkillsMarket}
+          onOpenAnalyticsChat={handleOpenAnalyticsChat}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3411,6 +3457,36 @@ export default function App() {
         <SlashCommandPanel
           isOpen={slashCommandOpen}
           onClose={() => setSlashCommandOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.77.0 (Cycle 29 G29-01) 新增：堆叠技能面板
+       *  引擎由 StackedSkillEngine 单例管理，支持一次最多 5 个技能堆叠
+       *  对应 Claude Code v2.1.199+ Stacked Skills 特性 */}
+      <ErrorBoundary level="panel" name="StackedSkills">
+        <StackedSkillsPanel
+          isOpen={stackedSkillsOpen}
+          onClose={() => setStackedSkillsOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.78.0 (Cycle 29 G29-02) 新增：技能市场面板
+       *  引擎由 SkillsMarketplace 单例管理，支持浏览/安装/评分/评论
+       *  对应 Codex Skills Marketplace + skills-hub.ai */}
+      <ErrorBoundary level="panel" name="Marketplace">
+        <MarketplacePanel
+          isOpen={skillsMarketOpen}
+          onClose={() => setSkillsMarketOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.79.0 (Cycle 29 G29-03) 新增：分析聊天面板
+       *  引擎由 AnalyticsChat 单例管理，支持自然语言查询用量数据
+       *  对应 Claude Code Analytics Chat 特性 */}
+      <ErrorBoundary level="panel" name="AnalyticsChat">
+        <AnalyticsChatPanel
+          isOpen={analyticsChatOpen}
+          onClose={() => setAnalyticsChatOpen(false)}
         />
       </ErrorBoundary>
 
