@@ -272,6 +272,12 @@ import { AutoCodeReviewPanel } from './components/AutoCodeReviewPanel';
 import { PRBotPanel } from './components/PRBotPanel';
 /** v6.63.0 (Cycle 25 G25-03) 新增：AI 性能优化器面板 */
 import { PerfOptimizerPanel } from './components/PerfOptimizerPanel';
+/** v6.64.0 (Cycle 26 G26-01) 新增：CSV 批处理智能体面板 */
+import { CsvBatchPanel } from './components/CsvBatchPanel';
+/** v6.65.0 (Cycle 26 G26-02) 新增：智能审批引擎面板 */
+import { SmartApprovalPanel } from './components/SmartApprovalPanel';
+/** v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务协作面板 */
+import { MTCPanel } from './components/MTCPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1449,6 +1455,36 @@ export default function App() {
   }, []);
 
   /**
+   * v6.64.0 (Cycle 26 G26-01) CSV 批处理智能体面板开关
+   * 作用：控制 CsvBatchPanel 弹窗显隐
+   *       引擎由 CsvBatchEngine 单例管理
+   */
+  const [csvBatchOpen, setCsvBatchOpen] = useState(false);
+  const handleOpenCsvBatch = useCallback(() => {
+    setCsvBatchOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.65.0 (Cycle 26 G26-02) 智能审批引擎面板开关
+   * 作用：控制 SmartApprovalPanel 弹窗显隐
+   *       引擎由 SmartApprovalEngine 单例管理
+   */
+  const [smartApprovalOpen, setSmartApprovalOpen] = useState(false);
+  const handleOpenSmartApproval = useCallback(() => {
+    setSmartApprovalOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.66.0 (Cycle 26 G26-03) MTC 多模任务协作面板开关
+   * 作用：控制 MTCPanel 弹窗显隐
+   *       适配器由 MtcAdapter 单例管理
+   */
+  const [mtcOpen, setMtcOpen] = useState(false);
+  const handleOpenMTC = useCallback(() => {
+    setMtcOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2484,6 +2520,9 @@ export default function App() {
           onOpenAutoCodeReview={handleOpenAutoCodeReview}
           onOpenPRBot={handleOpenPRBot}
           onOpenPerfOptimizer={handleOpenPerfOptimizer}
+          onOpenCsvBatch={handleOpenCsvBatch}
+          onOpenSmartApproval={handleOpenSmartApproval}
+          onOpenMTC={handleOpenMTC}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3106,6 +3145,39 @@ export default function App() {
         <PerfOptimizerPanel
           isOpen={perfOptimizerOpen}
           onClose={() => setPerfOptimizerOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.64.0 (Cycle 26 G26-01) 新增：CSV 批处理智能体面板
+       *  触发：BrandHeader 菜单"📊 CSV 批处理"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  引擎由 CsvBatchEngine 单例管理，支持 CSV 解析 + 模板渲染 + 并发任务调度 + 进度监控 + 结果导出 */}
+      <ErrorBoundary level="panel" name="CsvBatch">
+        <CsvBatchPanel
+          isOpen={csvBatchOpen}
+          onClose={() => setCsvBatchOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.65.0 (Cycle 26 G26-02) 新增：智能审批引擎面板
+       *  触发：BrandHeader 菜单"🛡️ 智能审批"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  引擎由 SmartApprovalEngine 单例管理，支持 40+ 内置规则 + JSON DSL + 决策流 + 审计日志 + 人工覆盖 */}
+      <ErrorBoundary level="panel" name="SmartApproval">
+        <SmartApprovalPanel
+          isOpen={smartApprovalOpen}
+          onClose={() => setSmartApprovalOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务协作面板
+       *  触发：BrandHeader 菜单"🎨 MTC 多模任务"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  适配器由 MtcAdapter 单例管理，支持 7 种任务类型 + 10 种文件类型 + 多格式输出 */}
+      <ErrorBoundary level="panel" name="MTC">
+        <MTCPanel
+          isOpen={mtcOpen}
+          onClose={() => setMtcOpen(false)}
         />
       </ErrorBoundary>
 

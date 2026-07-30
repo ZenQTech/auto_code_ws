@@ -181,6 +181,12 @@ export interface AppLayoutProps {
   onOpenPRBot?: () => void;
   /** v6.63.0 (Cycle 25 G25-03) 新增：AI 性能优化器面板回调 */
   onOpenPerfOptimizer?: () => void;
+  /** v6.64.0 (Cycle 26 G26-01) 新增：CSV 批处理面板回调 */
+  onOpenCsvBatch?: () => void;
+  /** v6.65.0 (Cycle 26 G26-02) 新增：智能审批面板回调 */
+  onOpenSmartApproval?: () => void;
+  /** v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务面板回调 */
+  onOpenMTC?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -319,6 +325,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenAutoCodeReview,  // v6.61.0 (Cycle 25 G25-01) 透传 BrandHeader
   onOpenPRBot,  // v6.62.0 (Cycle 25 G25-02) 透传 BrandHeader
   onOpenPerfOptimizer,  // v6.63.0 (Cycle 25 G25-03) 透传 BrandHeader
+  onOpenCsvBatch,  // v6.64.0 (Cycle 26 G26-01) 透传 BrandHeader
+  onOpenSmartApproval,  // v6.65.0 (Cycle 26 G26-02) 透传 BrandHeader
+  onOpenMTC,  // v6.66.0 (Cycle 26 G26-03) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -532,6 +541,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenAutoCodeReview={onOpenAutoCodeReview}
         onOpenPRBot={onOpenPRBot}
         onOpenPerfOptimizer={onOpenPerfOptimizer}
+        onOpenCsvBatch={onOpenCsvBatch}
+        onOpenSmartApproval={onOpenSmartApproval}
+        onOpenMTC={onOpenMTC}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

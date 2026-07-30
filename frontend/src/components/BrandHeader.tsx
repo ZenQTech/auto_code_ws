@@ -176,6 +176,12 @@ export interface BrandHeaderProps {
   onOpenPRBot?: () => void;
   /** v6.63.0 (Cycle 25 G25-03) 新增：AI 性能优化器 */
   onOpenPerfOptimizer?: () => void;
+  /** v6.64.0 (Cycle 26 G26-01) 新增：CSV 批处理智能体 */
+  onOpenCsvBatch?: () => void;
+  /** v6.65.0 (Cycle 26 G26-02) 新增：智能审批引擎 */
+  onOpenSmartApproval?: () => void;
+  /** v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务协作 */
+  onOpenMTC?: () => void;
 }
 
 /**
@@ -185,7 +191,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -580,6 +586,36 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M3.34 19a10 10 0 1 1 17.32 0" />
         </svg>
       );
+    case 'csv':
+      // v6.64.0 (Cycle 26 G26-01) 新增：CSV 批处理（表格+箭头）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="3" y="3" width="18" height="18" rx="2" />
+          <line x1="3" y1="9" x2="21" y2="9" />
+          <line x1="9" y1="3" x2="9" y2="21" />
+          <path d="m13 14 3 3-3 3" />
+        </svg>
+      );
+    case 'shield-alert':
+      // v6.65.0 (Cycle 26 G26-02) 新增：智能审批（盾牌+警告）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="M12 8v4" />
+          <path d="M12 16h.01" />
+        </svg>
+      );
+    case 'palette':
+      // v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务（调色板）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <circle cx="13.5" cy="6.5" r=".5" fill="currentColor" />
+          <circle cx="17.5" cy="10.5" r=".5" fill="currentColor" />
+          <circle cx="8.5" cy="7.5" r=".5" fill="currentColor" />
+          <circle cx="6.5" cy="12.5" r=".5" fill="currentColor" />
+          <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9z" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -689,6 +725,12 @@ export default function BrandHeader({
   onOpenPRBot,
   /** v6.63.0 (Cycle 25 G25-03) 新增：AI 性能优化器 */
   onOpenPerfOptimizer,
+  /** v6.64.0 (Cycle 26 G26-01) 新增：CSV 批处理智能体 */
+  onOpenCsvBatch,
+  /** v6.65.0 (Cycle 26 G26-02) 新增：智能审批引擎 */
+  onOpenSmartApproval,
+  /** v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务协作 */
+  onOpenMTC,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1760,6 +1802,60 @@ export default function BrandHeader({
                 >
                   <Icon name="gauge" className="w-4 h-4 text-amber-500" />
                   <span>⚡ AI 性能优化器</span>
+                </button>
+              )}
+
+              {/* v6.64.0 (Cycle 26 G26-01) 新增：CSV 批处理智能体（菜单项）
+               *  行为：点击调 onOpenCsvBatch() 弹出 CsvBatchPanel
+               *       支持 CSV 解析 + 模板渲染 + 并发任务调度 + 进度监控 + 结果导出
+               *  图标：csv（表格+箭头） */}
+              {onOpenCsvBatch && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCsvBatch)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-emerald-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-csv-batch"
+                >
+                  <Icon name="csv" className="w-4 h-4 text-emerald-500" />
+                  <span>📊 CSV 批处理</span>
+                </button>
+              )}
+
+              {/* v6.65.0 (Cycle 26 G26-02) 新增：智能审批引擎（菜单项）
+               *  行为：点击调 onOpenSmartApproval() 弹出 SmartApprovalPanel
+               *       40+ 内置规则 + JSON DSL + 决策流 + 审计日志 + 人工覆盖
+               *  图标：shield-alert（盾牌+警告） */}
+              {onOpenSmartApproval && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSmartApproval)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-rose-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-smart-approval"
+                >
+                  <Icon name="shield-alert" className="w-4 h-4 text-rose-500" />
+                  <span>🛡️ 智能审批</span>
+                </button>
+              )}
+
+              {/* v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务协作（菜单项）
+               *  行为：点击调 onOpenMTC() 弹出 MTCPanel
+               *       7 种任务类型（总结/翻译/重写/分析/转换/提取/优化）+ 10 种文件类型
+               *  图标：palette（调色板） */}
+              {onOpenMTC && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMTC)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-pink-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-mtc"
+                >
+                  <Icon name="palette" className="w-4 h-4 text-pink-500" />
+                  <span>🎨 MTC 多模任务</span>
                 </button>
               )}
 
