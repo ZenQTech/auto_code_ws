@@ -908,3 +908,50 @@ Phase 7: 循环重启准备 + 迭代日志
 **当前 Cycle**: Cycle 23 ✅ 已完成
 **下一 Cycle**: Cycle 24 启动准备
 **负责人**: Hermes AI Agent
+
+## Cycle 24 完成
+
+**日期**: 2026-07-30
+**主题**: 跨会话记忆 + 多任务编排 + 语音输入 + Figma 转代码
+**Git Hash**: 3e990a0 (P2-P3) + 7586b83 (P0-P1) + 8f680fe (P1-2 Figma)
+
+### 主要功能
+- v6.57.0-v6.59.0 (G24-01/02/03): GlobalMemoryEngine + MultiTaskOrchestrator + VoiceInputAdapter
+- v6.60.0 (G24-04): FigmaAdapter
+- v6.61.0: UI/UX 优化 + 端到端集成测试
+
+### 测试结果
+- 新增 281 测试全部通过
+- TypeScript 0 错误
+
+## Cycle 25 完成
+
+**日期**: 2026-07-30
+**主题**: 自动化代码评审 + PR 机器人 + AI 性能优化器
+**Git Hash**: 182acb7 + 4a84916 (验收报告)
+
+### 主要功能
+- v6.62.0 (G25-01): AutoCodeReviewEngine - 100+ 内置规则 + 严重度分级 + JSON/Markdown/SARIF 导出
+- v6.63.0 (G25-02): PRBotEngine - PR 事件触发 + 自动 review + 审计日志
+- v6.64.0 (G25-03): PerfOptimizerEngine - 20+ React 反模式规则 + 重构 diff + 性能预算
+
+### 测试结果
+- 新增 200+ 测试（24 组件 + 24 组件 + 28 组件 + 30 集成 + 单元测试）
+- Cycle 25 全量测试 100% 通过
+- TypeScript 0 错误
+- 端到端集成测试覆盖三大引擎协同工作
+
+### 交付文档
+- CYCLE25_CODEX_TRAE_RESEARCH.md
+- CYCLE25_GAP_ANALYSIS.md
+- CYCLE25_SPEC_G25_01_AUTO_CODE_REVIEW.md
+- CYCLE25_SPEC_G25_02_PR_BOT.md
+- CYCLE25_SPEC_G25_03_PERF_OPTIMIZER.md
+- CYCLE25_ACCEPTANCE_REPORT.md
+
+---
+
+**更新日期**: 2026-07-30 11:30
+**当前 Cycle**: Cycle 25 ✅ 已完成
+**下一 Cycle**: Cycle 26 启动准备
+**负责人**: Hermes AI Agent
