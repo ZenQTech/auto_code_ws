@@ -145,6 +145,14 @@
 #     ⑤ BrandHeader 新增 3 个菜单项 + 3 个 SVG 图标
 #     ⑥ AppLayout 新增 3 个回调 prop 透传
 #     ⑦ 浮动气泡挂在主内容区域右下角，hover 自动展开建议
+#   - 2026-07-30 | v6.71.0 | Cycle 27 G27-01/02/04/05/06 新增 5 个面板集成
+#     ① NestedSubAgentPanel (嵌套子代理) / AgentCheckpointPanel (代理检查点)
+#     ② AgentMessagingPanel (代理消息) / AgentTemplatePanel (代理模板) / RemoteControlPanel (远程控制)
+#     ③ 5 个面板均通过 ErrorBoundary 嵌套 + 显隐 state + onClose 回调
+#     ④ BrandHeader 新增 5 个菜单项 (🌲/📌/💬/📋/📱) + 5 个 SVG 图标 (nested/checkpoint/messaging/template/remote)
+#     ⑤ AppLayout 新增 5 个回调 prop 透传
+#     ⑥ 对应 Codex v0.130+ Nested Sub-Agents + Claude Code 2026-06 Agent Checkpointing
+#     ⑦ 对应 Codex v0.130+ Structured Messaging + Agent Templates + Remote Control
 # ============================================================
  */
 
@@ -278,6 +286,16 @@ import { CsvBatchPanel } from './components/CsvBatchPanel';
 import { SmartApprovalPanel } from './components/SmartApprovalPanel';
 /** v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务协作面板 */
 import { MTCPanel } from './components/MTCPanel';
+/** v6.67.0 (Cycle 27 G27-01) 新增：嵌套子代理面板 */
+import { NestedSubAgentPanel } from './components/NestedSubAgentPanel';
+/** v6.68.0 (Cycle 27 G27-02) 新增：代理检查点面板 */
+import { AgentCheckpointPanel } from './components/AgentCheckpointPanel';
+/** v6.69.0 (Cycle 27 G27-04) 新增：代理消息面板 */
+import { AgentMessagingPanel } from './components/AgentMessagingPanel';
+/** v6.70.0 (Cycle 27 G27-05) 新增：代理模板面板 */
+import { AgentTemplatePanel } from './components/AgentTemplatePanel';
+/** v6.71.0 (Cycle 27 G27-06) 新增：远程控制面板 */
+import { RemoteControlPanel } from './components/RemoteControlPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1485,6 +1503,56 @@ export default function App() {
   }, []);
 
   /**
+   * v6.67.0 (Cycle 27 G27-01) 嵌套子代理面板开关
+   * 作用：控制 NestedSubAgentPanel 弹窗显隐
+   *       引擎由 NestedSubAgentEngine 单例管理，支持 3 层嵌套子代理
+   */
+  const [nestedSubAgentOpen, setNestedSubAgentOpen] = useState(false);
+  const handleOpenNestedSubAgent = useCallback(() => {
+    setNestedSubAgentOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.68.0 (Cycle 27 G27-02) 代理检查点面板开关
+   * 作用：控制 AgentCheckpointPanel 弹窗显隐
+   *       引擎由 AgentCheckpointEngine 单例管理，支持检查点保存/恢复
+   */
+  const [agentCheckpointOpen, setAgentCheckpointOpen] = useState(false);
+  const handleOpenAgentCheckpoint = useCallback(() => {
+    setAgentCheckpointOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.69.0 (Cycle 27 G27-04) 代理消息面板开关
+   * 作用：控制 AgentMessagingPanel 弹窗显隐
+   *       引擎由 AgentMessagingEngine 单例管理，支持 send_message/followup_task
+   */
+  const [agentMessagingOpen, setAgentMessagingOpen] = useState(false);
+  const handleOpenAgentMessaging = useCallback(() => {
+    setAgentMessagingOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.70.0 (Cycle 27 G27-05) 代理模板面板开关
+   * 作用：控制 AgentTemplatePanel 弹窗显隐
+   *       引擎由 AgentTemplateEngine 单例管理，支持 10 个内置模板 + 用户模板
+   */
+  const [agentTemplateOpen, setAgentTemplateOpen] = useState(false);
+  const handleOpenAgentTemplate = useCallback(() => {
+    setAgentTemplateOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.71.0 (Cycle 27 G27-06) 远程控制面板开关
+   * 作用：控制 RemoteControlPanel 弹窗显隐
+   *       引擎由 RemoteControlEngine 单例管理，支持 QR 配对 + Thread 迁移
+   */
+  const [remoteControlOpen, setRemoteControlOpen] = useState(false);
+  const handleOpenRemoteControl = useCallback(() => {
+    setRemoteControlOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2523,6 +2591,11 @@ export default function App() {
           onOpenCsvBatch={handleOpenCsvBatch}
           onOpenSmartApproval={handleOpenSmartApproval}
           onOpenMTC={handleOpenMTC}
+          onOpenNestedSubAgent={handleOpenNestedSubAgent}
+          onOpenAgentCheckpoint={handleOpenAgentCheckpoint}
+          onOpenAgentMessaging={handleOpenAgentMessaging}
+          onOpenAgentTemplate={handleOpenAgentTemplate}
+          onOpenRemoteControl={handleOpenRemoteControl}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3178,6 +3251,61 @@ export default function App() {
         <MTCPanel
           isOpen={mtcOpen}
           onClose={() => setMtcOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.67.0 (Cycle 27 G27-01) 新增：嵌套子代理面板
+       *  触发：BrandHeader 菜单"🌲 嵌套子代理"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  引擎由 NestedSubAgentEngine 单例管理，支持 3 层嵌套 + 树形/时间线/统计视图 */}
+      <ErrorBoundary level="panel" name="NestedSubAgent">
+        <NestedSubAgentPanel
+          isOpen={nestedSubAgentOpen}
+          onClose={() => setNestedSubAgentOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.68.0 (Cycle 27 G27-02) 新增：代理检查点面板
+       *  触发：BrandHeader 菜单"📌 代理检查点"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  引擎由 AgentCheckpointEngine 单例管理，支持保存/恢复/重命名/标签/自动清理 */}
+      <ErrorBoundary level="panel" name="AgentCheckpoint">
+        <AgentCheckpointPanel
+          isOpen={agentCheckpointOpen}
+          onClose={() => setAgentCheckpointOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.69.0 (Cycle 27 G27-04) 新增：代理消息面板
+       *  触发：BrandHeader 菜单"💬 代理消息"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  引擎由 AgentMessagingEngine 单例管理，支持 send_message/followup_task/路径寻址 */}
+      <ErrorBoundary level="panel" name="AgentMessaging">
+        <AgentMessagingPanel
+          isOpen={agentMessagingOpen}
+          onClose={() => setAgentMessagingOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.70.0 (Cycle 27 G27-05) 新增：代理模板面板
+       *  触发：BrandHeader 菜单"📋 代理模板"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  引擎由 AgentTemplateEngine 单例管理，支持 10 个内置模板 + 5 个社区模板 + 评分 */}
+      <ErrorBoundary level="panel" name="AgentTemplate">
+        <AgentTemplatePanel
+          isOpen={agentTemplateOpen}
+          onClose={() => setAgentTemplateOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.71.0 (Cycle 27 G27-06) 新增：远程控制面板
+       *  触发：BrandHeader 菜单"📱 远程控制"项
+       *  关闭：面板内关闭按钮 / Esc 键 / 背景点击
+       *  引擎由 RemoteControlEngine 单例管理，支持 QR 配对 + Thread 迁移 + 远程命令 */}
+      <ErrorBoundary level="panel" name="RemoteControl">
+        <RemoteControlPanel
+          isOpen={remoteControlOpen}
+          onClose={() => setRemoteControlOpen(false)}
         />
       </ErrorBoundary>
 

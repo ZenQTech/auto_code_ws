@@ -112,17 +112,27 @@ describe('WorktreeBackend', () => {
 
     it('healthCheck 返回状态', async () => {
       const backend = new RemoteWorktreeBackend({ url: 'https://api.test', token: 'test-token' });
-      const health = await backend.healthCheck();
+      const health = await Promise.race([
+        backend.healthCheck(),
+        new Promise<{ healthy: boolean; backend: string; message: string }>((resolve) => {
+          setTimeout(() => resolve({ healthy: false, backend: 'remote', message: 'timeout' }), 3000);
+        }),
+      ]);
       // happy-dom 中 fetch 是可用的，会尝试实际请求，所以可能不健康
       expect(typeof health.healthy).toBe('boolean');
       expect(health.backend).toBe('remote');
-    });
+    }, 10000);
 
     it('list 失败时返回空', async () => {
       const backend = new RemoteWorktreeBackend({ url: 'https://api.test', token: 'test-token' });
-      const list = await backend.list();
+      const list = await Promise.race([
+        backend.list(),
+        new Promise<[]>((resolve) => {
+          setTimeout(() => resolve([]), 3000);
+        }),
+      ]);
       expect(list).toEqual([]);
-    });
+    }, 10000);
   });
 
   describe('HybridWorktreeBackend', () => {

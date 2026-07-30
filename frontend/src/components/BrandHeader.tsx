@@ -43,6 +43,13 @@
 #     新增 onOpenAutoCodeReview / onOpenPRBot / onOpenPerfOptimizer 回调
 #     新增 search-check (代码评审) / bot (机器人) / gauge (性能计) 内联 SVG 图标
 #     对应 Codex PR review + TRAE 实时代码质量分析 + AI 主动性能建议
+#   - 2026-07-30 | v2.10.0 | Cycle 26 新增：菜单项 CSV 批处理 / 智能审批 / MTC 多模任务
+#     新增 onOpenCsvBatch / onOpenSmartApproval / onOpenMTC 回调
+#     新增 csv / shield-alert / palette 内联 SVG 图标
+#   - 2026-07-30 | v2.11.0 | Cycle 27 新增：菜单项 嵌套子代理 / 代理检查点 / 代理消息 / 代理模板 / 远程控制
+#     新增 onOpenNestedSubAgent / onOpenAgentCheckpoint / onOpenAgentMessaging / onOpenAgentTemplate / onOpenRemoteControl 回调
+#     新增 nested / checkpoint / messaging / template / remote 内联 SVG 图标
+#     对应 Codex v0.130+ Nested Sub-Agents + Claude Code 2026-06 Agent Checkpointing + Structured Messaging + Agent Templates + Remote Control
 # ============================================================
  */
 
@@ -182,6 +189,16 @@ export interface BrandHeaderProps {
   onOpenSmartApproval?: () => void;
   /** v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务协作 */
   onOpenMTC?: () => void;
+  /** v6.67.0 (Cycle 27 G27-01) 新增：嵌套子代理 */
+  onOpenNestedSubAgent?: () => void;
+  /** v6.68.0 (Cycle 27 G27-02) 新增：代理检查点 */
+  onOpenAgentCheckpoint?: () => void;
+  /** v6.69.0 (Cycle 27 G27-04) 新增：代理消息 */
+  onOpenAgentMessaging?: () => void;
+  /** v6.70.0 (Cycle 27 G27-05) 新增：代理模板 */
+  onOpenAgentTemplate?: () => void;
+  /** v6.71.0 (Cycle 27 G27-06) 新增：远程控制 */
+  onOpenRemoteControl?: () => void;
 }
 
 /**
@@ -191,7 +208,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -616,6 +633,50 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10c.83 0 1.5-.67 1.5-1.5 0-.39-.15-.74-.39-1.01-.23-.26-.38-.61-.38-.99 0-.83.67-1.5 1.5-1.5H16c3.31 0 6-2.69 6-6 0-4.96-4.49-9-10-9z" />
         </svg>
       );
+    case 'nested':
+      // v6.67.0 (Cycle 27 G27-01) 新增：嵌套子代理（分层树形结构）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="9" y="2" width="6" height="5" rx="1" />
+          <rect x="2" y="17" width="6" height="5" rx="1" />
+          <rect x="16" y="17" width="6" height="5" rx="1" />
+          <path d="M12 7v4M5 17v-2a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v2" />
+        </svg>
+      );
+    case 'checkpoint':
+      // v6.68.0 (Cycle 27 G27-02) 新增：代理检查点（书签/存档）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+          <path d="M12 7v4M12 15h.01" />
+        </svg>
+      );
+    case 'messaging':
+      // v6.69.0 (Cycle 27 G27-04) 新增：代理消息（对话气泡）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+          <path d="M8 9h8M8 13h6" />
+        </svg>
+      );
+    case 'template':
+      // v6.70.0 (Cycle 27 G27-05) 新增：代理模板（层叠卡片）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="3" y="3" width="14" height="14" rx="2" />
+          <path d="M7 7h6M7 11h6M7 15h4" />
+          <path d="M17 17v4M21 17v4M19 17v4" />
+        </svg>
+      );
+    case 'remote':
+      // v6.71.0 (Cycle 27 G27-06) 新增：远程控制（设备+信号）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="2" y="6" width="14" height="12" rx="2" />
+          <path d="M22 8l-6 4 6 4V8z" />
+          <path d="M6 10h6M6 14h4" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -731,6 +792,16 @@ export default function BrandHeader({
   onOpenSmartApproval,
   /** v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务协作 */
   onOpenMTC,
+  /** v6.67.0 (Cycle 27 G27-01) 新增：嵌套子代理 */
+  onOpenNestedSubAgent,
+  /** v6.68.0 (Cycle 27 G27-02) 新增：代理检查点 */
+  onOpenAgentCheckpoint,
+  /** v6.69.0 (Cycle 27 G27-04) 新增：代理消息 */
+  onOpenAgentMessaging,
+  /** v6.70.0 (Cycle 27 G27-05) 新增：代理模板 */
+  onOpenAgentTemplate,
+  /** v6.71.0 (Cycle 27 G27-06) 新增：远程控制 */
+  onOpenRemoteControl,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -1856,6 +1927,96 @@ export default function BrandHeader({
                 >
                   <Icon name="palette" className="w-4 h-4 text-pink-500" />
                   <span>🎨 MTC 多模任务</span>
+                </button>
+              )}
+
+              {/* v6.67.0 (Cycle 27 G27-01) 新增：嵌套子代理（菜单项）
+               *  行为：点击调 onOpenNestedSubAgent() 弹出 NestedSubAgentPanel
+               *       支持 3 层嵌套 + 树形视图 + 时间线 + 统计
+               *  图标：nested（分层树形结构） */}
+              {onOpenNestedSubAgent && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenNestedSubAgent)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-indigo-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-nested-sub-agent"
+                >
+                  <Icon name="nested" className="w-4 h-4 text-indigo-500" />
+                  <span>🌲 嵌套子代理</span>
+                </button>
+              )}
+
+              {/* v6.68.0 (Cycle 27 G27-02) 新增：代理检查点（菜单项）
+               *  行为：点击调 onOpenAgentCheckpoint() 弹出 AgentCheckpointPanel
+               *       支持检查点保存/恢复/重命名/标签/自动清理
+               *  图标：checkpoint（书签/存档） */}
+              {onOpenAgentCheckpoint && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenAgentCheckpoint)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-amber-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-agent-checkpoint"
+                >
+                  <Icon name="checkpoint" className="w-4 h-4 text-amber-500" />
+                  <span>📌 代理检查点</span>
+                </button>
+              )}
+
+              {/* v6.69.0 (Cycle 27 G27-04) 新增：代理消息（菜单项）
+               *  行为：点击调 onOpenAgentMessaging() 弹出 AgentMessagingPanel
+               *       支持 send_message/followup_task + 路径寻址 + 消息状态追踪
+               *  图标：messaging（对话气泡） */}
+              {onOpenAgentMessaging && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenAgentMessaging)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-agent-messaging"
+                >
+                  <Icon name="messaging" className="w-4 h-4 text-cyan-500" />
+                  <span>💬 代理消息</span>
+                </button>
+              )}
+
+              {/* v6.70.0 (Cycle 27 G27-05) 新增：代理模板（菜单项）
+               *  行为：点击调 onOpenAgentTemplate() 弹出 AgentTemplatePanel
+               *       10 个内置模板 + 5 个社区模板 + 用户自定义 + 评分
+               *  图标：template（层叠卡片） */}
+              {onOpenAgentTemplate && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenAgentTemplate)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-violet-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-agent-template"
+                >
+                  <Icon name="template" className="w-4 h-4 text-violet-500" />
+                  <span>📋 代理模板</span>
+                </button>
+              )}
+
+              {/* v6.71.0 (Cycle 27 G27-06) 新增：远程控制（菜单项）
+               *  行为：点击调 onOpenRemoteControl() 弹出 RemoteControlPanel
+               *       QR 配对 + Thread 迁移 + 远程命令 + 设备管理
+               *  图标：remote（设备+信号） */}
+              {onOpenRemoteControl && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenRemoteControl)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-emerald-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                  data-testid="menu-remote-control"
+                >
+                  <Icon name="remote" className="w-4 h-4 text-emerald-500" />
+                  <span>📱 远程控制</span>
                 </button>
               )}
 

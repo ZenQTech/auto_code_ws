@@ -220,12 +220,13 @@ describe('SSE 流式拦截器', () => {
       setTimeout(() => controller.abort(), 50);
 
       // 使用 Promise.race + timeout 避免极端环境卡住
-      await expect(
-        Promise.race([
-          promise,
-          new Promise((_, reject) => setTimeout(() => reject(new SSEError('测试超时')), 10000)),
-        ])
-      ).rejects.toThrow(SSEError);
+      const onTimeout = (): never => {
+        throw new SSEError('测试超时', 'timeout');
+      };
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(onTimeout()), 10000);
+      });
+      await expect(Promise.race([promise, timeoutPromise])).rejects.toThrow(SSEError);
     });
 
     it('cancel() 方法主动取消', async () => {

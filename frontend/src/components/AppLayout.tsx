@@ -24,6 +24,8 @@
  *     展示各 SubAgent 的分支名/模块名/进度/文件数/提交数
  *   - 2026-07-27 | v6.12.0 | P0-2 拆分第六阶段：内联消息渲染 + MessageRow 抽离到 ChatView 组件
  *   - 2026-07-27 | v6.13.0 | Cycle 7 P0-10 新增 onOpenMultiAgentTree 回调 + 透传 BrandHeader
+ *   - 2026-07-30 | v6.66.0 | Cycle 26 G26-01/02/03 新增 onOpenCsvBatch/onOpenSmartApproval/onOpenMTC 透传
+ *   - 2026-07-30 | v6.71.0 | Cycle 27 G27-01/02/04/05/06 新增 onOpenNestedSubAgent/onOpenAgentCheckpoint/onOpenAgentMessaging/onOpenAgentTemplate/onOpenRemoteControl 透传
  * ============================================================
  */
 
@@ -187,6 +189,16 @@ export interface AppLayoutProps {
   onOpenSmartApproval?: () => void;
   /** v6.66.0 (Cycle 26 G26-03) 新增：MTC 多模任务面板回调 */
   onOpenMTC?: () => void;
+  /** v6.67.0 (Cycle 27 G27-01) 新增：嵌套子代理面板回调 */
+  onOpenNestedSubAgent?: () => void;
+  /** v6.68.0 (Cycle 27 G27-02) 新增：代理检查点面板回调 */
+  onOpenAgentCheckpoint?: () => void;
+  /** v6.69.0 (Cycle 27 G27-04) 新增：代理消息面板回调 */
+  onOpenAgentMessaging?: () => void;
+  /** v6.70.0 (Cycle 27 G27-05) 新增：代理模板面板回调 */
+  onOpenAgentTemplate?: () => void;
+  /** v6.71.0 (Cycle 27 G27-06) 新增：远程控制面板回调 */
+  onOpenRemoteControl?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -328,6 +340,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenCsvBatch,  // v6.64.0 (Cycle 26 G26-01) 透传 BrandHeader
   onOpenSmartApproval,  // v6.65.0 (Cycle 26 G26-02) 透传 BrandHeader
   onOpenMTC,  // v6.66.0 (Cycle 26 G26-03) 透传 BrandHeader
+  onOpenNestedSubAgent,  // v6.67.0 (Cycle 27 G27-01) 透传 BrandHeader
+  onOpenAgentCheckpoint,  // v6.68.0 (Cycle 27 G27-02) 透传 BrandHeader
+  onOpenAgentMessaging,  // v6.69.0 (Cycle 27 G27-04) 透传 BrandHeader
+  onOpenAgentTemplate,  // v6.70.0 (Cycle 27 G27-05) 透传 BrandHeader
+  onOpenRemoteControl,  // v6.71.0 (Cycle 27 G27-06) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -544,6 +561,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenCsvBatch={onOpenCsvBatch}
         onOpenSmartApproval={onOpenSmartApproval}
         onOpenMTC={onOpenMTC}
+        onOpenNestedSubAgent={onOpenNestedSubAgent}
+        onOpenAgentCheckpoint={onOpenAgentCheckpoint}
+        onOpenAgentMessaging={onOpenAgentMessaging}
+        onOpenAgentTemplate={onOpenAgentTemplate}
+        onOpenRemoteControl={onOpenRemoteControl}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

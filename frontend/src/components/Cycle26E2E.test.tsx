@@ -22,7 +22,6 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import React from 'react';
 import { CsvBatchPanel } from '../components/CsvBatchPanel';
 import { SmartApprovalPanel } from '../components/SmartApprovalPanel';
 import { MTCPanel } from '../components/MTCPanel';
@@ -89,6 +88,8 @@ describe('Cycle 26 E2E - 引擎初始化', () => {
 
     approvalEngine.addRule({
       name: 'Test Rule',
+      description: 'Test rule for E2E',
+      reason: 'Testing block rule',
       actionTypes: ['shell'],
       match: { type: 'contains', value: 'test' },
       decision: 'block',
@@ -244,6 +245,8 @@ describe('Cycle 26 E2E - 智能审批工作流', () => {
 
     engine.addRule({
       name: '禁用 curl wget',
+      description: '禁用 curl 和 wget 命令',
+      reason: '防止未授权下载',
       actionTypes: ['shell'],
       match: { type: 'regex', value: 'curl|wget' },
       decision: 'block',
