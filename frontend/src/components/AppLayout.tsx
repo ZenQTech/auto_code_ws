@@ -215,6 +215,12 @@ export interface AppLayoutProps {
   onOpenSkillsMarket?: () => void;
   /** v6.79.0 (Cycle 29 G29-03) 新增：分析聊天 */
   onOpenAnalyticsChat?: () => void;
+  /** v6.83.0 (Cycle 30 G30-01) 新增：成本阈值告警 */
+  onOpenCostThreshold?: () => void;
+  /** v6.84.0 (Cycle 30 G30-02) 新增：动态工作流 */
+  onOpenDynamicWorkflow?: () => void;
+  /** v6.85.0 (Cycle 30 G30-03) 新增：编排多代理 */
+  onOpenOrchestratedAgent?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -369,6 +375,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenStackedSkills,  // v6.77.0 (Cycle 29 G29-01) 透传 BrandHeader
   onOpenSkillsMarket,  // v6.78.0 (Cycle 29 G29-02) 透传 BrandHeader
   onOpenAnalyticsChat,  // v6.79.0 (Cycle 29 G29-03) 透传 BrandHeader
+  onOpenCostThreshold,  // v6.83.0 (Cycle 30 G30-01) 透传 BrandHeader
+  onOpenDynamicWorkflow,  // v6.84.0 (Cycle 30 G30-02) 透传 BrandHeader
+  onOpenOrchestratedAgent,  // v6.85.0 (Cycle 30 G30-03) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -598,6 +607,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenStackedSkills={onOpenStackedSkills}
         onOpenSkillsMarket={onOpenSkillsMarket}
         onOpenAnalyticsChat={onOpenAnalyticsChat}
+        onOpenCostThreshold={onOpenCostThreshold}
+        onOpenDynamicWorkflow={onOpenDynamicWorkflow}
+        onOpenOrchestratedAgent={onOpenOrchestratedAgent}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

@@ -46,10 +46,9 @@
 #   - 2026-07-30 | v2.10.0 | Cycle 26 新增：菜单项 CSV 批处理 / 智能审批 / MTC 多模任务
 #     新增 onOpenCsvBatch / onOpenSmartApproval / onOpenMTC 回调
 #     新增 csv / shield-alert / palette 内联 SVG 图标
-#   - 2026-07-30 | v2.11.0 | Cycle 27 新增：菜单项 嵌套子代理 / 代理检查点 / 代理消息 / 代理模板 / 远程控制
-#     新增 onOpenNestedSubAgent / onOpenAgentCheckpoint / onOpenAgentMessaging / onOpenAgentTemplate / onOpenRemoteControl 回调
-#     新增 nested / checkpoint / messaging / template / remote 内联 SVG 图标
-#     对应 Codex v0.130+ Nested Sub-Agents + Claude Code 2026-06 Agent Checkpointing + Structured Messaging + Agent Templates + Remote Control
+#   - 2026-07-30 | v2.12.0 | Cycle 30 新增：菜单项 成本阈值告警 / 动态工作流 / 编排多代理
+#     新增 onOpenCostThreshold / onOpenDynamicWorkflow / onOpenOrchestratedAgent 回调
+#     对应 Claude Code Admin Console 75%/90%/100% 阈值告警 + Codex Dynamic Workflows + Codex Orchestrated Mode
 # ============================================================
  */
 
@@ -215,6 +214,12 @@ export interface BrandHeaderProps {
   onOpenSkillsMarket?: () => void;
   /** v6.79.0 (Cycle 29 G29-03) 新增：分析聊天 */
   onOpenAnalyticsChat?: () => void;
+  /** v6.83.0 (Cycle 30 G30-01) 新增：成本阈值告警 */
+  onOpenCostThreshold?: () => void;
+  /** v6.84.0 (Cycle 30 G30-02) 新增：动态工作流 */
+  onOpenDynamicWorkflow?: () => void;
+  /** v6.85.0 (Cycle 30 G30-03) 新增：编排多代理 */
+  onOpenOrchestratedAgent?: () => void;
 }
 
 /**
@@ -224,7 +229,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -693,6 +698,33 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M6 10h6M6 14h4" />
         </svg>
       );
+    case 'cost-threshold':
+      // v6.83.0 (Cycle 30 G30-01) 新增：成本阈值告警（美元符号 + 上升趋势）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <line x1="12" y1="1" x2="12" y2="23" />
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+        </svg>
+      );
+    case 'workflow':
+      // v6.84.0 (Cycle 30 G30-02) 新增：动态工作流（齿轮 + 节点）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <circle cx="6" cy="6" r="2" />
+          <circle cx="18" cy="6" r="2" />
+          <circle cx="12" cy="18" r="2" />
+          <path d="M6 8v4a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8M12 14v2" />
+        </svg>
+      );
+    case 'orchestrate':
+      // v6.85.0 (Cycle 30 G30-03) 新增：编排多代理（指挥家）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M9 18V5l12-2v13" />
+          <circle cx="6" cy="18" r="3" />
+          <circle cx="18" cy="16" r="3" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -834,6 +866,12 @@ export default function BrandHeader({
   onOpenSkillsMarket,
   /** v6.79.0 (Cycle 29 G29-03) 新增：分析聊天 */
   onOpenAnalyticsChat,
+  /** v6.83.0 (Cycle 30 G30-01) 新增：成本阈值告警 */
+  onOpenCostThreshold,
+  /** v6.84.0 (Cycle 30 G30-02) 新增：动态工作流 */
+  onOpenDynamicWorkflow,
+  /** v6.85.0 (Cycle 30 G30-03) 新增：编排多代理 */
+  onOpenOrchestratedAgent,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2145,6 +2183,45 @@ export default function BrandHeader({
                   data-testid="menu-analytics-chat"
                 >
                   <span>📊 分析聊天</span>
+                </button>
+              )}
+
+              {/* v2.12.0 (Cycle 30) 新增：成本阈值告警（菜单项） */}
+              {onOpenCostThreshold && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCostThreshold)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-emerald-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-cost-threshold"
+                >
+                  <Icon name="cost-threshold" className="w-4 h-4" />
+                  <span>💰 成本阈值告警</span>
+                </button>
+              )}
+
+              {/* v2.12.0 (Cycle 30) 新增：动态工作流（菜单项） */}
+              {onOpenDynamicWorkflow && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenDynamicWorkflow)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-cyan-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-dynamic-workflow"
+                >
+                  <Icon name="workflow" className="w-4 h-4" />
+                  <span>⚙️ 动态工作流</span>
+                </button>
+              )}
+
+              {/* v2.12.0 (Cycle 30) 新增：编排多代理（菜单项） */}
+              {onOpenOrchestratedAgent && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenOrchestratedAgent)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-violet-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-orchestrated-agent"
+                >
+                  <Icon name="orchestrate" className="w-4 h-4" />
+                  <span>🎼 编排多代理</span>
                 </button>
               )}
 

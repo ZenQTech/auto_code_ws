@@ -314,6 +314,12 @@ import { StackedSkillsPanel } from './components/StackedSkillsPanel';
 import { MarketplacePanel } from './components/MarketplacePanel';
 /** v6.79.0 (Cycle 29 G29-03) 新增：分析聊天面板 */
 import { AnalyticsChatPanel } from './components/AnalyticsChatPanel';
+/** v6.83.0 (Cycle 30 G30-01) 新增：成本阈值告警面板 */
+import { CostThresholdAlertPanel } from './components/CostThresholdAlertPanel';
+/** v6.84.0 (Cycle 30 G30-02) 新增：动态工作流面板 */
+import { DynamicWorkflowPanel } from './components/DynamicWorkflowPanel';
+/** v6.85.0 (Cycle 30 G30-03) 新增：编排多代理面板 */
+import { OrchestratedAgentPanel } from './components/OrchestratedAgentPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1651,6 +1657,36 @@ export default function App() {
   }, []);
 
   /**
+   * v6.83.0 (Cycle 30 G30-01) 成本阈值告警面板开关
+   * 作用：控制 CostThresholdAlertPanel 弹窗显隐
+   *       引擎由 CostThresholdAlertEngine 单例管理，支持多级阈值、提额申请、强制阻断
+   */
+  const [costThresholdOpen, setCostThresholdOpen] = useState(false);
+  const handleOpenCostThreshold = useCallback(() => {
+    setCostThresholdOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.84.0 (Cycle 30 G30-02) 动态工作流面板开关
+   * 作用：控制 DynamicWorkflowPanel 弹窗显隐
+   *       引擎由 DynamicWorkflowEngine 单例管理，支持 Phase-based 编排、Journal、Resume/Replay
+   */
+  const [dynamicWorkflowOpen, setDynamicWorkflowOpen] = useState(false);
+  const handleOpenDynamicWorkflow = useCallback(() => {
+    setDynamicWorkflowOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.85.0 (Cycle 30 G30-03) 编排多代理面板开关
+   * 作用：控制 OrchestratedAgentPanel 弹窗显隐
+   *       引擎由 OrchestratedAgentEngine 单例管理，支持 6 阶段 Orchestrated Mode、角色预设
+   */
+  const [orchestratedAgentOpen, setOrchestratedAgentOpen] = useState(false);
+  const handleOpenOrchestratedAgent = useCallback(() => {
+    setOrchestratedAgentOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2702,6 +2738,9 @@ export default function App() {
           onOpenStackedSkills={handleOpenStackedSkills}
           onOpenSkillsMarket={handleOpenSkillsMarket}
           onOpenAnalyticsChat={handleOpenAnalyticsChat}
+          onOpenCostThreshold={handleOpenCostThreshold}
+          onOpenDynamicWorkflow={handleOpenDynamicWorkflow}
+          onOpenOrchestratedAgent={handleOpenOrchestratedAgent}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3487,6 +3526,36 @@ export default function App() {
         <AnalyticsChatPanel
           isOpen={analyticsChatOpen}
           onClose={() => setAnalyticsChatOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.83.0 (Cycle 30 G30-01) 新增：成本阈值告警面板
+       *  引擎由 CostThresholdAlertEngine 单例管理，支持多级阈值、提额申请、强制阻断
+       *  对应 Claude Code Admin Console 75%/90%/100% 阈值告警 */}
+      <ErrorBoundary level="panel" name="CostThreshold">
+        <CostThresholdAlertPanel
+          isOpen={costThresholdOpen}
+          onClose={() => setCostThresholdOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.84.0 (Cycle 30 G30-02) 新增：动态工作流面板
+       *  引擎由 DynamicWorkflowEngine 单例管理，支持 Phase-based 编排、Journal、Resume/Replay
+       *  对应 Codex Dynamic Workflows + Phase-based 确定性编排 */}
+      <ErrorBoundary level="panel" name="DynamicWorkflow">
+        <DynamicWorkflowPanel
+          isOpen={dynamicWorkflowOpen}
+          onClose={() => setDynamicWorkflowOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.85.0 (Cycle 30 G30-03) 新增：编排多代理面板
+       *  引擎由 OrchestratedAgentEngine 单例管理，支持 6 阶段 Orchestrated Mode、角色预设
+       *  对应 Codex Orchestrated Mode + Worker/Explorer/Reviewer/Synthesizer 角色 */}
+      <ErrorBoundary level="panel" name="OrchestratedAgent">
+        <OrchestratedAgentPanel
+          isOpen={orchestratedAgentOpen}
+          onClose={() => setOrchestratedAgentOpen(false)}
         />
       </ErrorBoundary>
 
