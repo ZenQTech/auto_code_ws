@@ -199,6 +199,16 @@ export interface AppLayoutProps {
   onOpenAgentTemplate?: () => void;
   /** v6.71.0 (Cycle 27 G27-06) 新增：远程控制面板回调 */
   onOpenRemoteControl?: () => void;
+  /** v6.72.0 (Cycle 28 G28-01) 新增：技能系统 */
+  onOpenSkillSystem?: () => void;
+  /** v6.73.0 (Cycle 28 G28-02) 新增：成本预算 */
+  onOpenCostBudget?: () => void;
+  /** v6.74.0 (Cycle 28 G28-03) 新增：用量归因 */
+  onOpenUsageAttribution?: () => void;
+  /** v6.75.0 (Cycle 28 G28-04) 新增：作用域权限 */
+  onOpenScopedPermissions?: () => void;
+  /** v6.76.0 (Cycle 28 G28-05) 新增：斜杠命令面板 */
+  onOpenCommandPalette?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -345,6 +355,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenAgentMessaging,  // v6.69.0 (Cycle 27 G27-04) 透传 BrandHeader
   onOpenAgentTemplate,  // v6.70.0 (Cycle 27 G27-05) 透传 BrandHeader
   onOpenRemoteControl,  // v6.71.0 (Cycle 27 G27-06) 透传 BrandHeader
+  onOpenSkillSystem,  // v6.72.0 (Cycle 28 G28-01) 透传 BrandHeader
+  onOpenCostBudget,  // v6.73.0 (Cycle 28 G28-02) 透传 BrandHeader
+  onOpenUsageAttribution,  // v6.74.0 (Cycle 28 G28-03) 透传 BrandHeader
+  onOpenScopedPermissions,  // v6.75.0 (Cycle 28 G28-04) 透传 BrandHeader
+  onOpenCommandPalette,  // v6.76.0 (Cycle 28 G28-05) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -566,6 +581,11 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenAgentMessaging={onOpenAgentMessaging}
         onOpenAgentTemplate={onOpenAgentTemplate}
         onOpenRemoteControl={onOpenRemoteControl}
+        onOpenSkillSystem={onOpenSkillSystem}
+        onOpenCostBudget={onOpenCostBudget}
+        onOpenUsageAttribution={onOpenUsageAttribution}
+        onOpenScopedPermissions={onOpenScopedPermissions}
+        onOpenCommandPalette={onOpenCommandPalette}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

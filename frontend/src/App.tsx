@@ -296,6 +296,11 @@ import { AgentMessagingPanel } from './components/AgentMessagingPanel';
 import { AgentTemplatePanel } from './components/AgentTemplatePanel';
 /** v6.71.0 (Cycle 27 G27-06) 新增：远程控制面板 */
 import { RemoteControlPanel } from './components/RemoteControlPanel';
+import { SkillsPanel } from './components/SkillsPanel';
+import { CostBudgetPanel } from './components/CostBudgetPanel';
+import { UsageAttributionPanel } from './components/UsageAttributionPanel';
+import { ScopedPermissionsPanel } from './components/ScopedPermissionsPanel';
+import { SlashCommandPanel } from './components/SlashCommandPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1553,6 +1558,56 @@ export default function App() {
   }, []);
 
   /**
+   * v6.72.0 (Cycle 28 G28-01) 技能系统面板开关
+   * 作用：控制 SkillsPanel 弹窗显隐
+   *       引擎由 SkillEngine 单例管理，支持 SKILL.md + 渐进式披露 + 隐式匹配
+   */
+  const [skillsOpen, setSkillsOpen] = useState(false);
+  const handleOpenSkills = useCallback(() => {
+    setSkillsOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.73.0 (Cycle 28 G28-02) 成本预算面板开关
+   * 作用：控制 CostBudgetPanel 弹窗显隐
+   *       引擎由 CostBudgetEngine 单例管理，支持 fallbackModel + 3层预算
+   */
+  const [costBudgetOpen, setCostBudgetOpen] = useState(false);
+  const handleOpenCostBudget = useCallback(() => {
+    setCostBudgetOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.74.0 (Cycle 28 G28-03) 用量归因面板开关
+   * 作用：控制 UsageAttributionPanel 弹窗显隐
+   *       引擎由 UsageAttributionEngine 单例管理，支持按 agent/task/model 拆分
+   */
+  const [usageAttributionOpen, setUsageAttributionOpen] = useState(false);
+  const handleOpenUsageAttribution = useCallback(() => {
+    setUsageAttributionOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.75.0 (Cycle 28 G28-04) 作用域权限面板开关
+   * 作用：控制 ScopedPermissionsPanel 弹窗显隐
+   *       引擎由 ScopedPermissionsEngine 单例管理，支持工具/路径/网络 细粒度控制
+   */
+  const [scopedPermissionsOpen, setScopedPermissionsOpen] = useState(false);
+  const handleOpenScopedPermissions = useCallback(() => {
+    setScopedPermissionsOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.76.0 (Cycle 28 G28-05) 斜杠命令面板开关
+   * 作用：控制 SlashCommandPanel 弹窗显隐
+   *       引擎由 SlashCommandEngine 单例管理，支持 /init /status /review /plan /goal
+   */
+  const [slashCommandOpen, setSlashCommandOpen] = useState(false);
+  const handleOpenSlashCommand = useCallback(() => {
+    setSlashCommandOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2596,6 +2651,11 @@ export default function App() {
           onOpenAgentMessaging={handleOpenAgentMessaging}
           onOpenAgentTemplate={handleOpenAgentTemplate}
           onOpenRemoteControl={handleOpenRemoteControl}
+          onOpenSkillSystem={handleOpenSkills}
+          onOpenCostBudget={handleOpenCostBudget}
+          onOpenUsageAttribution={handleOpenUsageAttribution}
+          onOpenScopedPermissions={handleOpenScopedPermissions}
+          onOpenCommandPalette={handleOpenSlashCommand}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3306,6 +3366,51 @@ export default function App() {
         <RemoteControlPanel
           isOpen={remoteControlOpen}
           onClose={() => setRemoteControlOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.72.0 (Cycle 28 G28-01) 新增：技能系统面板
+       *  引擎由 SkillEngine 单例管理，支持 SKILL.md + 渐进式披露 + 隐式匹配 + 5 个内置 Skills */}
+      <ErrorBoundary level="panel" name="Skills">
+        <SkillsPanel
+          isOpen={skillsOpen}
+          onClose={() => setSkillsOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.73.0 (Cycle 28 G28-02) 新增：成本预算面板
+       *  引擎由 CostBudgetEngine 单例管理，支持 fallbackModel + 3层预算 */}
+      <ErrorBoundary level="panel" name="CostBudget">
+        <CostBudgetPanel
+          isOpen={costBudgetOpen}
+          onClose={() => setCostBudgetOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.74.0 (Cycle 28 G28-03) 新增：用量归因面板
+       *  引擎由 UsageAttributionEngine 单例管理，支持按 agent/task/model 拆分 */}
+      <ErrorBoundary level="panel" name="UsageAttribution">
+        <UsageAttributionPanel
+          isOpen={usageAttributionOpen}
+          onClose={() => setUsageAttributionOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.75.0 (Cycle 28 G28-04) 新增：作用域权限面板
+       *  引擎由 ScopedPermissionsEngine 单例管理，支持工具/路径/网络 细粒度控制 */}
+      <ErrorBoundary level="panel" name="ScopedPermissions">
+        <ScopedPermissionsPanel
+          isOpen={scopedPermissionsOpen}
+          onClose={() => setScopedPermissionsOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.76.0 (Cycle 28 G28-05) 新增：斜杠命令面板
+       *  引擎由 SlashCommandEngine 单例管理，支持 /init /status /review /plan /goal */}
+      <ErrorBoundary level="panel" name="SlashCommand">
+        <SlashCommandPanel
+          isOpen={slashCommandOpen}
+          onClose={() => setSlashCommandOpen(false)}
         />
       </ErrorBoundary>
 

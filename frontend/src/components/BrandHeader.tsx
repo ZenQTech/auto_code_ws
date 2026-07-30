@@ -199,6 +199,16 @@ export interface BrandHeaderProps {
   onOpenAgentTemplate?: () => void;
   /** v6.71.0 (Cycle 27 G27-06) 新增：远程控制 */
   onOpenRemoteControl?: () => void;
+  /** v6.72.0 (Cycle 28 G28-01) 新增：技能系统 (Codex Skills) */
+  onOpenSkillSystem?: () => void;
+  /** v6.73.0 (Cycle 28 G28-02) 新增：成本预算 */
+  onOpenCostBudget?: () => void;
+  /** v6.74.0 (Cycle 28 G28-03) 新增：用量归因 */
+  onOpenUsageAttribution?: () => void;
+  /** v6.75.0 (Cycle 28 G28-04) 新增：作用域权限 */
+  onOpenScopedPermissions?: () => void;
+  /** v6.76.0 (Cycle 28 G28-05) 新增：斜杠命令面板 */
+  onOpenCommandPalette?: () => void;
 }
 
 /**
@@ -802,6 +812,16 @@ export default function BrandHeader({
   onOpenAgentTemplate,
   /** v6.71.0 (Cycle 27 G27-06) 新增：远程控制 */
   onOpenRemoteControl,
+  /** v6.72.0 (Cycle 28 G28-01) 新增：技能系统 */
+  onOpenSkillSystem,
+  /** v6.73.0 (Cycle 28 G28-02) 新增：成本预算 */
+  onOpenCostBudget,
+  /** v6.74.0 (Cycle 28 G28-03) 新增：用量归因 */
+  onOpenUsageAttribution,
+  /** v6.75.0 (Cycle 28 G28-04) 新增：作用域权限 */
+  onOpenScopedPermissions,
+  /** v6.76.0 (Cycle 28 G28-05) 新增：斜杠命令面板 */
+  onOpenCommandPalette,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2017,6 +2037,66 @@ export default function BrandHeader({
                 >
                   <Icon name="remote" className="w-4 h-4 text-emerald-500" />
                   <span>📱 远程控制</span>
+                </button>
+              )}
+
+              {/* v6.72.0 (Cycle 28 G28-01) 新增：技能系统（菜单项） */}
+              {onOpenSkillSystem && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSkillSystem)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-rose-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-skill-system"
+                >
+                  <span>🎯 技能系统</span>
+                </button>
+              )}
+
+              {/* v6.73.0 (Cycle 28 G28-02) 新增：成本预算（菜单项） */}
+              {onOpenCostBudget && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCostBudget)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-green-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-cost-budget"
+                >
+                  <span>💰 成本预算</span>
+                </button>
+              )}
+
+              {/* v6.74.0 (Cycle 28 G28-03) 新增：用量归因（菜单项） */}
+              {onOpenUsageAttribution && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenUsageAttribution)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-cyan-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-usage-attribution"
+                >
+                  <span>📊 用量归因</span>
+                </button>
+              )}
+
+              {/* v6.75.0 (Cycle 28 G28-04) 新增：作用域权限（菜单项） */}
+              {onOpenScopedPermissions && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenScopedPermissions)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-amber-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-scoped-permissions"
+                >
+                  <span>🔒 作用域权限</span>
+                </button>
+              )}
+
+              {/* v6.76.0 (Cycle 28 G28-05) 新增：斜杠命令面板（菜单项） */}
+              {onOpenCommandPalette && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenCommandPalette)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-violet-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-command-palette"
+                >
+                  <span>⌨️ 斜杠命令</span>
                 </button>
               )}
 
