@@ -234,6 +234,12 @@ export interface AppLayoutProps {
   onOpenSSO?: () => void;
   /** v6.91.0 (Cycle 32 G32-03) 新增：策略规则 */
   onOpenPolicy?: () => void;
+  /** v6.94.0 (Cycle 33 G33-01) 新增：企业全场景工作流 */
+  onOpenEnterpriseWorkflow?: () => void;
+  /** v6.94.0 (Cycle 33 G33-02) 新增：集成 Dashboard */
+  onOpenUnifiedDashboard?: () => void;
+  /** v6.94.0 (Cycle 33 G33-03) 新增：安全审计 */
+  onOpenSecurityAudit?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -397,6 +403,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenAuditTrail,  // v6.89.0 (Cycle 32 G32-01) 透传 BrandHeader
   onOpenSSO,  // v6.90.0 (Cycle 32 G32-02) 透传 BrandHeader
   onOpenPolicy,  // v6.91.0 (Cycle 32 G32-03) 透传 BrandHeader
+  onOpenEnterpriseWorkflow,  // v6.94.0 (Cycle 33 G33-01) 透传 BrandHeader
+  onOpenUnifiedDashboard,  // v6.94.0 (Cycle 33 G33-02) 透传 BrandHeader
+  onOpenSecurityAudit,  // v6.94.0 (Cycle 33 G33-03) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -635,6 +644,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenAuditTrail={onOpenAuditTrail}
         onOpenSSO={onOpenSSO}
         onOpenPolicy={onOpenPolicy}
+        onOpenEnterpriseWorkflow={onOpenEnterpriseWorkflow}
+        onOpenUnifiedDashboard={onOpenUnifiedDashboard}
+        onOpenSecurityAudit={onOpenSecurityAudit}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

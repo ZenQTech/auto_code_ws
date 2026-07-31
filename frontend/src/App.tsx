@@ -332,6 +332,12 @@ import { AuditTrailPanel } from './components/AuditTrailPanel';
 import { SSOPanel } from './components/SSOPanel';
 /** v6.91.0 (Cycle 32 G32-03) 新增：策略规则面板 */
 import { PolicyPanel } from './components/PolicyPanel';
+/** v6.94.0 (Cycle 33 G33-01) 新增：企业全场景工作流面板 */
+import { EnterpriseWorkflowPanel } from './components/EnterpriseWorkflowPanel';
+/** v6.94.0 (Cycle 33 G33-02) 新增：集成 Dashboard 面板 */
+import { UnifiedDashboardPanel } from './components/UnifiedDashboardPanel';
+/** v6.94.0 (Cycle 33 G33-03) 新增：安全审计面板 */
+import { SecurityAuditPanel } from './components/SecurityAuditPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1762,6 +1768,42 @@ export default function App() {
   }, []);
 
   /**
+   * v6.94.0 (Cycle 33 G33-01) 新增：企业全场景工作流面板
+   * 作用：控制 EnterpriseWorkflowPanel 弹窗显隐
+   *       引擎集成 30+ 引擎作为工作流步骤，支持 5 个预置场景（用户入职/代码审查/合规审计/安全应急/日常任务）
+   *       声明式 JSON DSL 工作流定义，支持步骤重试/超时/条件分支/并行执行/审批流/子工作流
+   *       对应 GitHub Actions / Temporal / Argo Workflows 企业级工作流编排
+   */
+  const [enterpriseWorkflowOpen, setEnterpriseWorkflowOpen] = useState(false);
+  const handleOpenEnterpriseWorkflow = useCallback(() => {
+    setEnterpriseWorkflowOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.94.0 (Cycle 33 G33-02) 新增：集成 Dashboard 面板
+   * 作用：控制 UnifiedDashboardPanel 弹窗显隐
+   *       聚合 30+ 引擎关键指标，提供 12+ 预置面板（健康度/成本/任务/审计/告警/用户/模型/Worktree/安全/合规/Skill/会话）
+   *       实时采集 + 阈值告警 + 多格式导出
+   *       对应 Grafana / Datadog / New Relic 企业级统一监控仪表盘
+   */
+  const [unifiedDashboardOpen, setUnifiedDashboardOpen] = useState(false);
+  const handleOpenUnifiedDashboard = useCallback(() => {
+    setUnifiedDashboardOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.94.0 (Cycle 33 G33-03) 新增：安全审计面板
+   * 作用：控制 SecurityAuditPanel 弹窗显隐
+   *       实现 7 个预置攻击场景（暴力破解/越权访问/数据外泄/会话劫持/权限提升/恶意上传/审计篡改）
+   *       自动化执行 + 验证 + 报告 + 应急响应
+   *       对应 OWASP ZAP / Burp Suite / Nessus 企业级安全审计与渗透测试
+   */
+  const [securityAuditOpen, setSecurityAuditOpen] = useState(false);
+  const handleOpenSecurityAudit = useCallback(() => {
+    setSecurityAuditOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2822,6 +2864,9 @@ export default function App() {
           onOpenAuditTrail={handleOpenAuditTrail}
           onOpenSSO={handleOpenSSO}
           onOpenPolicy={handleOpenPolicy}
+          onOpenEnterpriseWorkflow={handleOpenEnterpriseWorkflow}
+          onOpenUnifiedDashboard={handleOpenUnifiedDashboard}
+          onOpenSecurityAudit={handleOpenSecurityAudit}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3697,6 +3742,36 @@ export default function App() {
         <PolicyPanel
           isOpen={policyOpen}
           onClose={() => setPolicyOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.94.0 (Cycle 33 G33-01) 新增：企业全场景工作流面板
+       *  引擎由 EnterpriseWorkflowEngine 单例管理，集成 30+ 引擎作为工作流步骤
+       *  对应 GitHub Actions / Temporal / Argo Workflows 企业级工作流编排 */}
+      <ErrorBoundary level="panel" name="EnterpriseWorkflow">
+        <EnterpriseWorkflowPanel
+          isOpen={enterpriseWorkflowOpen}
+          onClose={() => setEnterpriseWorkflowOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.94.0 (Cycle 33 G33-02) 新增：集成 Dashboard 面板
+       *  引擎由 UnifiedDashboardEngine 单例管理，聚合 30+ 引擎关键指标
+       *  对应 Grafana / Datadog / New Relic 企业级统一监控仪表盘 */}
+      <ErrorBoundary level="panel" name="UnifiedDashboard">
+        <UnifiedDashboardPanel
+          isOpen={unifiedDashboardOpen}
+          onClose={() => setUnifiedDashboardOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.94.0 (Cycle 33 G33-03) 新增：安全审计面板
+       *  引擎由 SecurityAuditEngine 单例管理，7 个预置攻击场景 + 应急响应
+       *  对应 OWASP ZAP / Burp Suite / Nessus 企业级安全审计与渗透测试 */}
+      <ErrorBoundary level="panel" name="SecurityAudit">
+        <SecurityAuditPanel
+          isOpen={securityAuditOpen}
+          onClose={() => setSecurityAuditOpen(false)}
         />
       </ErrorBoundary>
 

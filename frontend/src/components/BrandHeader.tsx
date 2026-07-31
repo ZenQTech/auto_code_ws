@@ -57,6 +57,10 @@
 #     新增 onOpenAuditTrail / onOpenSSO / onOpenPolicy 回调
 #     新增 audit (盾牌 + 勾) / sso (钥匙) / policy (文档) 内联 SVG 图标
 #     对应 SOC 2 / GDPR / EU AI Act 审计 + OIDC/SAML/SCIM 单点登录 + OPA/Rego 策略引擎
+#   - 2026-07-30 | v2.15.0 | Cycle 33 新增：菜单项 企业工作流 / 集成 Dashboard / 安全审计
+#     新增 onOpenEnterpriseWorkflow / onOpenUnifiedDashboard / onOpenSecurityAudit 回调
+#     新增 workflow (齿轮) / dashboard (仪表盘) / shield (盾牌) 内联 SVG 图标
+#     对应企业级工作流编排 + 30+ 引擎统一 Dashboard + 7 个预置攻击场景自动化
 # ============================================================
  */
 
@@ -240,6 +244,12 @@ export interface BrandHeaderProps {
   onOpenSSO?: () => void;
   /** v6.91.0 (Cycle 32 G32-03) 新增：策略规则 */
   onOpenPolicy?: () => void;
+  /** v6.94.0 (Cycle 33 G33-01) 新增：企业全场景工作流 */
+  onOpenEnterpriseWorkflow?: () => void;
+  /** v6.94.0 (Cycle 33 G33-02) 新增：集成 Dashboard */
+  onOpenUnifiedDashboard?: () => void;
+  /** v6.94.0 (Cycle 33 G33-03) 新增：安全审计 */
+  onOpenSecurityAudit?: () => void;
 }
 
 /**
@@ -249,7 +259,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -796,6 +806,33 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M9 15l2 2 4-4" />
         </svg>
       );
+    case 'enterprise-workflow':
+      // v6.94.0 (Cycle 33 G33-01) 新增：企业全场景工作流（齿轮）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+      );
+    case 'unified-dashboard':
+      // v6.94.0 (Cycle 33 G33-02) 新增：集成 Dashboard（柱状图）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="3" y="3" width="7" height="9" />
+          <rect x="14" y="3" width="7" height="5" />
+          <rect x="14" y="12" width="7" height="9" />
+          <rect x="3" y="16" width="7" height="5" />
+        </svg>
+      );
+    case 'security-shield':
+      // v6.94.0 (Cycle 33 G33-03) 新增：安全审计（盾牌 + 警告）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <line x1="12" y1="8" x2="12" y2="12" />
+          <line x1="12" y1="16" x2="12.01" y2="16" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -955,6 +992,12 @@ export default function BrandHeader({
   onOpenSSO,
   /** v6.91.0 (Cycle 32 G32-03) 新增：策略规则 */
   onOpenPolicy,
+  /** v6.94.0 (Cycle 33 G33-01) 新增：企业全场景工作流 */
+  onOpenEnterpriseWorkflow,
+  /** v6.94.0 (Cycle 33 G33-02) 新增：集成 Dashboard */
+  onOpenUnifiedDashboard,
+  /** v6.94.0 (Cycle 33 G33-03) 新增：安全审计 */
+  onOpenSecurityAudit,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2383,6 +2426,45 @@ export default function BrandHeader({
                 >
                   <Icon name="policy" className="w-4 h-4 text-fuchsia-500" />
                   <span>📋 策略规则</span>
+                </button>
+              )}
+
+              {/* v2.15.0 (Cycle 33 G33-01) 新增：企业全场景工作流（菜单项） */}
+              {onOpenEnterpriseWorkflow && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenEnterpriseWorkflow)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-cyan-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-enterprise-workflow"
+                >
+                  <Icon name="enterprise-workflow" className="w-4 h-4 text-cyan-500" />
+                  <span>🔄 企业工作流</span>
+                </button>
+              )}
+
+              {/* v2.15.0 (Cycle 33 G33-02) 新增：集成 Dashboard（菜单项） */}
+              {onOpenUnifiedDashboard && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenUnifiedDashboard)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-violet-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-unified-dashboard"
+                >
+                  <Icon name="unified-dashboard" className="w-4 h-4 text-violet-500" />
+                  <span>📊 集成 Dashboard</span>
+                </button>
+              )}
+
+              {/* v2.15.0 (Cycle 33 G33-03) 新增：安全审计（菜单项） */}
+              {onOpenSecurityAudit && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenSecurityAudit)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-red-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-security-audit"
+                >
+                  <Icon name="security-shield" className="w-4 h-4 text-red-500" />
+                  <span>🛡 安全审计</span>
                 </button>
               )}
 
