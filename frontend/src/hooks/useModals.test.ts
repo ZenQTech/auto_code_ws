@@ -15,6 +15,8 @@
  * #     (新增 mcpRag/mcpRagRealLLM/mcpRagPerformance/mcpMultimodalRag)
  * #   - 2026-08-01 | v1.2.0 | Cycle 49 G49-主应用集成：同步更新到 33 panel
  * #     (新增 mcpMultimodalProvider)
+ * #   - 2026-08-01 | v1.3.0 | Cycle 50 G50-主应用集成：同步更新到 34 panel
+ * #     (新增 mcpE2EProduction)
  * # ====================================
  */
 
@@ -24,10 +26,10 @@ import { useModals } from './useModals';
 
 describe('useModals', () => {
   describe('初始状态', () => {
-    it('应该返回 33 个 panel controller + 2 个工具方法', () => {
+    it('应该返回 34 个 panel controller + 2 个工具方法', () => {
       const { result } = renderHook(() => useModals());
       const controllers = Object.keys(result.current);
-      // 33 panel + closeAll + openMulti = 35
+      // 34 panel + closeAll + openMulti = 36
       // (v3.1.0 G39-03 新增 mcpRegistry,
       //  v3.2.0 Cycle 41 新增 mcpAdvanced,
       //  v3.3.0 Cycle 42 G42-04 新增 mcpIntegrated,
@@ -37,8 +39,9 @@ describe('useModals', () => {
       //  v3.7.0 Cycle 46 新增 mcpRagRealLLM,
       //  v3.8.0 Cycle 47 新增 mcpRagPerformance,
       //  v3.9.0 Cycle 48 新增 mcpMultimodalRag,
-      //  v3.10.0 Cycle 49 新增 mcpMultimodalProvider)
-      expect(controllers).toHaveLength(35);
+      //  v3.10.0 Cycle 49 新增 mcpMultimodalProvider,
+      //  v3.11.0 Cycle 50 新增 mcpE2EProduction)
+      expect(controllers).toHaveLength(36);
     });
 
     it('fileExplorer 默认应打开', () => {

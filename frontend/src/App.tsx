@@ -242,6 +242,8 @@ import { McpRagPerformancePanel } from './components/McpRagPerformancePanel';
 import { McpMultimodalRagPanel } from './components/McpMultimodalRagPanel';
 /** v6.123.0 Cycle 49 G49-主应用集成 新增：MCP × 真实多模态 Provider 面板 (真实 CLIP + 火山方舟 + 质量评估 + 模型缓存) */
 import { McpMultimodalProviderPanel } from './components/McpMultimodalProviderPanel';
+/** v6.124.0 Cycle 50 G50-主应用集成 新增：MCP × 真实 E2E 生产面板 (真实 API + 端到端测试 + 监控 + 安全 + 部署) */
+import McpE2EProductionPanel from './components/McpE2EProductionPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -634,6 +636,7 @@ export default function App() {
     mcpRagPerformance: mcpRagPerformanceModal,  // v2.10.0 (Cycle 47) 新增
     mcpMultimodalRag: mcpMultimodalRagModal,  // v2.11.0 (Cycle 48) 新增
     mcpMultimodalProvider: mcpMultimodalProviderModal,  // v2.12.0 (Cycle 49) 新增
+    mcpE2EProduction: mcpE2EProductionModal,  // v2.13.0 (Cycle 50) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3182,6 +3185,7 @@ export default function App() {
           onOpenMcpRagPerformance={() => mcpRagPerformanceModal.onOpen()}
           onOpenMcpMultimodalRag={() => mcpMultimodalRagModal.onOpen()}
           onOpenMcpMultimodalProvider={() => mcpMultimodalProviderModal.onOpen()}
+          onOpenMcpE2EProduction={() => mcpE2EProductionModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -3420,6 +3424,15 @@ export default function App() {
        * 依赖：CLIPLocalProvider + VolcengineMultimodalProvider + MultimodalQualityEvaluator + ModelCache */}
       {mcpMultimodalProviderModal.open && (
         <McpMultimodalProviderPanel onClose={mcpMultimodalProviderModal.onClose} />
+      )}
+
+      {/* v6.124.0 Cycle 50 G50-主应用集成 新增：MCP × 真实 E2E 生产面板弹窗
+       * 触发：BrandHeader 菜单"🚀 MCP × 真实 E2E 生产"项
+       * 关闭：McpE2EProductionPanel 内部 onClose 回调
+       * 功能：6 Tab（真实火山方舟 / E2E 测试 / 监控指标 / API Key / 限流配额 / 部署文档）
+       * 依赖：RealVolcengineClient + MultimodalRAGE2ETestSuite + MetricsRegistry + ApiKeyManager + RateLimiter */}
+      {mcpE2EProductionModal.open && (
+        <McpE2EProductionPanel onClose={mcpE2EProductionModal.onClose} />
       )}
 
       {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗

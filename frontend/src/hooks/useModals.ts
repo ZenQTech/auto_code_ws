@@ -80,7 +80,8 @@ export type PanelKey =
   | 'mcpRagRealLLM'
   | 'mcpRagPerformance'
   | 'mcpMultimodalRag'
-  | 'mcpMultimodalProvider';
+  | 'mcpMultimodalProvider'
+  | 'mcpE2EProduction';
 
 /** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
@@ -125,6 +126,7 @@ const INITIAL_STATE: PanelsState = {
   mcpRagPerformance: DEFAULT_OPEN.mcpRagPerformance ?? false,
   mcpMultimodalRag: DEFAULT_OPEN.mcpMultimodalRag ?? false,
   mcpMultimodalProvider: DEFAULT_OPEN.mcpMultimodalProvider ?? false,
+  mcpE2EProduction: DEFAULT_OPEN.mcpE2EProduction ?? false,
 };
 
 /** Action 类型 */
@@ -230,6 +232,8 @@ export interface UseModalsResult {
   mcpMultimodalRag: PanelController;
   /** v3.10.0 (Cycle 49) 新增：MCP × 真实多模态 Provider 面板 (CLIP + 火山方舟 + 质量评估 + 模型缓存) */
   mcpMultimodalProvider: PanelController;
+  /** v3.11.0 (Cycle 50) 新增：MCP × 真实 E2E 生产面板 (真实 API + 端到端测试 + 监控 + 安全 + 部署) */
+  mcpE2EProduction: PanelController;
   /** v3.0.0 新增：批量关闭所有 panel */
   closeAll: () => void;
   /** v3.0.0 新增：批量打开多个 panel */
@@ -294,6 +298,7 @@ export function useModals(): UseModalsResult {
       mcpRagPerformance: makeController('mcpRagPerformance'),  // v3.8.0 (Cycle 47) 新增
       mcpMultimodalRag: makeController('mcpMultimodalRag'),  // v3.9.0 (Cycle 48) 新增
       mcpMultimodalProvider: makeController('mcpMultimodalProvider'),  // v3.10.0 (Cycle 49) 新增
+      mcpE2EProduction: makeController('mcpE2EProduction'),  // v3.11.0 (Cycle 50) 新增
       closeAll: () => dispatch({ type: 'CLOSE_ALL' }),
       openMulti: (panels) => dispatch({ type: 'OPEN_MULTI', panels }),
     }),

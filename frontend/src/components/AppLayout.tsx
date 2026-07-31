@@ -166,6 +166,8 @@ export interface AppLayoutProps {
   onOpenMcpMultimodalRag: () => void;
   /** v6.123.0 (Cycle 49 G49-主应用集成) 新增：MCP × 真实多模态 Provider 面板回调 */
   onOpenMcpMultimodalProvider: () => void;
+  /** v6.124.0 (Cycle 50 G50-主应用集成) 新增：MCP × 真实 E2E 生产面板回调 */
+  onOpenMcpE2EProduction: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板回调 */
   onOpenComposer: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板回调 */
@@ -427,6 +429,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenMcpRagPerformance,  // v6.121.0 (Cycle 47) 透传 BrandHeader
   onOpenMcpMultimodalRag,  // v6.122.0 (Cycle 48) 透传 BrandHeader
   onOpenMcpMultimodalProvider,  // v6.123.0 (Cycle 49) 透传 BrandHeader
+  onOpenMcpE2EProduction,  // v6.124.0 (Cycle 50) 透传 BrandHeader
   onOpenComposer,  // v6.36.0 (Cycle 16 P0-1) 透传 BrandHeader
   onOpenBackgroundTasks,  // v6.41.0 (Cycle 19 P0-1) 透传 BrandHeader
   onOpenBestOfN,  // v6.42.0 (Cycle 19 P0-2) 透传 BrandHeader
