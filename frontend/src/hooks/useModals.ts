@@ -36,6 +36,7 @@
  *   - 2026-07-31 | v3.4.0 | Cycle 43 G43-04 新增 mcpE2E MCP 端到端测试面板
  *   - 2026-08-01 | v3.8.0 | Cycle 47 G47-INTEGRATION 新增 mcpRagPerformance RAG 性能优化面板
  *   - 2026-08-01 | v3.9.0 | Cycle 48 G48-INTEGRATION 新增 mcpMultimodalRag 多模态 RAG 面板
+ *   - 2026-08-01 | v3.10.0 | Cycle 49 G49-INTEGRATION 新增 mcpMultimodalProvider 真实多模态 Provider 面板
  * ============================================================
  */
 
@@ -78,7 +79,8 @@ export type PanelKey =
   | 'mcpRag'
   | 'mcpRagRealLLM'
   | 'mcpRagPerformance'
-  | 'mcpMultimodalRag';
+  | 'mcpMultimodalRag'
+  | 'mcpMultimodalProvider';
 
 /** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
@@ -122,6 +124,7 @@ const INITIAL_STATE: PanelsState = {
   mcpRagRealLLM: DEFAULT_OPEN.mcpRagRealLLM ?? false,
   mcpRagPerformance: DEFAULT_OPEN.mcpRagPerformance ?? false,
   mcpMultimodalRag: DEFAULT_OPEN.mcpMultimodalRag ?? false,
+  mcpMultimodalProvider: DEFAULT_OPEN.mcpMultimodalProvider ?? false,
 };
 
 /** Action 类型 */
@@ -225,6 +228,8 @@ export interface UseModalsResult {
   mcpRagPerformance: PanelController;
   /** v3.9.0 (Cycle 48) 新增：MCP × 多模态 RAG 面板 (多模态 Embedding + 跨模态检索 + 跨模态缓存 + 性能基准) */
   mcpMultimodalRag: PanelController;
+  /** v3.10.0 (Cycle 49) 新增：MCP × 真实多模态 Provider 面板 (CLIP + 火山方舟 + 质量评估 + 模型缓存) */
+  mcpMultimodalProvider: PanelController;
   /** v3.0.0 新增：批量关闭所有 panel */
   closeAll: () => void;
   /** v3.0.0 新增：批量打开多个 panel */
@@ -288,6 +293,7 @@ export function useModals(): UseModalsResult {
       mcpRagRealLLM: makeController('mcpRagRealLLM'),  // v3.7.0 (Cycle 46) 新增
       mcpRagPerformance: makeController('mcpRagPerformance'),  // v3.8.0 (Cycle 47) 新增
       mcpMultimodalRag: makeController('mcpMultimodalRag'),  // v3.9.0 (Cycle 48) 新增
+      mcpMultimodalProvider: makeController('mcpMultimodalProvider'),  // v3.10.0 (Cycle 49) 新增
       closeAll: () => dispatch({ type: 'CLOSE_ALL' }),
       openMulti: (panels) => dispatch({ type: 'OPEN_MULTI', panels }),
     }),

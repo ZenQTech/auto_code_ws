@@ -187,6 +187,8 @@ export interface BrandHeaderProps {
   onOpenMcpRagPerformance?: () => void;
   /** v2.28.0 (Cycle 48) 新增：打开 MCP × 多模态 RAG 面板回调（可选） */
   onOpenMcpMultimodalRag?: () => void;
+  /** v2.29.0 (Cycle 49) 新增：打开 MCP × 真实多模态 Provider 面板回调（可选） */
+  onOpenMcpMultimodalProvider?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1119,6 +1121,8 @@ export default function BrandHeader({
   onOpenMcpRagPerformance,
   /** v2.28.0 (Cycle 48) 新增 */
   onOpenMcpMultimodalRag,
+  /** v2.29.0 (Cycle 49) 新增 */
+  onOpenMcpMultimodalProvider,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2088,6 +2092,23 @@ export default function BrandHeader({
                 >
                   <Icon name="image" className="w-4 h-4 text-pink-500" />
                   <span>🎨 MCP × 多模态 RAG</span>
+                </button>
+              )}
+
+              {/* v2.29.0 (Cycle 49) 新增：MCP × 真实多模态 Provider（菜单项）
+               *  行为：点击调 onOpenMcpMultimodalProvider() 弹出 McpMultimodalProviderPanel 真实 Provider 面板
+               *       5 Tab：真实 CLIP / 火山方舟 / 质量评估 / 模型缓存 / 系统设置
+               *  图标：brain，表达真实 AI 模型语义 */}
+              {onOpenMcpMultimodalProvider && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpMultimodalProvider)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="brain" className="w-4 h-4 text-cyan-500" />
+                  <span>🧠 MCP × 真实多模态 Provider</span>
                 </button>
               )}
 

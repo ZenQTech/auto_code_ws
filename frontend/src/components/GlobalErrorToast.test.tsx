@@ -52,8 +52,13 @@ describe('GlobalErrorToast', () => {
     act(() => {
       window.onerror?.('js error', 'test.js', 42, 5, new Error('js error'));
     });
-    expect(screen.getByText(/test\.js/)).toBeTruthy();
-    expect(screen.getByText(/:42/)).toBeTruthy();
+    // 使用 getAllByText 避免与时间戳(格式 HH:42:SS) 冲突
+    const matches = screen.getAllByText(/test\.js/);
+    expect(matches.length).toBeGreaterThan(0);
+    // 验证 source:line 显示: 容器文本中应包含 'test.js:42' 但排除时间戳
+    const container = document.body;
+    const html = container.textContent ?? '';
+    expect(html).toContain('test.js:42');
   });
 
   it('点击"忽略"关闭 Toast', () => {

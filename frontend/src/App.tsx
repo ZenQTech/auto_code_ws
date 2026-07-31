@@ -240,6 +240,8 @@ import { McpRagRealLLMPanel } from './components/McpRagRealLLMPanel';
 import { McpRagPerformancePanel } from './components/McpRagPerformancePanel';
 /** v6.122.0 Cycle 48 G48-主应用集成 新增：MCP × 多模态 RAG 面板 (多模态 Embedding + 跨模态检索 + 跨模态缓存 + 性能基准) */
 import { McpMultimodalRagPanel } from './components/McpMultimodalRagPanel';
+/** v6.123.0 Cycle 49 G49-主应用集成 新增：MCP × 真实多模态 Provider 面板 (真实 CLIP + 火山方舟 + 质量评估 + 模型缓存) */
+import { McpMultimodalProviderPanel } from './components/McpMultimodalProviderPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -631,6 +633,7 @@ export default function App() {
     mcpRagRealLLM: mcpRagRealLLMModal,  // v2.9.0 (Cycle 46) 新增
     mcpRagPerformance: mcpRagPerformanceModal,  // v2.10.0 (Cycle 47) 新增
     mcpMultimodalRag: mcpMultimodalRagModal,  // v2.11.0 (Cycle 48) 新增
+    mcpMultimodalProvider: mcpMultimodalProviderModal,  // v2.12.0 (Cycle 49) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3178,6 +3181,7 @@ export default function App() {
           onOpenMcpRagRealLLM={() => mcpRagRealLLMModal.onOpen()}
           onOpenMcpRagPerformance={() => mcpRagPerformanceModal.onOpen()}
           onOpenMcpMultimodalRag={() => mcpMultimodalRagModal.onOpen()}
+          onOpenMcpMultimodalProvider={() => mcpMultimodalProviderModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -3407,6 +3411,15 @@ export default function App() {
        * 依赖：MultimodalEmbedding + MultimodalVectorIndex + MultimodalSemanticCache + MultimodalRAGBenchmark */}
       {mcpMultimodalRagModal.open && (
         <McpMultimodalRagPanel onClose={mcpMultimodalRagModal.onClose} />
+      )}
+
+      {/* v6.123.0 Cycle 49 G49-主应用集成 新增：MCP × 真实多模态 Provider 面板弹窗
+       * 触发：BrandHeader 菜单"🧠 MCP × 真实多模态 Provider"项
+       * 关闭：McpMultimodalProviderPanel 内部 onClose 回调
+       * 功能：5 Tab（真实 CLIP / 火山方舟 / 质量评估 / 模型缓存 / 系统设置）
+       * 依赖：CLIPLocalProvider + VolcengineMultimodalProvider + MultimodalQualityEvaluator + ModelCache */}
+      {mcpMultimodalProviderModal.open && (
+        <McpMultimodalProviderPanel onClose={mcpMultimodalProviderModal.onClose} />
       )}
 
       {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗
