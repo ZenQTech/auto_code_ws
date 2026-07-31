@@ -87,6 +87,17 @@ export interface IndexResourceOptions {
   tags?: string[];
   /** 自定义元数据 */
   metadata?: Record<string, unknown>;
+  /**
+   * 预先加载的内容（提供时跳过 resourceBridge.resolve）
+   * - 适用场景：内容已通过其他途径获得（如文件系统直接读取）
+   * - 格式：{ text?: string; blob?: string; mimeType?: string }
+   */
+  preloadedContent?: {
+    text?: string;
+    blob?: string;
+    mimeType?: string;
+    name?: string;
+  };
 }
 
 /**
@@ -362,7 +373,7 @@ export class McpRagEngine {
 
   /**
    * 索引单个 MCP 资源
-   * - 读取资源内容
+   * - 读取资源内容（支持 preloadedContent 跳过 bridge）
    * - 转换为纯文本
    * - 添加到 RAG 知识库
    * - 记录索引映射
@@ -377,21 +388,45 @@ export class McpRagEngine {
     }
 
     try {
-      // 1. 通过 resourceBridge 解析资源
-      const resolved = await this.resourceBridge.resolve(resourceUri);
-      if (!resolved || !resolved.content) {
-        throw new Error(`资源解析失败或无内容: ${resourceUri}`);
-      }
-
-      // 2. 合并所有内容
-      const contents = Array.isArray(resolved.content)
-        ? resolved.content
-        : [resolved.content];
-
+      // 1. 解析资源：优先使用 preloadedContent，否则通过 resourceBridge
       let fullText = '';
-      for (const content of contents) {
-        const text = resourceContentToText(content);
-        if (text) fullText += text + '\n\n';
+      let resolvedInfo: { name?: string; mimeType?: string; serverName?: string } | null = null;
+
+      if (options.preloadedContent) {
+        // 1a. 使用预先加载的内容
+        const pc = options.preloadedContent;
+        if (pc.text) {
+          fullText = pc.text;
+        } else if (pc.blob) {
+          fullText = pc.blob;
+        } else {
+          throw new Error('preloadedContent 必须包含 text 或 blob');
+        }
+        resolvedInfo = {
+          name: pc.name ?? resourceUri.split('/').pop() ?? resourceUri,
+          mimeType: pc.mimeType,
+        };
+      } else {
+        // 1b. 通过 resourceBridge 解析资源
+        const resolved = await this.resourceBridge.resolve(resourceUri);
+        if (!resolved || !resolved.content) {
+          throw new Error(`资源解析失败或无内容: ${resourceUri}`);
+        }
+
+        const contents = Array.isArray(resolved.content)
+          ? resolved.content
+          : [resolved.content];
+
+        for (const content of contents) {
+          const text = resourceContentToText(content);
+          if (text) fullText += text + '\n\n';
+        }
+
+        resolvedInfo = {
+          name: resolved.info?.name,
+          mimeType: resolved.info?.mimeType,
+          serverName: resolved.info?.serverName,
+        };
       }
 
       if (!fullText.trim()) {
@@ -405,13 +440,13 @@ export class McpRagEngine {
         content: fullText,
         metadata: {
           source: resourceUri,
-          title: resolved.info?.name ?? resourceUri,
+          title: resolvedInfo?.name ?? resourceUri,
           createdAt: Date.now(),
           updatedAt: Date.now(),
-          mimeType: resolved.info?.mimeType,
+          mimeType: resolvedInfo?.mimeType,
           tags: options.tags ?? ['mcp', `server:${serverId}`],
           serverId,
-          serverName: resolved.info?.serverName,
+          serverName: resolvedInfo?.serverName,
           indexedFromMcp: true,
           ...options.metadata,
         },
@@ -435,8 +470,8 @@ export class McpRagEngine {
         documentId: finalId,
         serverId,
         resourceUri,
-        resourceName: resolved.info?.name ?? resourceUri,
-        mimeType: resolved.info?.mimeType,
+        resourceName: resolvedInfo?.name ?? resourceUri,
+        mimeType: resolvedInfo?.mimeType,
         indexedAt: Date.now(),
         chunkCount,
         size: fullText.length,
