@@ -175,6 +175,8 @@ export interface BrandHeaderProps {
   onOpenMcpAdvanced?: () => void;
   /** v2.22.0 (Cycle 42 G42-04) 新增：打开 MCP 集成智能体面板回调（可选） */
   onOpenMcpIntegrated?: () => void;
+  /** v2.23.0 (Cycle 43 G43-04) 新增：打开 MCP E2E 测试面板回调（可选） */
+  onOpenMcpE2E?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1095,6 +1097,8 @@ export default function BrandHeader({
   onOpenMcpAdvanced,
   /** v2.22.0 (Cycle 42 G42-04) 新增 */
   onOpenMcpIntegrated,
+  /** v2.23.0 (Cycle 43 G43-04) 新增 */
+  onOpenMcpE2E,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -1958,6 +1962,24 @@ export default function BrandHeader({
                 >
                   <Icon name="workflow" className="w-4 h-4 text-rose-500" />
                   <span>🚀 MCP 集成智能体</span>
+                </button>
+              )}
+
+              {/* v2.23.0 (Cycle 43 G43-04) 新增：MCP E2E 测试（菜单项）
+               *  行为：点击调 onOpenMcpE2E() 弹出 McpE2EPanel 端到端测试面板
+               *       运行 5 大标准场景：基础对话 / 单步工具调用 / 多步工具调用 / 资源引用 / 错误恢复
+               *       支持 LLM Provider 选择（Mock / 火山方舟 Coding Plan）
+               *  图标：chart（柱状图），表达端到端测试统计 */}
+              {onOpenMcpE2E && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpE2E)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-rose-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="chart" className="w-4 h-4 text-teal-500" />
+                  <span>🧪 MCP E2E 测试</span>
                 </button>
               )}
 

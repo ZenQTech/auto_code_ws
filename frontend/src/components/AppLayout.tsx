@@ -150,6 +150,8 @@ export interface AppLayoutProps {
   onOpenMcpAdvanced: () => void;
   /** v6.115.0 (Cycle 42 G42-04) 新增：MCP 集成智能体面板回调（端到端 LLM+Agent+MCP 融合） */
   onOpenMcpIntegrated: () => void;
+  /** v6.117.0 (Cycle 43 G43-04) 新增：MCP E2E 测试面板回调（端到端测试套件） */
+  onOpenMcpE2E: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板回调 */
   onOpenComposer: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板回调 */
@@ -404,6 +406,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenMcpRegistry,  // v6.111.0 (Cycle 39 G39-03) 透传 BrandHeader
   onOpenMcpAdvanced,  // v6.114.0 (Cycle 41) 透传 BrandHeader
   onOpenMcpIntegrated,  // v6.115.0 (Cycle 42 G42-04) 透传 BrandHeader
+  onOpenMcpE2E,  // v6.117.0 (Cycle 43 G43-04) 透传 BrandHeader
   onOpenComposer,  // v6.36.0 (Cycle 16 P0-1) 透传 BrandHeader
   onOpenBackgroundTasks,  // v6.41.0 (Cycle 19 P0-1) 透传 BrandHeader
   onOpenBestOfN,  // v6.42.0 (Cycle 19 P0-2) 透传 BrandHeader
@@ -666,6 +669,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenMcpRegistry={onOpenMcpRegistry}
         onOpenMcpAdvanced={onOpenMcpAdvanced}
         onOpenMcpIntegrated={onOpenMcpIntegrated}
+        onOpenMcpE2E={onOpenMcpE2E}
         onOpenComposer={onOpenComposer}
         onOpenBackgroundTasks={onOpenBackgroundTasks}
         onOpenBestOfN={onOpenBestOfN}

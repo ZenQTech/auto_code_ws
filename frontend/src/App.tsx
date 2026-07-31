@@ -218,6 +218,8 @@ import McpRegistryPanel from './components/McpRegistryPanel';
 import McpAdvancedPanel from './components/McpAdvancedPanel';
 /** v2.5.0 (Cycle 42 G42-04) 新增：MCP 集成智能体面板（LLM + Agent + MCP 端到端融合） */
 import { McpIntegratedPanel } from './components/McpIntegratedPanel';
+/** v6.117.0 Cycle 43 G43-04 新增：MCP 端到端测试面板 */
+import { McpE2EPanel } from './components/McpE2EPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -603,6 +605,7 @@ export default function App() {
     mcpRegistry: mcpRegistryModal,  // v2.3.0 (Cycle 39 G39-03) 新增
     mcpAdvanced: mcpAdvancedModal,  // v2.4.0 (Cycle 41) 新增
     mcpIntegrated: mcpIntegratedModal,  // v2.5.0 (Cycle 42 G42-04) 新增
+    mcpE2E: mcpE2EModal,  // v2.6.0 (Cycle 43 G43-04) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3144,6 +3147,7 @@ export default function App() {
           onOpenMcpRegistry={() => mcpRegistryModal.onOpen()}
           onOpenMcpAdvanced={() => mcpAdvancedModal.onOpen()}
           onOpenMcpIntegrated={() => mcpIntegratedModal.onOpen()}
+          onOpenMcpE2E={() => mcpE2EModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -3319,6 +3323,15 @@ export default function App() {
        *       - 提示词 Tab：所有 MCP 提示词列表（含参数 schema） */}
       {mcpIntegratedModal.open && (
         <McpIntegratedPanel onClose={mcpIntegratedModal.onClose} llmProviderName="mock" />
+      )}
+
+      {/* v6.117.0 Cycle 43 G43-04 新增：MCP E2E 测试面板弹窗
+       * 触发：BrandHeader 菜单"MCP E2E 测试"项
+       * 关闭：McpE2EPanel 内部 onClose 回调
+       * 功能：运行 5 大 E2E 场景，验证 MCP × Hermes 端到端集成
+       * 依赖：mcpE2ETestSuite + volcengineCodingPlanProvider */}
+      {mcpE2EModal.open && (
+        <McpE2EPanel onClose={mcpE2EModal.onClose} />
       )}
 
       {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗
