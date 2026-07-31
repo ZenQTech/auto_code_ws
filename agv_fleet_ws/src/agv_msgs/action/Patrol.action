@@ -1,9 +1,0 @@
-# 执行巡检任务
-geometry_msgs/PoseStamped[] waypoints  # 巡检路径点
-uint32 loops                      # 循环次数（0=无限）
----
-uint32 current_waypoint           # 当前路径点索引
-uint32 loops_completed            # 已完成循环次数
----
-bool completed                    # 是否完成
-string message

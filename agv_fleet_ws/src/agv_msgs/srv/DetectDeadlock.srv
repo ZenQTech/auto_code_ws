@@ -1,5 +1,0 @@
-# 死锁检测
----
-bool has_deadlock
-string[] involved_agvs
-string deadlock_type              # HEAD_ON | CROSS | CYCLE_WAIT

@@ -1,5 +1,0 @@
-# 取消任务
-string task_id                   # 要取消的任务 ID
----
-bool success
-string message

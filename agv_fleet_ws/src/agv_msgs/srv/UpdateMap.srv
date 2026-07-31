@@ -1,5 +1,0 @@
-# 更新地图
-nav_msgs/OccupancyGrid map
----
-bool success
-string message

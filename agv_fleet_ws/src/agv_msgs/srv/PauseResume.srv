@@ -1,5 +1,0 @@
-# 暂停/恢复 AGV
-bool pause                        # true=暂停, false=恢复
----
-bool success
-string message

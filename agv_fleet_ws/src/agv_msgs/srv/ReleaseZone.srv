@@ -1,5 +1,0 @@
-# 释放路径区域预留
-string zone_id
-string agv_id
----
-bool success

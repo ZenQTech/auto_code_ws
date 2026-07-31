@@ -1,9 +1,0 @@
-# 执行充电任务
-string station_id                 # 充电站 ID
----
-float32 battery_level             # 当前电量
-string status                     # 充电状态
----
-bool success
-float32 final_battery             # 最终电量
-string message

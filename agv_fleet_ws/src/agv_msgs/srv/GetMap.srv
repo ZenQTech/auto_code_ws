@@ -1,5 +1,0 @@
-# 获取全局地图
-string map_name
----
-nav_msgs/OccupancyGrid map
-string metadata                   # 地图元数据（JSON）

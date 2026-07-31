@@ -1,6 +1,0 @@
-# 死锁解锁
-string[] agv_ids                  # 涉事 AGV 列表
-string strategy                   # BACK_OFF | RE_ROUTE | PRIORITY_PASS
----
-bool success
-string[] resolved_actions         # 各 AGV 的解锁动作描述
