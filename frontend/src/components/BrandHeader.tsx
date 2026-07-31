@@ -65,6 +65,9 @@
 #     新增 onOpenEdgeModelRouter / onOpenOfflineFirst / onOpenDeviceCluster 回调
 #     新增 edge-cloud (云+端) / offline (云断线) / devices (多设备) 内联 SVG 图标
 #     对应 Cursor Router 端云路由 + Trae Solo 离线优先 + mDNS/DNS-SD 设备发现
+#   - 2026-07-31 | v2.18.0 | Cycle 36 G36-01/02/03 新增：菜单项 LLM Provider / 流式对话 / 多模态
+#     新增 onOpenLLMProvider / onOpenStreamingChat / onOpenMultiModal 回调
+#     对应 Anthropic/OpenAI/Ollama 适配 + SSE 流式响应 + 图像/音频/文件处理
 # ============================================================
  */
 
@@ -268,6 +271,12 @@ export interface BrandHeaderProps {
   onOpenTaskCheckpoint?: () => void;
   /** v6.98.0 (Cycle 35 G35-04) 新增：智能体调度 */
   onOpenAgentScheduler?: () => void;
+  /** v2.18.0 (Cycle 36 G36-01) 新增：LLM Provider 管理 */
+  onOpenLLMProvider?: () => void;
+  /** v2.18.0 (Cycle 36 G36-02) 新增：流式对话演示 */
+  onOpenStreamingChat?: () => void;
+  /** v2.18.0 (Cycle 36 G36-03) 新增：多模态处理 */
+  onOpenMultiModal?: () => void;
 }
 
 /**
@@ -277,7 +286,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices' | 'chat' | 'scheduler'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices' | 'chat' | 'scheduler' | 'llm' | 'multimodal'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -893,6 +902,23 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M16 2v4M8 2v4M3 10h18" />
         </svg>
       );
+    case 'llm':
+      // v2.18.0 (Cycle 36 G36-01) 新增：LLM Provider
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M9.5 2A2.5 2.5 0 0 1 12 4.5v15a2.5 2.5 0 0 1-4.96.44 2.5 2.5 0 0 1-2.96-3.08 3 3 0 0 1-.34-5.58 2.5 2.5 0 0 1 1.32-4.24 2.5 2.5 0 0 1 1.98-3A2.5 2.5 0 0 1 9.5 2Z" />
+          <path d="M14.5 2A2.5 2.5 0 0 0 12 4.5v15a2.5 2.5 0 0 0 4.96.44 2.5 2.5 0 0 0 2.96-3.08 3 3 0 0 0 .34-5.58 2.5 2.5 0 0 0-1.32-4.24 2.5 2.5 0 0 0-1.98-3A2.5 2.5 0 0 0 14.5 2Z" />
+        </svg>
+      );
+    case 'multimodal':
+      // v2.18.0 (Cycle 36 G36-03) 新增：多模态
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+          <circle cx="8.5" cy="8.5" r="1.5" />
+          <polyline points="21 15 16 10 5 21" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -1072,6 +1098,12 @@ export default function BrandHeader({
   onOpenTaskCheckpoint,
   /** v6.98.0 (Cycle 35 G35-04) 新增：智能体调度 */
   onOpenAgentScheduler,
+  /** v2.18.0 (Cycle 36 G36-01) 新增：LLM Provider 管理 */
+  onOpenLLMProvider,
+  /** v2.18.0 (Cycle 36 G36-02) 新增：流式对话演示 */
+  onOpenStreamingChat,
+  /** v2.18.0 (Cycle 36 G36-03) 新增：多模态处理 */
+  onOpenMultiModal,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2630,6 +2662,45 @@ export default function BrandHeader({
                 >
                   <Icon name="scheduler" className="w-4 h-4 text-rose-500" />
                   <span>⚡ 智能体调度</span>
+                </button>
+              )}
+
+              {/* v2.18.0 (Cycle 36 G36-01) 新增：LLM Provider 管理（菜单项） */}
+              {onOpenLLMProvider && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenLLMProvider)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-indigo-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-llm-provider"
+                >
+                  <Icon name="llm" className="w-4 h-4 text-indigo-500" />
+                  <span>🧠 LLM Provider</span>
+                </button>
+              )}
+
+              {/* v2.18.0 (Cycle 36 G36-02) 新增：流式对话演示（菜单项） */}
+              {onOpenStreamingChat && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenStreamingChat)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-cyan-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-streaming-chat"
+                >
+                  <Icon name="stream" className="w-4 h-4 text-cyan-500" />
+                  <span>💬 流式对话</span>
+                </button>
+              )}
+
+              {/* v2.18.0 (Cycle 36 G36-03) 新增：多模态处理（菜单项） */}
+              {onOpenMultiModal && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMultiModal)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-pink-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-multimodal"
+                >
+                  <Icon name="multimodal" className="w-4 h-4 text-pink-500" />
+                  <span>🖼️ 多模态处理</span>
                 </button>
               )}
 

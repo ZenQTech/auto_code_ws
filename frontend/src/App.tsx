@@ -352,6 +352,12 @@ import { AgentCommunicationPanel } from './components/AgentCommunicationPanel';
 import { TaskCheckpointPanel } from './components/TaskCheckpointPanel';
 /** v6.98.0 (Cycle 35 G35-04) 新增：智能体调度面板 */
 import { AgentSchedulerPanel } from './components/AgentSchedulerPanel';
+/** v6.107.0 (Cycle 36 G36-01) 新增：LLM Provider 面板 */
+import LLMProviderPanel from './components/LLMProviderPanel';
+/** v6.107.0 (Cycle 36 G36-02) 新增：Streaming Chat 面板 */
+import StreamingChatPanel from './components/StreamingChatPanel';
+/** v6.107.0 (Cycle 36 G36-03) 新增：Multi-Modal 面板 */
+import MultiModalPanel from './components/MultiModalPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1891,6 +1897,36 @@ export default function App() {
   }, []);
 
   /**
+   * v6.107.0 (Cycle 36 G36-01) 新增：LLM Provider 面板
+   * 作用：控制 LLMProviderPanel 弹窗显隐
+   *       4 大 Provider (Mock/Anthropic/OpenAI/Ollama) + 统一抽象层
+   */
+  const [llmProviderOpen, setLlmProviderOpen] = useState(false);
+  const handleOpenLLMProvider = useCallback(() => {
+    setLlmProviderOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.107.0 (Cycle 36 G36-02) 新增：Streaming Chat 面板
+   * 作用：控制 StreamingChatPanel 弹窗显隐
+   *       流式响应 + 实时统计 (TTFT/ITPS) + 暂停/恢复
+   */
+  const [streamingChatOpen, setStreamingChatOpen] = useState(false);
+  const handleOpenStreamingChat = useCallback(() => {
+    setStreamingChatOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.107.0 (Cycle 36 G36-03) 新增：Multi-Modal 面板
+   * 作用：控制 MultiModalPanel 弹窗显隐
+   *       图像/语音/文件处理 + 多模态融合
+   */
+  const [multiModalOpen, setMultiModalOpen] = useState(false);
+  const handleOpenMultiModal = useCallback(() => {
+    setMultiModalOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2961,6 +2997,9 @@ export default function App() {
           onOpenAgentCommunication={handleOpenAgentCommunication}
           onOpenTaskCheckpoint={handleOpenTaskCheckpoint}
           onOpenAgentScheduler={handleOpenAgentScheduler}
+          onOpenLLMProvider={handleOpenLLMProvider}
+          onOpenStreamingChat={handleOpenStreamingChat}
+          onOpenMultiModal={handleOpenMultiModal}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3936,6 +3975,36 @@ export default function App() {
         <AgentSchedulerPanel
           isOpen={agentSchedulerOpen}
           onClose={() => setAgentSchedulerOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.107.0 (Cycle 36 G36-01) 新增：LLM Provider 面板
+       *  4 大 Provider (Mock/Anthropic/OpenAI/Ollama) + 统一抽象层
+       *  对标 LiteLLM / Vercel AI SDK */}
+      <ErrorBoundary level="panel" name="LLMProvider">
+        <LLMProviderPanel
+          isOpen={llmProviderOpen}
+          onClose={() => setLlmProviderOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.107.0 (Cycle 36 G36-02) 新增：Streaming Chat 面板
+       *  流式响应 + 实时统计 (TTFT/ITPS) + 暂停/恢复
+       *  对标 Vercel AI SDK / OpenAI ChatKit */}
+      <ErrorBoundary level="panel" name="StreamingChat">
+        <StreamingChatPanel
+          isOpen={streamingChatOpen}
+          onClose={() => setStreamingChatOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.107.0 (Cycle 36 G36-03) 新增：Multi-Modal 面板
+       *  图像/语音/文件处理 + 多模态融合
+       *  对标 GPT-4o Vision / Claude Vision */}
+      <ErrorBoundary level="panel" name="MultiModal">
+        <MultiModalPanel
+          isOpen={multiModalOpen}
+          onClose={() => setMultiModalOpen(false)}
         />
       </ErrorBoundary>
 
