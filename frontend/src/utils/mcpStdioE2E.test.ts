@@ -87,9 +87,9 @@ class StdioE2EMockTransport implements McpTransport {
     }, this.responseDelayMs + 5);
   }
 
-  onMessage(handler: (msg: unknown) => void): () => void {
-    this.msgHandlers.add(handler);
-    return () => this.msgHandlers.delete(handler);
+  onMessage(handler: (msg: import('./mcpTypes').JsonRpcMessage) => void): () => void {
+    this.msgHandlers.add(handler as (msg: unknown) => void);
+    return () => this.msgHandlers.delete(handler as (msg: unknown) => void);
   }
 
   onError(handler: (err: Error) => void): () => void {

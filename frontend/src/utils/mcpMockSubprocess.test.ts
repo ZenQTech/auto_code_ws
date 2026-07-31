@@ -70,7 +70,7 @@ describe('MockSubprocess 生命周期', () => {
       received = err;
     });
     proc.emitError(new Error('boom'));
-    expect(received?.message).toBe('boom');
+    expect((received as Error | null)?.message).toBe('boom');
   });
 });
 
