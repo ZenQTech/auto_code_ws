@@ -324,14 +324,18 @@ describe('McpRagKnowledgeBase', () => {
   // ============ 变更检测 ============
 
   describe('detectChanges - 变更检测', () => {
+    // 共享 timestamp: 避免 beforeEach 与 test 体时间漂移导致 flaky
+    let beforeEachT: number;
+
     beforeEach(async () => {
-      const t = Date.now();
-      await kb.addFile('fs', 'file:///a.txt', 'A', { filename: 'a.txt', modifiedAt: t });
-      await kb.addFile('fs', 'file:///b.txt', 'B', { filename: 'b.txt', modifiedAt: t });
+      beforeEachT = Date.now();
+      await kb.addFile('fs', 'file:///a.txt', 'A', { filename: 'a.txt', modifiedAt: beforeEachT });
+      await kb.addFile('fs', 'file:///b.txt', 'B', { filename: 'b.txt', modifiedAt: beforeEachT });
     });
 
     it('应识别新增文件', () => {
-      const t = Date.now();
+      // 使用 beforeEach 时刻 + 小偏移, 避免 Date.now() 时间漂移
+      const t = beforeEachT;
       const changes = kb.detectChanges([
         { uri: 'file:///a.txt', modifiedAt: t },
         { uri: 'file:///b.txt', modifiedAt: t },
@@ -341,7 +345,8 @@ describe('McpRagKnowledgeBase', () => {
     });
 
     it('应识别已修改文件', () => {
-      const t = Date.now();
+      // 使用 beforeEach 时刻, a 标记为更新(+1000), b 标记为未变更
+      const t = beforeEachT;
       const changes = kb.detectChanges([
         { uri: 'file:///a.txt', modifiedAt: t + 1000 }, // 新
         { uri: 'file:///b.txt', modifiedAt: t },
@@ -351,7 +356,8 @@ describe('McpRagKnowledgeBase', () => {
     });
 
     it('应识别已删除文件', () => {
-      const t = Date.now();
+      // 使用 beforeEach 时刻, 只传 a, b 应识别为删除
+      const t = beforeEachT;
       const changes = kb.detectChanges([
         { uri: 'file:///a.txt', modifiedAt: t },
       ]);
