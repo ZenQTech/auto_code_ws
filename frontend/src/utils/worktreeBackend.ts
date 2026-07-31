@@ -242,7 +242,7 @@ export class MockWorktreeBackend implements WorktreeBackend {
 
 export class LocalGitWorktreeBackend implements WorktreeBackend {
   readonly type: BackendType = 'local-git';
-  // @ts-expect-error 预留给未来的 git 命令路径配置
+  // 预留给未来的 git 命令路径配置
   private readonly gitPath: string;
   private readonly repoPath: string;
   private readonly mockMode: boolean;
@@ -250,11 +250,9 @@ export class LocalGitWorktreeBackend implements WorktreeBackend {
   constructor(config: { gitPath?: string; repoPath?: string } = {}) {
     this.gitPath = config.gitPath ?? 'git';
     // 浏览器环境或无 process 时使用当前目录
-    // @ts-expect-error process 在浏览器中可能不存在
     const cwd = (typeof process !== 'undefined' && process.cwd) ? process.cwd() : '.';
     this.repoPath = config.repoPath ?? cwd;
     // 检测环境：浏览器或没有 child_process 时使用 mock 模式
-    // @ts-expect-error process 在浏览器中可能不存在
     this.mockMode = typeof window !== 'undefined' || typeof process === 'undefined';
   }
 

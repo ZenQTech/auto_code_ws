@@ -68,6 +68,10 @@
 #   - 2026-07-31 | v2.18.0 | Cycle 36 G36-01/02/03 新增：菜单项 LLM Provider / 流式对话 / 多模态
 #     新增 onOpenLLMProvider / onOpenStreamingChat / onOpenMultiModal 回调
 #     对应 Anthropic/OpenAI/Ollama 适配 + SSE 流式响应 + 图像/音频/文件处理
+#   - 2026-07-31 | v2.19.0 | Cycle 37 G37-01/02/03/04 新增：菜单项 RAG 知识库 / 工具市场 / Agent Loop / 真实 LLM
+#     新增 onOpenRAG / onOpenToolMarketplace / onOpenAgentLoop / onOpenRealLLMProvider 回调
+#     新增 rag (书本+齿轮) / tool (扳手) / loop (循环箭头) / real-llm (云+勾选) 内联 SVG 图标
+#     对应 RAG 引擎+工具市场+ReAct/Plan-Execute Agent Loop+DeepSeek/火山方舟真实 LLM 集成
 # ============================================================
  */
 
@@ -277,6 +281,14 @@ export interface BrandHeaderProps {
   onOpenStreamingChat?: () => void;
   /** v2.18.0 (Cycle 36 G36-03) 新增：多模态处理 */
   onOpenMultiModal?: () => void;
+  /** v2.19.0 (Cycle 37 G37-01) 新增：RAG 知识库 */
+  onOpenRAG?: () => void;
+  /** v2.19.0 (Cycle 37 G37-02) 新增：Tool Use 工具市场 */
+  onOpenToolMarketplace?: () => void;
+  /** v2.19.0 (Cycle 37 G37-03) 新增：Agent Loop 智能体循环 */
+  onOpenAgentLoop?: () => void;
+  /** v2.19.0 (Cycle 37 G37-04) 新增：真实 LLM Provider 配置 */
+  onOpenRealLLMProvider?: () => void;
 }
 
 /**
@@ -286,7 +298,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices' | 'chat' | 'scheduler' | 'llm' | 'multimodal'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices' | 'chat' | 'scheduler' | 'llm' | 'multimodal' | 'rag' | 'tool' | 'loop' | 'real-llm'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -919,6 +931,40 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <polyline points="21 15 16 10 5 21" />
         </svg>
       );
+    case 'rag':
+      // v2.19.0 (Cycle 37 G37-01) 新增：RAG 知识库（书本+齿轮组合）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+          <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+          <circle cx="12" cy="8" r="2" />
+          <path d="M12 14l-2 4M12 14l2 4M12 14v-4" />
+        </svg>
+      );
+    case 'tool':
+      // v2.19.0 (Cycle 37 G37-02) 新增：Tool Use（工具箱）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+        </svg>
+      );
+    case 'loop':
+      // v2.19.0 (Cycle 37 G37-03) 新增：Agent Loop（循环箭头）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <polyline points="23 4 23 10 17 10" />
+          <polyline points="1 20 1 14 7 14" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+      );
+    case 'real-llm':
+      // v2.19.0 (Cycle 37 G37-04) 新增：真实 LLM（云+API）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+          <path d="M9 14l2 2 4-4" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -1104,6 +1150,14 @@ export default function BrandHeader({
   onOpenStreamingChat,
   /** v2.18.0 (Cycle 36 G36-03) 新增：多模态处理 */
   onOpenMultiModal,
+  /** v2.19.0 (Cycle 37 G37-01) 新增：RAG 知识库 */
+  onOpenRAG,
+  /** v2.19.0 (Cycle 37 G37-02) 新增：Tool Use 工具市场 */
+  onOpenToolMarketplace,
+  /** v2.19.0 (Cycle 37 G37-03) 新增：Agent Loop 智能体循环 */
+  onOpenAgentLoop,
+  /** v2.19.0 (Cycle 37 G37-04) 新增：真实 LLM Provider 配置 */
+  onOpenRealLLMProvider,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2701,6 +2755,58 @@ export default function BrandHeader({
                 >
                   <Icon name="multimodal" className="w-4 h-4 text-pink-500" />
                   <span>🖼️ 多模态处理</span>
+                </button>
+              )}
+
+              {/* v2.19.0 (Cycle 37 G37-01) 新增：RAG 知识库（菜单项） */}
+              {onOpenRAG && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenRAG)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-amber-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-rag"
+                >
+                  <Icon name="rag" className="w-4 h-4 text-amber-500" />
+                  <span>📚 RAG 知识库</span>
+                </button>
+              )}
+
+              {/* v2.19.0 (Cycle 37 G37-02) 新增：Tool Use 工具市场（菜单项） */}
+              {onOpenToolMarketplace && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenToolMarketplace)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-emerald-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-tool-marketplace"
+                >
+                  <Icon name="tool" className="w-4 h-4 text-emerald-500" />
+                  <span>🔧 工具市场</span>
+                </button>
+              )}
+
+              {/* v2.19.0 (Cycle 37 G37-03) 新增：Agent Loop 智能体循环（菜单项） */}
+              {onOpenAgentLoop && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenAgentLoop)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-violet-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-agent-loop"
+                >
+                  <Icon name="loop" className="w-4 h-4 text-violet-500" />
+                  <span>🔄 Agent Loop</span>
+                </button>
+              )}
+
+              {/* v2.19.0 (Cycle 37 G37-04) 新增：真实 LLM Provider 配置（菜单项） */}
+              {onOpenRealLLMProvider && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenRealLLMProvider)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-sky-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-real-llm-provider"
+                >
+                  <Icon name="real-llm" className="w-4 h-4 text-sky-500" />
+                  <span>☁️ 真实 LLM</span>
                 </button>
               )}
 

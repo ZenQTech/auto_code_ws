@@ -43,6 +43,8 @@ const PROVIDER_DISPLAY: Record<ProviderName, { name: string; icon: string; color
   anthropic: { name: 'Anthropic Claude', icon: '🤖', color: 'orange', description: 'Claude 系列模型（Opus/Sonnet/Haiku）' },
   openai: { name: 'OpenAI', icon: '🧠', color: 'green', description: 'GPT 系列模型（GPT-4o/o1）' },
   ollama: { name: 'Ollama (Local)', icon: '💻', color: 'blue', description: '本地 LLM 运行时' },
+  deepseek: { name: 'DeepSeek', icon: '🐋', color: 'indigo', description: 'DeepSeek 系列模型（Chat/Reasoner/Coder）' },
+  'volcengine-ark': { name: '火山方舟', icon: '🌋', color: 'red', description: '豆包 / Kimi 等 Coding Plan 模型' },
 };
 
 const LLMProviderPanel: React.FC<LLMProviderPanelProps> = ({

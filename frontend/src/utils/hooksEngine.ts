@@ -346,11 +346,11 @@ export class HooksEngine {
   private hooks: Map<string, HookDefinition> = new Map();
   private executionLog: HookExecutionResult[] = [];
   private readonly eventBus: HookEventBus = new HookEventBus();
-  // @ts-expect-error 预留给未来的并发控制
+  // 预留给未来的并发控制
   private readonly maxConcurrent: number = 10;
-  // @ts-expect-error 预留给未来的并发控制
+  // 预留给未来的并发控制
   private runningCount: number = 0;
-  // @ts-expect-error 预留给未来的并发控制
+  // 预留给未来的并发控制
   private readonly queue: Array<{ hook: HookDefinition; event: HookEvent }> = [];
   private readonly maxExecutionLog: number = 1000;
 

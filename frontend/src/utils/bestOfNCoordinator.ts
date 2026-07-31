@@ -399,7 +399,7 @@ export class BestOfNWorktreeCoordinator {
   private readonly worktreePool: Set<string> = new Set();
   // 依赖注入
   private worktreeManager: any = null;
-  // @ts-expect-error 预留给未来的多模型执行器集成
+  // 预留给未来的多模型执行器集成
   private multiModelExecutor: any = null;
   // 配置
   private readonly defaultMaxConcurrent: number = 4;

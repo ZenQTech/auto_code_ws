@@ -21,7 +21,7 @@
 
 // ============ 类型定义 ============
 
-export type ProviderName = 'anthropic' | 'openai' | 'ollama' | 'mock';
+export type ProviderName = 'anthropic' | 'openai' | 'ollama' | 'mock' | 'deepseek' | 'volcengine-ark';
 
 export type MessageRole = 'system' | 'user' | 'assistant' | 'tool';
 
@@ -195,6 +195,16 @@ export const PROVIDER_MODELS: Record<ProviderName, ModelInfo[]> = {
   mock: [
     { id: 'mock-fast', name: 'Mock Fast', contextWindow: 128000, inputCostPerMTokens: 0, outputCostPerMTokens: 0, capabilities: ['text'] },
     { id: 'mock-smart', name: 'Mock Smart', contextWindow: 128000, inputCostPerMTokens: 0, outputCostPerMTokens: 0, capabilities: ['text', 'image'] },
+  ],
+  deepseek: [
+    { id: 'deepseek-chat', name: 'DeepSeek Chat', contextWindow: 128000, inputCostPerMTokens: 0.14, outputCostPerMTokens: 0.28, capabilities: ['text'] },
+    { id: 'deepseek-reasoner', name: 'DeepSeek Reasoner', contextWindow: 128000, inputCostPerMTokens: 0.55, outputCostPerMTokens: 2.19, capabilities: ['text'] },
+    { id: 'deepseek-coder', name: 'DeepSeek Coder', contextWindow: 128000, inputCostPerMTokens: 0.14, outputCostPerMTokens: 0.28, capabilities: ['text'] },
+  ],
+  'volcengine-ark': [
+    { id: 'doubao-pro-256k', name: 'Doubao Pro 256K', contextWindow: 256000, inputCostPerMTokens: 0.8, outputCostPerMTokens: 2.0, capabilities: ['text'] },
+    { id: 'doubao-lite-128k', name: 'Doubao Lite 128K', contextWindow: 128000, inputCostPerMTokens: 0.3, outputCostPerMTokens: 0.6, capabilities: ['text'] },
+    { id: 'kimi-k2', name: 'Kimi K2', contextWindow: 128000, inputCostPerMTokens: 0.6, outputCostPerMTokens: 0.6, capabilities: ['text'] },
   ],
 };
 

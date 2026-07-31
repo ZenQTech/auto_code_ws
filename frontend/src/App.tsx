@@ -358,6 +358,14 @@ import LLMProviderPanel from './components/LLMProviderPanel';
 import StreamingChatPanel from './components/StreamingChatPanel';
 /** v6.107.0 (Cycle 36 G36-03) 新增：Multi-Modal 面板 */
 import MultiModalPanel from './components/MultiModalPanel';
+/** v6.108.0 (Cycle 37 G37-01) 新增：RAG 知识库面板 */
+import RAGPanel from './components/RAGPanel';
+/** v6.108.0 (Cycle 37 G37-02) 新增：Tool Use 工具市场面板 */
+import ToolMarketplacePanel from './components/ToolMarketplacePanel';
+/** v6.108.0 (Cycle 37 G37-03) 新增：Agent Loop 面板 */
+import AgentLoopPanel from './components/AgentLoopPanel';
+/** v6.108.0 (Cycle 37 G37-04) 新增：真实 LLM Provider 面板 */
+import RealLLMProviderPanel from './components/RealLLMProviderPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1927,6 +1935,46 @@ export default function App() {
   }, []);
 
   /**
+   * v6.108.0 (Cycle 37 G37-01) 新增：RAG 知识库面板
+   * 作用：控制 RAGPanel 弹窗显隐
+   *       文档管理 + 混合检索 (Vector + BM25) + RRF 融合 + 引用
+   */
+  const [ragPanelOpen, setRagPanelOpen] = useState(false);
+  const handleOpenRAG = useCallback(() => {
+    setRagPanelOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.108.0 (Cycle 37 G37-02) 新增：Tool Use 工具市场面板
+   * 作用：控制 ToolMarketplacePanel 弹窗显隐
+   *       工具注册/执行/统计 + OpenAI/Anthropic 协议转换
+   */
+  const [toolMarketplaceOpen, setToolMarketplaceOpen] = useState(false);
+  const handleOpenToolMarketplace = useCallback(() => {
+    setToolMarketplaceOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.108.0 (Cycle 37 G37-03) 新增：Agent Loop 面板
+   * 作用：控制 AgentLoopPanel 弹窗显隐
+   *       ReAct / Plan-Execute 双模式 + 中断恢复 + 检查点
+   */
+  const [agentLoopOpen, setAgentLoopOpen] = useState(false);
+  const handleOpenAgentLoop = useCallback(() => {
+    setAgentLoopOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.108.0 (Cycle 37 G37-04) 新增：真实 LLM Provider 面板
+   * 作用：控制 RealLLMProviderPanel 弹窗显隐
+   *       DeepSeek + 火山方舟 Coding Plan 真实 API 集成
+   */
+  const [realLLMProviderOpen, setRealLLMProviderOpen] = useState(false);
+  const handleOpenRealLLMProvider = useCallback(() => {
+    setRealLLMProviderOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2683,7 +2731,7 @@ export default function App() {
    * 注：handleConfirmPlan 引用 void 化以避免 TS6133，
    *     在新版 Composer Plan Mode 流程下不再被实际调用
    */
-  // @ts-expect-error - 保留历史调用链，新版 Composer Plan Mode 替代
+  // 保留历史调用链，新版 Composer Plan Mode 替代
   const handleConfirmPlan = useCallback(async () => {
     // 注：此函数在新版 Composer Plan Mode 中不再被引用，保留仅为兼容历史调用链
     // v5.9.0：按钮加载态
@@ -3000,6 +3048,10 @@ export default function App() {
           onOpenLLMProvider={handleOpenLLMProvider}
           onOpenStreamingChat={handleOpenStreamingChat}
           onOpenMultiModal={handleOpenMultiModal}
+          onOpenRAG={handleOpenRAG}
+          onOpenToolMarketplace={handleOpenToolMarketplace}
+          onOpenAgentLoop={handleOpenAgentLoop}
+          onOpenRealLLMProvider={handleOpenRealLLMProvider}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -4007,6 +4059,42 @@ export default function App() {
           onClose={() => setMultiModalOpen(false)}
         />
       </ErrorBoundary>
+
+      {/* v6.108.0 (Cycle 37 G37-01) 新增：RAG 知识库面板
+       *  文档管理 + 混合检索 (Vector + BM25) + RRF 融合 + 引用追踪
+       *  对标 LangChain RAG / LlamaIndex */}
+      {ragPanelOpen && (
+        <ErrorBoundary level="panel" name="RAGPanel">
+          <RAGPanel onClose={() => setRagPanelOpen(false)} />
+        </ErrorBoundary>
+      )}
+
+      {/* v6.108.0 (Cycle 37 G37-02) 新增：Tool Use 工具市场面板
+       *  工具注册/执行/统计 + OpenAI/Anthropic 协议转换 + 权限管理
+       *  对标 OpenAI Function Calling / Anthropic Tool Use */}
+      {toolMarketplaceOpen && (
+        <ErrorBoundary level="panel" name="ToolMarketplace">
+          <ToolMarketplacePanel onClose={() => setToolMarketplaceOpen(false)} />
+        </ErrorBoundary>
+      )}
+
+      {/* v6.108.0 (Cycle 37 G37-03) 新增：Agent Loop 面板
+       *  ReAct / Plan-Execute 双模式 + 中断/恢复 + 检查点管理
+       *  对标 LangGraph / AutoGPT / BabyAGI */}
+      {agentLoopOpen && (
+        <ErrorBoundary level="panel" name="AgentLoop">
+          <AgentLoopPanel onClose={() => setAgentLoopOpen(false)} />
+        </ErrorBoundary>
+      )}
+
+      {/* v6.108.0 (Cycle 37 G37-04) 新增：真实 LLM Provider 面板
+       *  DeepSeek + 火山方舟 Coding Plan 真实 API 集成 + 思考模式
+       *  对标 LiteLLM / Portkey */}
+      {realLLMProviderOpen && (
+        <ErrorBoundary level="panel" name="RealLLMProvider">
+          <RealLLMProviderPanel onClose={() => setRealLLMProviderOpen(false)} />
+        </ErrorBoundary>
+      )}
 
       {/* v6.57.0 (Cycle 23 G24-04) 新增：浮动建议气泡
        *  位置：右下角，仅在有活跃建议时显示

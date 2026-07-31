@@ -205,8 +205,8 @@ class LocalStorageSideChatStorage implements SideChatStorage {
 }
 
 // 内存存储实现（用于测试场景 / SSR 环境）
-// 注意：未直接引用，仅供子类化使用，故用 @ts-expect-error 抑制 unused 警告
-// @ts-expect-error 备用存储实现，仅供测试继承使用
+// 注意：未直接引用，仅供子类化使用
+// 备用存储实现，仅供测试继承使用
 class MemorySideChatStorage implements SideChatStorage {
   private chats: SideChat[] = [];
 
