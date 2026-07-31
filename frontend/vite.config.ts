@@ -22,16 +22,23 @@ export default defineConfig({
   },
   build: {
     // ============================================================
-    // 2026-07-24 | v1.0.0 | Module A 前端 UI 优化 - Task A3
-    // 启用 Rollup manualChunks 切分：
-    //   - vendor-react: React / ReactDOM 等核心库（高频更新 / 全局共享）
-    //   - vendor-monaco: Monaco Editor（按需懒加载，仅编程模式打开文件时引入）
-    // 收益：
-    //   1. 减小主包体积，加快首屏加载
-    //   2. 充分利用浏览器缓存（vendor chunk 长期不变，business chunk 频繁更新）
-    //   3. Monaco 单独切分，可走动态 import 实现按需加载
+    // 2026-08-01 | v1.0.2 | Cycle 44 修复 - Vite 构建兼容性
+    // 标记 Node.js 内置模块为外部依赖（仅用于测试和服务端场景）
+    // 这些模块在浏览器中无意义，但 Cycle 43 添加的 MCP 真实服务器
+    // （mcpFilesystemServer / mcpGitServer / mcpFetchServer）会引用它们
     // ============================================================
     rollupOptions: {
+      external: [
+        /^node:/,
+        'node:child_process',
+        'node:fs',
+        'node:fs/promises',
+        'node:path',
+        'node:os',
+        'node:crypto',
+        'node:util',
+        'node:stream',
+      ],
       output: {
         manualChunks: {
           'vendor-react': ['react', 'react-dom'],
