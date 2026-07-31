@@ -28,7 +28,8 @@
  *   - 2026-07-30 | v6.71.0 | Cycle 27 G27-01/02/04/05/06 新增 onOpenNestedSubAgent/onOpenAgentCheckpoint/onOpenAgentMessaging/onOpenAgentTemplate/onOpenRemoteControl 透传
  *   - 2026-07-30 | v6.86.0 | Cycle 31 G31-01/02/03 新增 onOpenCostAttribution/onOpenRemoteWorktree/onOpenWorktreeSync 透传
  *   - 2026-07-31 | v6.99.0 | Cycle 36 G36-01/02/03 新增 onOpenLLMProvider/onOpenStreamingChat/onOpenMultiModal 透传
- *   - 2026-07-31 | v7.00.0 | Cycle 37 G37-01/02/03/04 新增 onOpenRAG/onOpenToolMarketplace/onOpenAgentLoop/onOpenRealLLMProvider 透传
+ *#   - 2026-07-31 | v7.00.0 | Cycle 37 G37-01/02/03/04 新增 onOpenRAG/onOpenToolMarketplace/onOpenAgentLoop/onOpenRealLLMProvider 透传
+#   - 2026-07-31 | v7.01.0 | Cycle 38 G38-01/02/03/04 新增 onOpenMultiAgentCrew/onOpenLongTermMemory/onOpenReflection/onOpenHumanApproval 透传
  * ============================================================
  */
 
@@ -270,6 +271,14 @@ export interface AppLayoutProps {
   onOpenAgentLoop?: () => void;
   /** v7.00.0 (Cycle 37 G37-04) 新增：真实 LLM Provider 配置 */
   onOpenRealLLMProvider?: () => void;
+  /** v7.01.0 (Cycle 38 G38-01) 新增：多 Agent 协作 */
+  onOpenMultiAgentCrew?: () => void;
+  /** v7.01.0 (Cycle 38 G38-02) 新增：长期记忆管理 */
+  onOpenLongTermMemory?: () => void;
+  /** v7.01.0 (Cycle 38 G38-03) 新增：反思与自我修正 */
+  onOpenReflection?: () => void;
+  /** v7.01.0 (Cycle 38 G38-04) 新增：人机协作审批 */
+  onOpenHumanApproval?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -450,6 +459,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenToolMarketplace,  // v7.00.0 (Cycle 37 G37-02) 透传 BrandHeader
   onOpenAgentLoop,  // v7.00.0 (Cycle 37 G37-03) 透传 BrandHeader
   onOpenRealLLMProvider,  // v7.00.0 (Cycle 37 G37-04) 透传 BrandHeader
+  onOpenMultiAgentCrew,  // v7.01.0 (Cycle 38 G38-01) 透传 BrandHeader
+  onOpenLongTermMemory,  // v7.01.0 (Cycle 38 G38-02) 透传 BrandHeader
+  onOpenReflection,  // v7.01.0 (Cycle 38 G38-03) 透传 BrandHeader
+  onOpenHumanApproval,  // v7.01.0 (Cycle 38 G38-04) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -705,6 +718,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenToolMarketplace={onOpenToolMarketplace}
         onOpenAgentLoop={onOpenAgentLoop}
         onOpenRealLLMProvider={onOpenRealLLMProvider}
+        onOpenMultiAgentCrew={onOpenMultiAgentCrew}
+        onOpenLongTermMemory={onOpenLongTermMemory}
+        onOpenReflection={onOpenReflection}
+        onOpenHumanApproval={onOpenHumanApproval}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

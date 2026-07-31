@@ -72,6 +72,10 @@
 #     新增 onOpenRAG / onOpenToolMarketplace / onOpenAgentLoop / onOpenRealLLMProvider 回调
 #     新增 rag (书本+齿轮) / tool (扳手) / loop (循环箭头) / real-llm (云+勾选) 内联 SVG 图标
 #     对应 RAG 引擎+工具市场+ReAct/Plan-Execute Agent Loop+DeepSeek/火山方舟真实 LLM 集成
+#   - 2026-07-31 | v2.20.0 | Cycle 38 G38-01/02/03/04 新增：菜单项 多 Agent 协作 / 长期记忆 / 反思迭代 / 审批中心
+#     新增 onOpenMultiAgentCrew / onOpenLongTermMemory / onOpenReflection / onOpenHumanApproval 回调
+#     新增 multi-agent (三节点网络) / memory (数据库+时钟) / reflection (镜像+箭头) / approval (盾牌+勾) 内联 SVG 图标
+#     对应 Manager-Worker 多 Agent 协作 + MemGPT 风格分层记忆 + Reflexion 反思引擎 + 人机审批流
 # ============================================================
  */
 
@@ -289,6 +293,14 @@ export interface BrandHeaderProps {
   onOpenAgentLoop?: () => void;
   /** v2.19.0 (Cycle 37 G37-04) 新增：真实 LLM Provider 配置 */
   onOpenRealLLMProvider?: () => void;
+  /** v2.20.0 (Cycle 38 G38-01) 新增：多 Agent 协作 */
+  onOpenMultiAgentCrew?: () => void;
+  /** v2.20.0 (Cycle 38 G38-02) 新增：长期记忆管理 */
+  onOpenLongTermMemory?: () => void;
+  /** v2.20.0 (Cycle 38 G38-03) 新增：反思与自我修正 */
+  onOpenReflection?: () => void;
+  /** v2.20.0 (Cycle 38 G38-04) 新增：人机协作审批 */
+  onOpenHumanApproval?: () => void;
 }
 
 /**
@@ -298,7 +310,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices' | 'chat' | 'scheduler' | 'llm' | 'multimodal' | 'rag' | 'tool' | 'loop' | 'real-llm'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices' | 'chat' | 'scheduler' | 'llm' | 'multimodal' | 'rag' | 'tool' | 'loop' | 'real-llm' | 'multi-agent' | 'memory' | 'reflection' | 'approval'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -965,6 +977,44 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M9 14l2 2 4-4" />
         </svg>
       );
+    case 'multi-agent':
+      // v2.20.0 (Cycle 38 G38-01) 新增：多 Agent 协作（三个节点网络）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <circle cx="12" cy="5" r="2" />
+          <circle cx="5" cy="19" r="2" />
+          <circle cx="19" cy="19" r="2" />
+          <path d="M12 7v3M12 10l-7 9M12 10l7 9" />
+        </svg>
+      );
+    case 'memory':
+      // v2.20.0 (Cycle 38 G38-02) 新增：长期记忆（数据库+时钟）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <ellipse cx="12" cy="5" rx="9" ry="3" />
+          <path d="M3 5v6c0 1.66 4 3 9 3s9-1.34 9-3V5" />
+          <path d="M3 11v6c0 1.66 4 3 9 3s9-1.34 9-3v-6" />
+          <circle cx="17" cy="18" r="2.5" />
+          <path d="M17 16.5v1.5l1 1" />
+        </svg>
+      );
+    case 'reflection':
+      // v2.20.0 (Cycle 38 G38-03) 新增：反思与自我修正（镜像+箭头）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1" />
+          <circle cx="12" cy="12" r="4" />
+          <path d="M10 10h4M10 14h4" />
+        </svg>
+      );
+    case 'approval':
+      // v2.20.0 (Cycle 38 G38-04) 新增：人机协作审批（盾牌+勾选）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M12 2l8 4v6c0 5-3.5 9.5-8 10-4.5-.5-8-5-8-10V6l8-4z" />
+          <path d="M9 12l2 2 4-4" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -1158,6 +1208,14 @@ export default function BrandHeader({
   onOpenAgentLoop,
   /** v2.19.0 (Cycle 37 G37-04) 新增：真实 LLM Provider 配置 */
   onOpenRealLLMProvider,
+  /** v2.20.0 (Cycle 38 G38-01) 新增：多 Agent 协作 */
+  onOpenMultiAgentCrew,
+  /** v2.20.0 (Cycle 38 G38-02) 新增：长期记忆管理 */
+  onOpenLongTermMemory,
+  /** v2.20.0 (Cycle 38 G38-03) 新增：反思与自我修正 */
+  onOpenReflection,
+  /** v2.20.0 (Cycle 38 G38-04) 新增：人机协作审批 */
+  onOpenHumanApproval,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2807,6 +2865,58 @@ export default function BrandHeader({
                 >
                   <Icon name="real-llm" className="w-4 h-4 text-sky-500" />
                   <span>☁️ 真实 LLM</span>
+                </button>
+              )}
+
+              {/* v2.20.0 (Cycle 38 G38-01) 新增：多 Agent 协作（菜单项） */}
+              {onOpenMultiAgentCrew && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMultiAgentCrew)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-indigo-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-multi-agent-crew"
+                >
+                  <Icon name="multi-agent" className="w-4 h-4 text-indigo-500" />
+                  <span>👥 多 Agent 协作</span>
+                </button>
+              )}
+
+              {/* v2.20.0 (Cycle 38 G38-02) 新增：长期记忆管理（菜单项） */}
+              {onOpenLongTermMemory && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenLongTermMemory)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-cyan-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-long-term-memory"
+                >
+                  <Icon name="memory" className="w-4 h-4 text-cyan-500" />
+                  <span>🧠 长期记忆</span>
+                </button>
+              )}
+
+              {/* v2.20.0 (Cycle 38 G38-03) 新增：反思与自我修正（菜单项） */}
+              {onOpenReflection && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenReflection)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-fuchsia-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-reflection"
+                >
+                  <Icon name="reflection" className="w-4 h-4 text-fuchsia-500" />
+                  <span>🔁 反思迭代</span>
+                </button>
+              )}
+
+              {/* v2.20.0 (Cycle 38 G38-04) 新增：人机协作审批（菜单项） */}
+              {onOpenHumanApproval && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenHumanApproval)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-rose-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-human-approval"
+                >
+                  <Icon name="approval" className="w-4 h-4 text-rose-500" />
+                  <span>✅ 审批中心</span>
                 </button>
               )}
 

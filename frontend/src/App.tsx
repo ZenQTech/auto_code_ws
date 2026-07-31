@@ -366,6 +366,14 @@ import ToolMarketplacePanel from './components/ToolMarketplacePanel';
 import AgentLoopPanel from './components/AgentLoopPanel';
 /** v6.108.0 (Cycle 37 G37-04) 新增：真实 LLM Provider 面板 */
 import RealLLMProviderPanel from './components/RealLLMProviderPanel';
+/** v6.110.0 (Cycle 38 G38-01) 新增：多 Agent 协作面板 */
+import MultiAgentCrewPanel from './components/MultiAgentCrewPanel';
+/** v6.110.0 (Cycle 38 G38-02) 新增：长期记忆管理面板 */
+import LongTermMemoryPanel from './components/LongTermMemoryPanel';
+/** v6.110.0 (Cycle 38 G38-03) 新增：反思与自我修正面板 */
+import ReflectionPanel from './components/ReflectionPanel';
+/** v6.110.0 (Cycle 38 G38-04) 新增：人机协作审批面板 */
+import HumanApprovalPanel from './components/HumanApprovalPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1975,6 +1983,46 @@ export default function App() {
   }, []);
 
   /**
+   * v6.110.0 (Cycle 38 G38-01) 新增：多 Agent 协作面板
+   * 作用：控制 MultiAgentCrewPanel 弹窗显隐
+   *       Manager-Worker 模式 + 任务分解 + 能力匹配 + 结果融合
+   */
+  const [multiAgentCrewOpen, setMultiAgentCrewOpen] = useState(false);
+  const handleOpenMultiAgentCrew = useCallback(() => {
+    setMultiAgentCrewOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.110.0 (Cycle 38 G38-02) 新增：长期记忆管理面板
+   * 作用：控制 LongTermMemoryPanel 弹窗显隐
+   *       核心/回忆/归档三层存储 + 上下文构建 + 衰减维护
+   */
+  const [longTermMemoryOpen, setLongTermMemoryOpen] = useState(false);
+  const handleOpenLongTermMemory = useCallback(() => {
+    setLongTermMemoryOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.110.0 (Cycle 38 G38-03) 新增：反思与自我修正面板
+   * 作用：控制 ReflectionPanel 弹窗显隐
+   *       Reflexion 反思引擎 + 策略调整 + 迭代终止
+   */
+  const [reflectionOpen, setReflectionOpen] = useState(false);
+  const handleOpenReflection = useCallback(() => {
+    setReflectionOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.110.0 (Cycle 38 G38-04) 新增：人机协作审批面板
+   * 作用：控制 HumanApprovalPanel 弹窗显隐
+   *       风险分级 + 审批队列 + 审计日志
+   */
+  const [humanApprovalOpen, setHumanApprovalOpen] = useState(false);
+  const handleOpenHumanApproval = useCallback(() => {
+    setHumanApprovalOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -3052,6 +3100,10 @@ export default function App() {
           onOpenToolMarketplace={handleOpenToolMarketplace}
           onOpenAgentLoop={handleOpenAgentLoop}
           onOpenRealLLMProvider={handleOpenRealLLMProvider}
+          onOpenMultiAgentCrew={handleOpenMultiAgentCrew}
+          onOpenLongTermMemory={handleOpenLongTermMemory}
+          onOpenReflection={handleOpenReflection}
+          onOpenHumanApproval={handleOpenHumanApproval}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -4093,6 +4145,42 @@ export default function App() {
       {realLLMProviderOpen && (
         <ErrorBoundary level="panel" name="RealLLMProvider">
           <RealLLMProviderPanel onClose={() => setRealLLMProviderOpen(false)} />
+        </ErrorBoundary>
+      )}
+
+      {/* v6.110.0 (Cycle 38 G38-01) 新增：多 Agent 协作面板
+       *  Manager-Worker 模式 + 任务分解 + 能力匹配 + 结果融合
+       *  对标 AutoGen GroupChat / LangGraph Supervisor / CrewAI */}
+      {multiAgentCrewOpen && (
+        <ErrorBoundary level="panel" name="MultiAgentCrew">
+          <MultiAgentCrewPanel onClose={() => setMultiAgentCrewOpen(false)} />
+        </ErrorBoundary>
+      )}
+
+      {/* v6.110.0 (Cycle 38 G38-02) 新增：长期记忆管理面板
+       *  核心/回忆/归档三层存储 + 上下文构建 + 衰减维护
+       *  对标 MemGPT / Letta */}
+      {longTermMemoryOpen && (
+        <ErrorBoundary level="panel" name="LongTermMemory">
+          <LongTermMemoryPanel onClose={() => setLongTermMemoryOpen(false)} />
+        </ErrorBoundary>
+      )}
+
+      {/* v6.110.0 (Cycle 38 G38-03) 新增：反思与自我修正面板
+       *  Reflexion 反思引擎 + 策略调整 + 迭代终止
+       *  对标 Reflexion / Self-Refine / CRITIC */}
+      {reflectionOpen && (
+        <ErrorBoundary level="panel" name="Reflection">
+          <ReflectionPanel onClose={() => setReflectionOpen(false)} />
+        </ErrorBoundary>
+      )}
+
+      {/* v6.110.0 (Cycle 38 G38-04) 新增：人机协作审批面板
+       *  风险分级 + 审批队列 + 审计日志
+       *  对标 LangChain Human-in-the-Loop / Microsoft Guidance */}
+      {humanApprovalOpen && (
+        <ErrorBoundary level="panel" name="HumanApproval">
+          <HumanApprovalPanel onClose={() => setHumanApprovalOpen(false)} />
         </ErrorBoundary>
       )}
 
