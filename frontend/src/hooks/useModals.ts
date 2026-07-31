@@ -71,7 +71,8 @@ export type PanelKey =
   | 'mcpRegistry'
   | 'mcpAdvanced'
   | 'mcpIntegrated'
-  | 'mcpE2E';
+  | 'mcpE2E'
+  | 'mcpMultimodal';
 
 /** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
@@ -110,6 +111,7 @@ const INITIAL_STATE: PanelsState = {
   mcpAdvanced: DEFAULT_OPEN.mcpAdvanced ?? false,
   mcpIntegrated: DEFAULT_OPEN.mcpIntegrated ?? false,
   mcpE2E: DEFAULT_OPEN.mcpE2E ?? false,
+  mcpMultimodal: DEFAULT_OPEN.mcpMultimodal ?? false,
 };
 
 /** Action 类型 */
@@ -203,6 +205,8 @@ export interface UseModalsResult {
   mcpIntegrated: PanelController;
   /** v3.4.0 (Cycle 43 G43-04) 新增：MCP 端到端测试面板 */
   mcpE2E: PanelController;
+  /** v3.5.0 (Cycle 44 G44-04) 新增：MCP 多模态智能体面板 */
+  mcpMultimodal: PanelController;
   /** v3.0.0 新增：批量关闭所有 panel */
   closeAll: () => void;
   /** v3.0.0 新增：批量打开多个 panel */
@@ -261,6 +265,7 @@ export function useModals(): UseModalsResult {
       mcpAdvanced: makeController('mcpAdvanced'),  // v3.2.0 (Cycle 41) 新增
       mcpIntegrated: makeController('mcpIntegrated'),  // v3.3.0 (Cycle 42 G42-04) 新增
       mcpE2E: makeController('mcpE2E'),  // v3.4.0 (Cycle 43 G43-04) 新增
+      mcpMultimodal: makeController('mcpMultimodal'),  // v3.5.0 (Cycle 44 G44-04) 新增
       closeAll: () => dispatch({ type: 'CLOSE_ALL' }),
       openMulti: (panels) => dispatch({ type: 'OPEN_MULTI', panels }),
     }),

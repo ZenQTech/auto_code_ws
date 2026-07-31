@@ -220,6 +220,8 @@ import McpAdvancedPanel from './components/McpAdvancedPanel';
 import { McpIntegratedPanel } from './components/McpIntegratedPanel';
 /** v6.117.0 Cycle 43 G43-04 新增：MCP 端到端测试面板 */
 import { McpE2EPanel } from './components/McpE2EPanel';
+/** v6.118.0 Cycle 44 G44-04 新增：MCP 多模态智能体面板 */
+import { McpMultimodalPanel } from './components/McpMultimodalPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -606,6 +608,7 @@ export default function App() {
     mcpAdvanced: mcpAdvancedModal,  // v2.4.0 (Cycle 41) 新增
     mcpIntegrated: mcpIntegratedModal,  // v2.5.0 (Cycle 42 G42-04) 新增
     mcpE2E: mcpE2EModal,  // v2.6.0 (Cycle 43 G43-04) 新增
+    mcpMultimodal: mcpMultimodalModal,  // v2.7.0 (Cycle 44 G44-04) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3148,6 +3151,7 @@ export default function App() {
           onOpenMcpAdvanced={() => mcpAdvancedModal.onOpen()}
           onOpenMcpIntegrated={() => mcpIntegratedModal.onOpen()}
           onOpenMcpE2E={() => mcpE2EModal.onOpen()}
+          onOpenMcpMultimodal={() => mcpMultimodalModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -3332,6 +3336,15 @@ export default function App() {
        * 依赖：mcpE2ETestSuite + volcengineCodingPlanProvider */}
       {mcpE2EModal.open && (
         <McpE2EPanel onClose={mcpE2EModal.onClose} />
+      )}
+
+      {/* v6.118.0 Cycle 44 G44-04 新增：MCP 多模态智能体面板弹窗
+       * 触发：BrandHeader 菜单"MCP 多模态智能体"项
+       * 关闭：McpMultimodalPanel 内部 onClose 回调
+       * 功能：图像/音频/文件多模态端到端处理
+       * 依赖：multimodalAgentLoop + mcpMultimodalToolBridge + mcpImageProcessor + mcpAudioProcessor */}
+      {mcpMultimodalModal.open && (
+        <McpMultimodalPanel onClose={mcpMultimodalModal.onClose} llmProviderName="mock" />
       )}
 
       {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗

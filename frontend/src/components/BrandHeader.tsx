@@ -177,6 +177,8 @@ export interface BrandHeaderProps {
   onOpenMcpIntegrated?: () => void;
   /** v2.23.0 (Cycle 43 G43-04) 新增：打开 MCP E2E 测试面板回调（可选） */
   onOpenMcpE2E?: () => void;
+  /** v2.24.0 (Cycle 44 G44-04) 新增：打开 MCP 多模态智能体面板回调（可选） */
+  onOpenMcpMultimodal?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1099,6 +1101,8 @@ export default function BrandHeader({
   onOpenMcpIntegrated,
   /** v2.23.0 (Cycle 43 G43-04) 新增 */
   onOpenMcpE2E,
+  /** v2.24.0 (Cycle 44 G44-04) 新增 */
+  onOpenMcpMultimodal,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -1980,6 +1984,24 @@ export default function BrandHeader({
                 >
                   <Icon name="chart" className="w-4 h-4 text-teal-500" />
                   <span>🧪 MCP E2E 测试</span>
+                </button>
+              )}
+
+              {/* v2.24.0 (Cycle 44 G44-04) 新增：MCP 多模态智能体（菜单项）
+               *  行为：点击调 onOpenMcpMultimodal() 弹出 McpMultimodalPanel 多模态智能体面板
+               *       支持图像/音频/文件多模态输入 → 智能路由 → MCP 工具 → 多模态结果
+               *       4 Tab：多模态对话 / 图像工具 / 音频工具 / 历史
+               *  图标：multimodal（多模态网格），表达多模态融合 */}
+              {onOpenMcpMultimodal && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpMultimodal)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-rose-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="multimodal" className="w-4 h-4 text-pink-500" />
+                  <span>🎨 MCP 多模态智能体</span>
                 </button>
               )}
 

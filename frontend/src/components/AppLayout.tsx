@@ -31,6 +31,7 @@
  *#   - 2026-07-31 | v7.00.0 | Cycle 37 G37-01/02/03/04 新增 onOpenRAG/onOpenToolMarketplace/onOpenAgentLoop/onOpenRealLLMProvider 透传
 #*#   - 2026-07-31 | v7.01.0 | Cycle 38 G38-01/02/03/04 新增 onOpenMultiAgentCrew/onOpenLongTermMemory/onOpenReflection/onOpenHumanApproval 透传
  *   - 2026-07-31 | v6.115.0 | Cycle 42 G42-04 新增 onOpenMcpIntegrated 透传（MCP 集成智能体面板）
+ *   - 2026-08-01 | v6.118.0 | Cycle 44 G44-04 新增 onOpenMcpMultimodal 透传（MCP 多模态智能体面板）
  * ============================================================
  */
 
@@ -152,6 +153,8 @@ export interface AppLayoutProps {
   onOpenMcpIntegrated: () => void;
   /** v6.117.0 (Cycle 43 G43-04) 新增：MCP E2E 测试面板回调（端到端测试套件） */
   onOpenMcpE2E: () => void;
+  /** v6.118.0 (Cycle 44 G44-04) 新增：MCP 多模态智能体面板回调 */
+  onOpenMcpMultimodal: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板回调 */
   onOpenComposer: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板回调 */
@@ -407,6 +410,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenMcpAdvanced,  // v6.114.0 (Cycle 41) 透传 BrandHeader
   onOpenMcpIntegrated,  // v6.115.0 (Cycle 42 G42-04) 透传 BrandHeader
   onOpenMcpE2E,  // v6.117.0 (Cycle 43 G43-04) 透传 BrandHeader
+  onOpenMcpMultimodal,  // v6.118.0 (Cycle 44 G44-04) 透传 BrandHeader
   onOpenComposer,  // v6.36.0 (Cycle 16 P0-1) 透传 BrandHeader
   onOpenBackgroundTasks,  // v6.41.0 (Cycle 19 P0-1) 透传 BrandHeader
   onOpenBestOfN,  // v6.42.0 (Cycle 19 P0-2) 透传 BrandHeader
@@ -670,6 +674,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenMcpAdvanced={onOpenMcpAdvanced}
         onOpenMcpIntegrated={onOpenMcpIntegrated}
         onOpenMcpE2E={onOpenMcpE2E}
+        onOpenMcpMultimodal={onOpenMcpMultimodal}
         onOpenComposer={onOpenComposer}
         onOpenBackgroundTasks={onOpenBackgroundTasks}
         onOpenBestOfN={onOpenBestOfN}
