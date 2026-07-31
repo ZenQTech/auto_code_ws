@@ -105,7 +105,7 @@ export interface SerializedFAISSIndex {
 export type FAISSVectorStoreEvent =
   | { type: 'vector-added'; id: string; index: number; at: number }
   | { type: 'batch-added'; count: number; totalTimeMs: number; at: number }
-  | { type: 'index-rebuilt'; type: IndexType; fromCount: number; at: number }
+  | { type: 'index-rebuilt'; fromCount: number; at: number }
   | { type: 'search-completed'; topK: number; hits: number; timeMs: number; at: number }
   | { type: 'index-cleared'; at: number };
 
@@ -804,7 +804,6 @@ export class FAISSWasmVectorStore {
     this.buildIndexForCurrent();
     this.emit({
       type: 'index-rebuilt',
-      type: this.activeIndexType,
       fromCount,
       at: Date.now(),
     });

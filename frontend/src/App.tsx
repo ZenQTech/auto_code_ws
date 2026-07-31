@@ -236,6 +236,8 @@ import { McpMultimodalPanel } from './components/McpMultimodalPanel';
 import { McpRagPanel } from './components/McpRagPanel';
 /** v6.120.0 Cycle 46 G46-主应用集成 新增：MCP × RAG × 真实 LLM 端到端面板 */
 import { McpRagRealLLMPanel } from './components/McpRagRealLLMPanel';
+/** v6.121.0 Cycle 47 G47-主应用集成 新增：MCP × RAG 性能优化面板 (FAISS + 缓存 + 监控 + 基准) */
+import { McpRagPerformancePanel } from './components/McpRagPerformancePanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -625,6 +627,7 @@ export default function App() {
     mcpMultimodal: mcpMultimodalModal,  // v2.7.0 (Cycle 44 G44-04) 新增
     mcpRag: mcpRagModal,  // v2.8.0 (Cycle 45 G45-04) 新增
     mcpRagRealLLM: mcpRagRealLLMModal,  // v2.9.0 (Cycle 46) 新增
+    mcpRagPerformance: mcpRagPerformanceModal,  // v2.10.0 (Cycle 47) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3170,6 +3173,7 @@ export default function App() {
           onOpenMcpMultimodal={() => mcpMultimodalModal.onOpen()}
           onOpenMcpRag={() => mcpRagModal.onOpen()}
           onOpenMcpRagRealLLM={() => mcpRagRealLLMModal.onOpen()}
+          onOpenMcpRagPerformance={() => mcpRagPerformanceModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -3381,6 +3385,15 @@ export default function App() {
        * 依赖：mcpRagRealLLM + ragMonitor + ragDebugger + ragE2ETestSuite */}
       {mcpRagRealLLMModal.open && (
         <McpRagRealLLMPanel onClose={mcpRagRealLLMModal.onClose} llmProviderName="mock" />
+      )}
+
+      {/* v6.121.0 Cycle 47 G47-主应用集成 新增：MCP × RAG 性能优化面板弹窗
+       * 触发：BrandHeader 菜单"⚡ MCP × RAG 性能优化"项
+       * 关闭：McpRagPerformancePanel 内部 onClose 回调
+       * 功能：5 Tab（向量检索 / 智能缓存 / 性能监控 / 性能基准 / 系统设置）
+       * 依赖：FAISS-WASM + RAG 智能缓存 + 性能 Dashboard + 性能基准套件 */}
+      {mcpRagPerformanceModal.open && (
+        <McpRagPerformancePanel onClose={mcpRagPerformanceModal.onClose} />
       )}
 
       {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗

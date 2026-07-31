@@ -183,6 +183,8 @@ export interface BrandHeaderProps {
   onOpenMcpRag?: () => void;
   /** v2.26.0 (Cycle 46) 新增：打开 MCP × RAG × 真实 LLM 端到端面板回调（可选） */
   onOpenMcpRagRealLLM?: () => void;
+  /** v2.27.0 (Cycle 47) 新增：打开 MCP × RAG 性能优化面板回调（可选） */
+  onOpenMcpRagPerformance?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1111,6 +1113,8 @@ export default function BrandHeader({
   onOpenMcpRag,
   /** v2.26.0 (Cycle 46) 新增 */
   onOpenMcpRagRealLLM,
+  /** v2.27.0 (Cycle 47) 新增 */
+  onOpenMcpRagPerformance,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2046,6 +2050,23 @@ export default function BrandHeader({
                 >
                   <Icon name="bot" className="w-4 h-4 text-violet-500" />
                   <span>🤖 MCP × RAG × 真实 LLM</span>
+                </button>
+              )}
+
+              {/* v2.27.0 (Cycle 47) 新增：MCP × RAG 性能优化（菜单项）
+               *  行为：点击调 onOpenMcpRagPerformance() 弹出 McpRagPerformancePanel 性能优化面板
+               *       5 Tab：向量检索 (FAISS) / 智能缓存 / 性能监控 / 性能基准 / 系统设置
+               *  图标：bolt，表达高性能闪电 */}
+              {onOpenMcpRagPerformance && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpRagPerformance)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-amber-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="zap" className="w-4 h-4 text-amber-500" />
+                  <span>⚡ MCP × RAG 性能优化</span>
                 </button>
               )}
 
