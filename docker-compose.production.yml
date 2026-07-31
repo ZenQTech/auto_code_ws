@@ -1,0 +1,222 @@
+# ============================================================
+# Docker Compose 生产编排 - MCP × Multimodal RAG (Cycle 50 G50-04)
+# ============================================================
+# 核心作用：编排 frontend (Nginx) + backend (FastAPI) + postgres
+#           支持生产部署 + SSL 反向代理 + 监控
+# 运行流程：
+#   1. 启动 postgres 数据库 (带健康检查)
+#   2. 启动 backend 容器 (依赖 postgres)
+#   3. 启动 frontend 容器 (反向代理 backend)
+#   4. 通过 .env.production 注入敏感配置
+# 输入参数：通过 .env.production 注入环境变量
+# 输出结果：完整的 MCP × Multimodal RAG 平台
+# 修改记录：
+#   - 2026-08-01 | v1.0.0 | Cycle 50 G50-04 初次创建
+# ============================================================
+version: "3.9"
+
+services:
+  # ============================================================
+  # 前端 (Nginx 1.27 + Vite SPA)
+  # ============================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:8000}
+        VITE_VOLCENGINE_BASE_URL: ${VITE_VOLCENGINE_BASE_URL:-https://ark.cn-beijing.volces.com/api/v3}
+        VITE_VOLCENGINE_MODEL: ${VITE_VOLCENGINE_MODEL:-doubao-embedding-vision}
+        VITE_ENABLE_METRICS: ${VITE_ENABLE_METRICS:-true}
+        VITE_ENABLE_E2E_TESTS: ${VITE_ENABLE_E2E_TESTS:-false}
+    image: mcp-multimodal-rag-frontend:1.0.0
+    container_name: mcp_frontend
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    networks:
+      - mcp_net
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 512M
+        reservations:
+          cpus: "0.1"
+          memory: 64M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================================
+  # 后端 (FastAPI)
+  # ============================================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mcp-multimodal-rag-backend:1.0.0
+    container_name: mcp_backend
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      # 数据库
+      DATABASE_URL: "postgresql+asyncpg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/claude_code"
+      # Claude Code API
+      ANTHROPIC_AUTH_TOKEN: "${ANTHROPIC_AUTH_TOKEN:-}"
+      ANTHROPIC_BASE_URL: "${ANTHROPIC_BASE_URL:-https://ark.cn-beijing.volces.com/api/coding}"
+      ANTHROPIC_MODEL: "${ANTHROPIC_MODEL:-deepseek-v4-flash}"
+      # Volcengine 多模态 (供 E2E 测试调用)
+      VOLCENGINE_API_KEY: "${VOLCENGINE_API_KEY:-}"
+      VOLCENGINE_BASE_URL: "${VOLCENGINE_BASE_URL:-https://ark.cn-beijing.volces.com/api/v3}"
+      # 应用配置
+      ENABLE_METRICS: "${ENABLE_METRICS:-true}"
+      ENABLE_E2E_TESTS: "${ENABLE_E2E_TESTS:-false}"
+      API_TIMEOUT_MS: "${API_TIMEOUT_MS:-3000000}"
+      PYTHONUNBUFFERED: "1"
+    volumes:
+      - ./config:/app/config:ro
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - ./workspace:/app/workspace
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - mcp_net
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 4G
+        reservations:
+          cpus: "0.5"
+          memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================================
+  # PostgreSQL 数据库
+  # ============================================================
+  postgres:
+    image: postgres:15-alpine
+    container_name: mcp_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: claude_code
+      LANG: en_US.UTF-8
+    ports:
+      - "127.0.0.1:5432:5432"  # 仅本地访问
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./deployment/postgres-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - mcp_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d claude_code"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 2G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # ============================================================
+  # Prometheus 监控 (可选)
+  # ============================================================
+  prometheus:
+    image: prom/prometheus:v2.50.0
+    container_name: mcp_prometheus
+    restart: unless-stopped
+    profiles: ["monitoring"]  # 默认不启动, 需 --profile monitoring
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./deployment/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - mcp_net
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
+
+  # ============================================================
+  # Grafana 可视化 (可选)
+  # ============================================================
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: mcp_grafana
+    restart: unless-stopped
+    profiles: ["monitoring"]
+    ports:
+      - "3000:3000"
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./deployment/grafana-datasources.yml:/etc/grafana/provisioning/datasources/datasources.yml:ro
+    depends_on:
+      - prometheus
+    networks:
+      - mcp_net
+
+# ============================================================
+# 卷定义
+# ============================================================
+volumes:
+  postgres_data:
+    name: mcp_postgres_data
+  prometheus_data:
+    name: mcp_prometheus_data
+  grafana_data:
+    name: mcp_grafana_data
+
+# ============================================================
+# 网络定义
+# ============================================================
+networks:
+  mcp_net:
+    name: mcp_net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
