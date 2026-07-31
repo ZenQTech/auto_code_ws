@@ -1,0 +1,15 @@
+# ============================================================
+# Grafana 数据源 - MCP × Multimodal RAG (Cycle 50 G50-04)
+# ============================================================
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: 15s
+      httpMethod: POST

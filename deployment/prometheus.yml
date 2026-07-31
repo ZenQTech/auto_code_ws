@@ -1,0 +1,65 @@
+# ============================================================
+# Prometheus 配置 - MCP × Multimodal RAG (Cycle 50 G50-04)
+# ============================================================
+# 核心作用：抓取 backend / frontend / postgres 指标
+# 运行流程：
+#   1. backend 暴露 /metrics (FastAPI + prometheus_client)
+#   2. frontend 通过 Nginx 暴露 /metrics
+#   3. postgres 通过 pg_exporter 暴露 (未启用, 预留)
+# 输入参数：scrape_interval / scrape_timeout
+# 输出结果：Prometheus 抓取目标
+# 修改记录：
+#   - 2026-08-01 | v1.0.0 | Cycle 50 G50-04 初次创建
+# ============================================================
+global:
+  scrape_interval: 15s
+  scrape_timeout: 10s
+  evaluation_interval: 15s
+  external_labels:
+    cluster: mcp-multimodal-rag
+    env: production
+
+scrape_configs:
+  # ============================================================
+  # Backend (FastAPI) 指标
+  # ============================================================
+  - job_name: mcp-backend
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - backend:8000
+        labels:
+          service: backend
+          component: fastapi
+
+  # ============================================================
+  # Frontend (Nginx) 指标
+  # ============================================================
+  - job_name: mcp-frontend
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - frontend:8080
+        labels:
+          service: frontend
+          component: nginx
+
+  # ============================================================
+  # PostgreSQL (通过 pg_exporter, 可选)
+  # ============================================================
+  # - job_name: mcp-postgres
+  #   metrics_path: /metrics
+  #   static_configs:
+  #     - targets:
+  #         - pg-exporter:9187
+  #       labels:
+  #         service: postgres
+  #         component: database
+
+  # ============================================================
+  # Prometheus 自身指标
+  # ============================================================
+  - job_name: prometheus
+    static_configs:
+      - targets:
+          - localhost:9090
