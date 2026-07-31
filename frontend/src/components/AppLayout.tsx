@@ -246,6 +246,14 @@ export interface AppLayoutProps {
   onOpenOfflineFirst?: () => void;
   /** v6.97.0 (Cycle 34 G34-03) 新增：设备集群管理 */
   onOpenDeviceCluster?: () => void;
+  /** v6.98.0 (Cycle 35 G35-01) 新增：工作流编排 */
+  onOpenWorkflowOrchestrator?: () => void;
+  /** v6.98.0 (Cycle 35 G35-02) 新增：智能体通信 */
+  onOpenAgentCommunication?: () => void;
+  /** v6.98.0 (Cycle 35 G35-03) 新增：任务检查点 */
+  onOpenTaskCheckpoint?: () => void;
+  /** v6.98.0 (Cycle 35 G35-04) 新增：智能体调度 */
+  onOpenAgentScheduler?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -415,6 +423,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenEdgeModelRouter,  // v6.97.0 (Cycle 34 G34-01) 透传 BrandHeader
   onOpenOfflineFirst,  // v6.97.0 (Cycle 34 G34-02) 透传 BrandHeader
   onOpenDeviceCluster,  // v6.97.0 (Cycle 34 G34-03) 透传 BrandHeader
+  onOpenWorkflowOrchestrator,  // v6.98.0 (Cycle 35 G35-01) 透传 BrandHeader
+  onOpenAgentCommunication,  // v6.98.0 (Cycle 35 G35-02) 透传 BrandHeader
+  onOpenTaskCheckpoint,  // v6.98.0 (Cycle 35 G35-03) 透传 BrandHeader
+  onOpenAgentScheduler,  // v6.98.0 (Cycle 35 G35-04) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -659,6 +671,10 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenEdgeModelRouter={onOpenEdgeModelRouter}
         onOpenOfflineFirst={onOpenOfflineFirst}
         onOpenDeviceCluster={onOpenDeviceCluster}
+        onOpenWorkflowOrchestrator={onOpenWorkflowOrchestrator}
+        onOpenAgentCommunication={onOpenAgentCommunication}
+        onOpenTaskCheckpoint={onOpenTaskCheckpoint}
+        onOpenAgentScheduler={onOpenAgentScheduler}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

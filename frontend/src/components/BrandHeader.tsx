@@ -260,6 +260,14 @@ export interface BrandHeaderProps {
   onOpenOfflineFirst?: () => void;
   /** v6.97.0 (Cycle 34 G34-03) 新增：设备集群管理 */
   onOpenDeviceCluster?: () => void;
+  /** v6.98.0 (Cycle 35 G35-01) 新增：工作流编排 */
+  onOpenWorkflowOrchestrator?: () => void;
+  /** v6.98.0 (Cycle 35 G35-02) 新增：智能体通信 */
+  onOpenAgentCommunication?: () => void;
+  /** v6.98.0 (Cycle 35 G35-03) 新增：任务检查点 */
+  onOpenTaskCheckpoint?: () => void;
+  /** v6.98.0 (Cycle 35 G35-04) 新增：智能体调度 */
+  onOpenAgentScheduler?: () => void;
 }
 
 /**
@@ -269,7 +277,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices' | 'chat' | 'scheduler'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -870,6 +878,21 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M11 21h-4" />
         </svg>
       );
+    case 'chat':
+      // v6.99.0 (Cycle 35 G35-02) 新增：智能体通信
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+        </svg>
+      );
+    case 'scheduler':
+      // v6.99.0 (Cycle 35 G35-04) 新增：智能体调度
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="3" y="4" width="18" height="18" rx="2" />
+          <path d="M16 2v4M8 2v4M3 10h18" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -1041,6 +1064,14 @@ export default function BrandHeader({
   onOpenOfflineFirst,
   /** v6.97.0 (Cycle 34 G34-03) 新增：设备集群管理 */
   onOpenDeviceCluster,
+  /** v6.98.0 (Cycle 35 G35-01) 新增：工作流编排 */
+  onOpenWorkflowOrchestrator,
+  /** v6.98.0 (Cycle 35 G35-02) 新增：智能体通信 */
+  onOpenAgentCommunication,
+  /** v6.98.0 (Cycle 35 G35-03) 新增：任务检查点 */
+  onOpenTaskCheckpoint,
+  /** v6.98.0 (Cycle 35 G35-04) 新增：智能体调度 */
+  onOpenAgentScheduler,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2547,6 +2578,58 @@ export default function BrandHeader({
                 >
                   <Icon name="devices" className="w-4 h-4 text-indigo-500" />
                   <span>📱 设备集群</span>
+                </button>
+              )}
+
+              {/* v2.18.0 (Cycle 35 G35-01) 新增：工作流编排（菜单项） */}
+              {onOpenWorkflowOrchestrator && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenWorkflowOrchestrator)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-blue-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-workflow-orchestrator"
+                >
+                  <Icon name="workflow" className="w-4 h-4 text-blue-500" />
+                  <span>🔀 工作流编排</span>
+                </button>
+              )}
+
+              {/* v2.18.0 (Cycle 35 G35-02) 新增：智能体通信（菜单项） */}
+              {onOpenAgentCommunication && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenAgentCommunication)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-purple-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-agent-communication"
+                >
+                  <Icon name="chat" className="w-4 h-4 text-purple-500" />
+                  <span>💬 智能体通信</span>
+                </button>
+              )}
+
+              {/* v2.18.0 (Cycle 35 G35-03) 新增：任务检查点（菜单项） */}
+              {onOpenTaskCheckpoint && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenTaskCheckpoint)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-green-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-task-checkpoint"
+                >
+                  <Icon name="checkpoint" className="w-4 h-4 text-green-500" />
+                  <span>📸 任务检查点</span>
+                </button>
+              )}
+
+              {/* v2.18.0 (Cycle 35 G35-04) 新增：智能体调度（菜单项） */}
+              {onOpenAgentScheduler && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenAgentScheduler)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-rose-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-agent-scheduler"
+                >
+                  <Icon name="scheduler" className="w-4 h-4 text-rose-500" />
+                  <span>⚡ 智能体调度</span>
                 </button>
               )}
 

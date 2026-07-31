@@ -344,6 +344,14 @@ import { EdgeModelRouterPanel } from './components/EdgeModelRouterPanel';
 import { OfflineFirstPanel } from './components/OfflineFirstPanel';
 /** v6.97.0 (Cycle 34 G34-03) 新增：设备集群面板 */
 import { DeviceClusterPanel } from './components/DeviceClusterPanel';
+/** v6.98.0 (Cycle 35 G35-01) 新增：工作流编排面板 */
+import { WorkflowOrchestratorPanel } from './components/WorkflowOrchestratorPanel';
+/** v6.98.0 (Cycle 35 G35-02) 新增：智能体通信面板 */
+import { AgentCommunicationPanel } from './components/AgentCommunicationPanel';
+/** v6.98.0 (Cycle 35 G35-03) 新增：任务检查点面板 */
+import { TaskCheckpointPanel } from './components/TaskCheckpointPanel';
+/** v6.98.0 (Cycle 35 G35-04) 新增：智能体调度面板 */
+import { AgentSchedulerPanel } from './components/AgentSchedulerPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1843,6 +1851,46 @@ export default function App() {
   }, []);
 
   /**
+   * v6.98.0 (Cycle 35 G35-01) 新增：工作流编排面板
+   * 作用：控制 WorkflowOrchestratorPanel 弹窗显隐
+   *       DAG 工作流定义 + 节点执行 + 实例管理 + 执行图可视化
+   */
+  const [workflowOrchestratorOpen, setWorkflowOrchestratorOpen] = useState(false);
+  const handleOpenWorkflowOrchestrator = useCallback(() => {
+    setWorkflowOrchestratorOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.98.0 (Cycle 35 G35-02) 新增：智能体通信面板
+   * 作用：控制 AgentCommunicationPanel 弹窗显隐
+   *       A2A 协议 + P2P/Pub-Sub/Request-Response 消息 + 订阅管理
+   */
+  const [agentCommunicationOpen, setAgentCommunicationOpen] = useState(false);
+  const handleOpenAgentCommunication = useCallback(() => {
+    setAgentCommunicationOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.98.0 (Cycle 35 G35-03) 新增：任务检查点面板
+   * 作用：控制 TaskCheckpointPanel 弹窗显隐
+   *       线程管理 + 完整/增量快照 + Time Travel + 分支标签
+   */
+  const [taskCheckpointOpen, setTaskCheckpointOpen] = useState(false);
+  const handleOpenTaskCheckpoint = useCallback(() => {
+    setTaskCheckpointOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.98.0 (Cycle 35 G35-04) 新增：智能体调度面板
+   * 作用：控制 AgentSchedulerPanel 弹窗显隐
+   *       WFQ/MLFQ/Priority 调度 + 资源池管理 + 抢占控制
+   */
+  const [agentSchedulerOpen, setAgentSchedulerOpen] = useState(false);
+  const handleOpenAgentScheduler = useCallback(() => {
+    setAgentSchedulerOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2909,6 +2957,10 @@ export default function App() {
           onOpenEdgeModelRouter={handleOpenEdgeModelRouter}
           onOpenOfflineFirst={handleOpenOfflineFirst}
           onOpenDeviceCluster={handleOpenDeviceCluster}
+          onOpenWorkflowOrchestrator={handleOpenWorkflowOrchestrator}
+          onOpenAgentCommunication={handleOpenAgentCommunication}
+          onOpenTaskCheckpoint={handleOpenTaskCheckpoint}
+          onOpenAgentScheduler={handleOpenAgentScheduler}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3844,6 +3896,46 @@ export default function App() {
         <DeviceClusterPanel
           isOpen={deviceClusterOpen}
           onClose={() => setDeviceClusterOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.98.0 (Cycle 35 G35-01) 新增：工作流编排面板
+       *  引擎由 WorkflowOrchestratorEngine 单例管理，DAG 工作流 + 节点执行 + 实例管理
+       *  对标 AutoGen / CrewAI / LangGraph 多智能体工作流 */}
+      <ErrorBoundary level="panel" name="WorkflowOrchestrator">
+        <WorkflowOrchestratorPanel
+          isOpen={workflowOrchestratorOpen}
+          onClose={() => setWorkflowOrchestratorOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.98.0 (Cycle 35 G35-02) 新增：智能体通信面板
+       *  引擎由 AgentCommunicationEngine 单例管理，A2A 协议 + Pub-Sub + Request-Response
+       *  对标 A2A Protocol / MCP Model Context Protocol */}
+      <ErrorBoundary level="panel" name="AgentCommunication">
+        <AgentCommunicationPanel
+          isOpen={agentCommunicationOpen}
+          onClose={() => setAgentCommunicationOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.98.0 (Cycle 35 G35-03) 新增：任务检查点面板
+       *  引擎由 TaskCheckpointEngine 单例管理，完整/增量快照 + Time Travel + 分支
+       *  对标 Temporal / Event Sourcing / Git 风格版本管理 */}
+      <ErrorBoundary level="panel" name="TaskCheckpoint">
+        <TaskCheckpointPanel
+          isOpen={taskCheckpointOpen}
+          onClose={() => setTaskCheckpointOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.98.0 (Cycle 35 G35-04) 新增：智能体调度面板
+       *  引擎由 AgentSchedulerEngine 单例管理，WFQ/MLFQ/Priority 调度 + 资源池 + 抢占
+       *  对标 Kubernetes Scheduler / Airflow DAG 调度器 */}
+      <ErrorBoundary level="panel" name="AgentScheduler">
+        <AgentSchedulerPanel
+          isOpen={agentSchedulerOpen}
+          onClose={() => setAgentSchedulerOpen(false)}
         />
       </ErrorBoundary>
 
