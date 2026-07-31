@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * # MCP Types - Model Context Protocol 类型定义 (v1.0.0 Cycle 39 G39-01)
+ * # MCP Types - Model Context Protocol 类型定义 (v1.1.0 Cycle 40 G40-04)
  * # ============================================================
  * # 核心作用：定义 MCP 协议使用的所有 TypeScript 类型
  * #           JSON-RPC 2.0 消息 + MCP 能力模型
@@ -8,8 +8,13 @@
  * # ============================================================
  * # 修改记录：
  * #   - 2026-07-31 | v1.0.0 | Cycle 39 G39-01 初次创建
+ * #   - 2026-07-31 | v1.1.0 | Cycle 40 G40-04 transport 接受 McpTransport 实例
  * # ============================================================
  */
+
+// 注意：McpTransport 类型在 mcpTransport.ts 中定义
+// 为避免循环依赖，使用 type-only import
+import type { McpTransport } from './mcpTransport';
 
 // ============ JSON-RPC 2.0 消息类型 ============
 
@@ -260,8 +265,8 @@ export interface McpClientOptions {
   serverId: string;
   /** 显示名称 */
   serverName: string;
-  /** 传输配置 */
-  transport: TransportOptions;
+  /** 传输配置或已实例化的传输（用于测试） */
+  transport: TransportOptions | McpTransport;
   /** 客户端信息（可选） */
   clientInfo?: { name: string; version: string };
   /** 协议版本（默认 2024-11-05） */

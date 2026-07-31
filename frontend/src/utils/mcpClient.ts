@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * # MCP Client - Model Context Protocol 客户端 (v1.0.0 Cycle 39 G39-01)
+ * # MCP Client - Model Context Protocol 客户端 (v1.0.1 Cycle 40 G40-04)
  * # ============================================================
  * # 核心作用：实现 MCP 协议客户端核心功能
  * #           生命周期管理 + 请求响应管理 + 能力发现 + 通知订阅
@@ -9,6 +9,7 @@
  * # ============================================================
  * # 修改记录：
  * #   - 2026-07-31 | v1.0.0 | Cycle 39 G39-01 初次创建
+ * #   - 2026-07-31 | v1.0.1 | Cycle 40 G40-04 新增 isReady/isClosed/disconnect/on/onNotification
  * # ============================================================
  */
 
@@ -38,6 +39,7 @@ import {
   type ServerInfo,
   type Tool,
   type ToolCallResult,
+  type TransportOptions,
 } from './mcpTypes';
 import {
   McpClosedError,
@@ -258,6 +260,7 @@ export class McpClient {
   private resourceUpdatedHandlers: Set<(uri: string) => void> = new Set();
   private logMessageHandlers: Set<(level: LogLevel, logger?: string, data?: unknown) => void> = new Set();
   private progressHandlers: Set<(progress: number, total?: number, message?: string) => void> = new Set();
+  private notificationHandlers: Set<(msg: JsonRpcMessage) => void> = new Set();
 
   constructor(options: McpClientOptions) {
     this.options = {
@@ -278,7 +281,11 @@ export class McpClient {
 
   // ============ 传输层管理 ============
 
-  private createTransport(transportOptions: McpClientOptions['transport']): McpTransport {
+  private createTransport(transportOptions: TransportOptions | McpTransport): McpTransport {
+    // 已经是 McpTransport 实例（用于测试或动态注入）
+    if (this.isMcpTransport(transportOptions)) {
+      return transportOptions;
+    }
     if (transportOptions.type === 'stdio') {
       return new StdioMcpTransport(transportOptions);
     }
@@ -286,6 +293,26 @@ export class McpClient {
       return new SseMcpTransport(transportOptions);
     }
     throw new McpConnectionError(`Unknown transport type: ${(transportOptions as { type: string }).type}`);
+  }
+
+  /**
+   * 类型守卫：判断是否为 McpTransport 实例
+   * 通过 duck-typing 识别：存在 start/send/onMessage/onError/onClose/isOpen/close 等方法
+   */
+  private isMcpTransport(obj: unknown): obj is McpTransport {
+    if (typeof obj !== 'object' || obj === null) return false;
+    const t = obj as Record<string, unknown>;
+    return (
+      typeof t.start === 'function' &&
+      typeof t.send === 'function' &&
+      typeof t.onMessage === 'function' &&
+      typeof t.onError === 'function' &&
+      typeof t.onClose === 'function' &&
+      typeof t.isOpen === 'function' &&
+      typeof t.close === 'function' &&
+      typeof t.type === 'string' &&
+      (t.type === 'stdio' || t.type === 'sse')
+    );
   }
 
   private bindTransport(): void {
@@ -334,6 +361,15 @@ export class McpClient {
    * 处理通知消息
    */
   private handleNotification(method: string, params?: Record<string, unknown>): void {
+    // 通用通知订阅
+    for (const h of this.notificationHandlers) {
+      try {
+        h({ jsonrpc: '2.0', method, params } as JsonRpcMessage);
+      } catch {
+        /* ignore */
+      }
+    }
+
     switch (method) {
       case NOTIFICATION_TOOLS_LIST_CHANGED:
         for (const h of this.toolsListChangedHandlers) {
@@ -558,6 +594,68 @@ export class McpClient {
 
   getState(): McpClientState {
     return this._state;
+  }
+
+  /**
+   * 是否已就绪（与 getState() === 'ready' 等价）
+   */
+  isReady(): boolean {
+    return this._state === 'ready';
+  }
+
+  /**
+   * 是否已关闭（与 getState() === 'closed' 等价）
+   */
+  isClosed(): boolean {
+    return this._state === 'closed';
+  }
+
+  /**
+   * 断开连接（close 的别名，保留向后兼容）
+   */
+  async disconnect(): Promise<void> {
+    await this.close();
+  }
+
+  /**
+   * 通用事件订阅（向后兼容，路由到具体订阅方法）
+   * @param event 事件名: 'notification' | 'tools_changed' | 'resources_changed' | 'prompts_changed' | 'resource_updated' | 'log' | 'progress'
+   * @param handler 处理器
+   */
+  on(event: string, handler: (...args: unknown[]) => void): () => void {
+    switch (event) {
+      case 'notification':
+        return this.onNotification((m) => {
+          const method = 'method' in m ? m.method : '';
+          const params = 'params' in m ? m.params : undefined;
+          handler({ method, params });
+        });
+      case 'tools_changed':
+        return this.onToolsListChanged(handler as () => void);
+      case 'resources_changed':
+        return this.onResourcesListChanged(handler as () => void);
+      case 'prompts_changed':
+        return this.onPromptsListChanged(handler as () => void);
+      case 'resource_updated':
+        return this.onResourceUpdated(handler as (uri: string) => void);
+      case 'log':
+        return this.onLogMessage(handler as (level: LogLevel, logger?: string, data?: unknown) => void);
+      case 'progress':
+        return this.onProgress(handler as (progress: number, total?: number, message?: string) => void);
+      default:
+        // 未知事件：返回 noop 取消函数
+        return () => {};
+    }
+  }
+
+  /**
+   * 通用通知订阅（任意 JSON-RPC notification）
+   */
+  onNotification(handler: (msg: JsonRpcRequest) => void): () => void {
+    this.notificationHandlers.add(handler as (msg: JsonRpcMessage) => void);
+    return () => {
+      this.notificationHandlers.delete(handler as (msg: JsonRpcMessage) => void);
+    };
   }
 
   getServerInfo(): ServerInfo | undefined {
