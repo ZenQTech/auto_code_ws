@@ -512,7 +512,7 @@ export class McpRagRealLLM {
       options.onProgress?.('retrieving', '执行 RAG 检索', { query });
 
       const agentResult = await this.ragAgent.run(query, options.agentOptions ?? {});
-      const hits = (agentResult as any).hits ?? [];
+      const hits: McpRagHit[] = (agentResult as any).resourceHits ?? (agentResult as any).hits ?? [];
       const citations = extractCitations(hits);
 
       result.agentResult = agentResult;
