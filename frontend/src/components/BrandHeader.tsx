@@ -181,6 +181,8 @@ export interface BrandHeaderProps {
   onOpenMcpMultimodal?: () => void;
   /** v2.25.0 (Cycle 45 G45-04) 新增：打开 MCP × RAG 智能体面板回调（可选） */
   onOpenMcpRag?: () => void;
+  /** v2.26.0 (Cycle 46) 新增：打开 MCP × RAG × 真实 LLM 端到端面板回调（可选） */
+  onOpenMcpRagRealLLM?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1107,6 +1109,8 @@ export default function BrandHeader({
   onOpenMcpMultimodal,
   /** v2.25.0 (Cycle 45 G45-04) 新增 */
   onOpenMcpRag,
+  /** v2.26.0 (Cycle 46) 新增 */
+  onOpenMcpRagRealLLM,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2024,6 +2028,24 @@ export default function BrandHeader({
                 >
                   <Icon name="book" className="w-4 h-4 text-emerald-500" />
                   <span>📚 MCP × RAG 智能体</span>
+                </button>
+              )}
+
+              {/* v2.26.0 (Cycle 46) 新增：MCP × RAG × 真实 LLM 端到端（菜单项）
+               *  行为：点击调 onOpenMcpRagRealLLM() 弹出 McpRagRealLLMPanel 端到端面板
+               *       多 Provider 协商（火山方舟 / DeepSeek / Anthropic / OpenAI）
+               *       4 Tab：智能对话 / 质量监控 / 调试回放 / E2E 测试
+               *  图标：robot，表达端到端智能体 */}
+              {onOpenMcpRagRealLLM && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpRagRealLLM)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-violet-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="bot" className="w-4 h-4 text-violet-500" />
+                  <span>🤖 MCP × RAG × 真实 LLM</span>
                 </button>
               )}
 

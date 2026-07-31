@@ -169,6 +169,16 @@
 #     ② BrandHeader 新增 1 个菜单项 (🚀 MCP 集成智能体) + workflow SVG 图标
 #     ③ AppLayout 新增 1 个回调 prop 透传 (onOpenMcpIntegrated)
 #     ④ useModals 新增 mcpIntegrated 面板 controller（v3.3.0）
+#   - 2026-08-01 | v6.120.0 | Cycle 46 G46-主应用集成 McpRagRealLLMPanel：
+#     ① McpRagRealLLMPanel (v1.0.0/Cycle 46) MCP × RAG × 真实 LLM 端到端面板
+#        - 智能对话 Tab：RAG 检索 + 真实 LLM 端到端查询（多 Provider 协商）
+#        - 质量监控 Tab：RAGMonitor 实时指标（成功率/延迟/成本/告警）
+#        - 调试回放 Tab：RAGDebugger 完整 trace 记录 + 步骤回放
+#        - E2E 测试 Tab：RAGE2ETestSuite 一键运行端到端测试套件
+#     ② BrandHeader 新增 1 个菜单项 (🤖 MCP × RAG × 真实 LLM) + robot SVG 图标
+#     ③ AppLayout 新增 1 个回调 prop 透传 (onOpenMcpRagRealLLM)
+#     ④ useModals 新增 mcpRagRealLLM 面板 controller（v3.7.0）
+#     ⑤ 依赖 mcpRagRealLLM + ragMonitor + ragDebugger + ragE2ETestSuite 四大引擎
 # ============================================================
  */
 
@@ -224,6 +234,8 @@ import { McpE2EPanel } from './components/McpE2EPanel';
 import { McpMultimodalPanel } from './components/McpMultimodalPanel';
 /** v6.119.0 Cycle 45 G45-04 新增：MCP × RAG 智能体面板 */
 import { McpRagPanel } from './components/McpRagPanel';
+/** v6.120.0 Cycle 46 G46-主应用集成 新增：MCP × RAG × 真实 LLM 端到端面板 */
+import { McpRagRealLLMPanel } from './components/McpRagRealLLMPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -612,6 +624,7 @@ export default function App() {
     mcpE2E: mcpE2EModal,  // v2.6.0 (Cycle 43 G43-04) 新增
     mcpMultimodal: mcpMultimodalModal,  // v2.7.0 (Cycle 44 G44-04) 新增
     mcpRag: mcpRagModal,  // v2.8.0 (Cycle 45 G45-04) 新增
+    mcpRagRealLLM: mcpRagRealLLMModal,  // v2.9.0 (Cycle 46) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3156,6 +3169,7 @@ export default function App() {
           onOpenMcpE2E={() => mcpE2EModal.onOpen()}
           onOpenMcpMultimodal={() => mcpMultimodalModal.onOpen()}
           onOpenMcpRag={() => mcpRagModal.onOpen()}
+          onOpenMcpRagRealLLM={() => mcpRagRealLLMModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -3358,6 +3372,15 @@ export default function App() {
        * 依赖：mcpRagAgent + mcpRagEngine + mcpToolRagSource */}
       {mcpRagModal.open && (
         <McpRagPanel onClose={mcpRagModal.onClose} llmProviderName="mock" />
+      )}
+
+      {/* v6.120.0 Cycle 46 G46-主应用集成 新增：MCP × RAG × 真实 LLM 端到端面板弹窗
+       * 触发：BrandHeader 菜单"🤖 MCP × RAG × 真实 LLM"项
+       * 关闭：McpRagRealLLMPanel 内部 onClose 回调
+       * 功能：多 Provider 协商 + 4 Tab（智能对话 / 质量监控 / 调试回放 / E2E 测试）
+       * 依赖：mcpRagRealLLM + ragMonitor + ragDebugger + ragE2ETestSuite */}
+      {mcpRagRealLLMModal.open && (
+        <McpRagRealLLMPanel onClose={mcpRagRealLLMModal.onClose} llmProviderName="mock" />
       )}
 
       {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗

@@ -157,6 +157,8 @@ export interface AppLayoutProps {
   onOpenMcpMultimodal: () => void;
   /** v6.119.0 (Cycle 45 G45-04) 新增：MCP × RAG 智能体面板回调 */
   onOpenMcpRag: () => void;
+  /** v6.120.0 (Cycle 46) 新增：MCP × RAG × 真实 LLM 端到端面板回调 */
+  onOpenMcpRagRealLLM: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板回调 */
   onOpenComposer: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板回调 */
@@ -414,6 +416,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenMcpE2E,  // v6.117.0 (Cycle 43 G43-04) 透传 BrandHeader
   onOpenMcpMultimodal,  // v6.118.0 (Cycle 44 G44-04) 透传 BrandHeader
   onOpenMcpRag,  // v6.119.0 (Cycle 45 G45-04) 透传 BrandHeader
+  onOpenMcpRagRealLLM,  // v6.120.0 (Cycle 46) 透传 BrandHeader
   onOpenComposer,  // v6.36.0 (Cycle 16 P0-1) 透传 BrandHeader
   onOpenBackgroundTasks,  // v6.41.0 (Cycle 19 P0-1) 透传 BrandHeader
   onOpenBestOfN,  // v6.42.0 (Cycle 19 P0-2) 透传 BrandHeader
@@ -679,6 +682,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenMcpE2E={onOpenMcpE2E}
         onOpenMcpMultimodal={onOpenMcpMultimodal}
         onOpenMcpRag={onOpenMcpRag}
+        onOpenMcpRagRealLLM={onOpenMcpRagRealLLM}
         onOpenComposer={onOpenComposer}
         onOpenBackgroundTasks={onOpenBackgroundTasks}
         onOpenBestOfN={onOpenBestOfN}

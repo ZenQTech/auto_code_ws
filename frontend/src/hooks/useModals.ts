@@ -73,7 +73,8 @@ export type PanelKey =
   | 'mcpIntegrated'
   | 'mcpE2E'
   | 'mcpMultimodal'
-  | 'mcpRag';
+  | 'mcpRag'
+  | 'mcpRagRealLLM';
 
 /** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
@@ -114,6 +115,7 @@ const INITIAL_STATE: PanelsState = {
   mcpE2E: DEFAULT_OPEN.mcpE2E ?? false,
   mcpMultimodal: DEFAULT_OPEN.mcpMultimodal ?? false,
   mcpRag: DEFAULT_OPEN.mcpRag ?? false,
+  mcpRagRealLLM: DEFAULT_OPEN.mcpRagRealLLM ?? false,
 };
 
 /** Action 类型 */
@@ -211,6 +213,8 @@ export interface UseModalsResult {
   mcpMultimodal: PanelController;
   /** v3.6.0 (Cycle 45 G45-04) 新增：MCP × RAG 智能体面板 */
   mcpRag: PanelController;
+  /** v3.7.0 (Cycle 46) 新增：MCP × RAG × 真实 LLM 端到端面板 */
+  mcpRagRealLLM: PanelController;
   /** v3.0.0 新增：批量关闭所有 panel */
   closeAll: () => void;
   /** v3.0.0 新增：批量打开多个 panel */
@@ -271,6 +275,7 @@ export function useModals(): UseModalsResult {
       mcpE2E: makeController('mcpE2E'),  // v3.4.0 (Cycle 43 G43-04) 新增
       mcpMultimodal: makeController('mcpMultimodal'),  // v3.5.0 (Cycle 44 G44-04) 新增
       mcpRag: makeController('mcpRag'),  // v3.6.0 (Cycle 45 G45-04) 新增
+      mcpRagRealLLM: makeController('mcpRagRealLLM'),  // v3.7.0 (Cycle 46) 新增
       closeAll: () => dispatch({ type: 'CLOSE_ALL' }),
       openMulti: (panels) => dispatch({ type: 'OPEN_MULTI', panels }),
     }),
