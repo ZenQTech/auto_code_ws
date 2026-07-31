@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * # MCP Client - Model Context Protocol 客户端 (v1.0.1 Cycle 40 G40-04)
+ * # MCP Client - Model Context Protocol 客户端 (v1.0.4 Cycle 41 G41-03)
  * # ============================================================
  * # 核心作用：实现 MCP 协议客户端核心功能
  * #           生命周期管理 + 请求响应管理 + 能力发现 + 通知订阅
@@ -10,6 +10,9 @@
  * # 修改记录：
  * #   - 2026-07-31 | v1.0.0 | Cycle 39 G39-01 初次创建
  * #   - 2026-07-31 | v1.0.1 | Cycle 40 G40-04 新增 isReady/isClosed/disconnect/on/onNotification
+ * #   - 2026-07-31 | v1.0.2 | Cycle 41 G41-01 新增 subscribeResource/unsubscribeResource
+ * #   - 2026-07-31 | v1.0.3 | Cycle 41 G41-02 新增 complete 参数补全
+ * #   - 2026-07-31 | v1.0.4 | Cycle 41 G41-03 新增 createSamplingMessage
  * # ============================================================
  */
 
@@ -543,6 +546,70 @@ export class McpClient {
   }
 
   /**
+   * 订阅资源更新（Cycle 41 G41-01）
+   * 服务器将在资源变化时通过 notifications/resources/updated 推送
+   * @see https://spec.modelcontextprotocol.io/specification/2024-11-05/server/resources/#subscribe
+   */
+  async subscribeResource(uri: string): Promise<void> {
+    await this.request('resources/subscribe', { uri });
+  }
+
+  /**
+   * 取消订阅资源（Cycle 41 G41-01）
+   */
+  async unsubscribeResource(uri: string): Promise<void> {
+    await this.request('resources/unsubscribe', { uri });
+  }
+
+  /**
+   * 参数补全（Cycle 41 G41-02）
+   * @see https://spec.modelcontextprotocol.io/specification/2024-11-05/client/utilities/completion
+   */
+  async complete(
+    ref: { type: 'ref/prompt'; name: string } | { type: 'ref/resource'; uri: string },
+    argument: { name: string; value: string },
+  ): Promise<{ values: string[]; total?: number; hasMore?: boolean }> {
+    return await this.request('completion/complete', { ref, argument });
+  }
+
+  /**
+   * 服务器主动 LLM 调用（Cycle 41 G41-03）
+   * 通常由 SamplingHandler 在内部调用
+   * @see https://spec.modelcontextprotocol.io/specification/2024-11-05/client/sampling
+   */
+  async createSamplingMessage(
+    request: {
+      messages: Array<{
+        role: 'user' | 'assistant';
+        content:
+          | { type: 'text'; text: string }
+          | { type: 'image'; data: string; mimeType: string }
+          | { type: 'audio'; data: string; mimeType: string };
+      }>;
+      maxTokens: number;
+      systemPrompt?: string;
+      temperature?: number;
+      modelPreferences?: {
+        hints?: Array<{ name?: string }>;
+        costPriority?: number;
+        speedPriority?: number;
+        intelligencePriority?: number;
+      };
+      stopSequences?: string[];
+    },
+  ): Promise<{
+    model: string;
+    stopReason?: string;
+    role: 'assistant';
+    content:
+      | { type: 'text'; text: string }
+      | { type: 'image'; data: string; mimeType: string }
+      | { type: 'audio'; data: string; mimeType: string };
+  }> {
+    return await this.request('sampling/createMessage', request as unknown as Record<string, unknown>);
+  }
+
+  /**
    * 列出可用提示词
    */
   async listPrompts(): Promise<Prompt[]> {
@@ -713,8 +780,9 @@ export class McpClient {
 
   /**
    * 发送 JSON-RPC 通知 (无 id，不等待响应)
+   * 公开方法，允许 RootsManager 等外部组件发送通知
    */
-  private async notify(method: string, params?: Record<string, unknown>): Promise<void> {
+  async notify(method: string, params?: Record<string, unknown>): Promise<void> {
     if (this._state === 'closed') {
       throw new McpClosedError('Client has been closed');
     }
