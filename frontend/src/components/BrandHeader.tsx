@@ -79,6 +79,9 @@
 #   - 2026-07-31 | v2.21.0 | Cycle 41 G41-01/02/03/04 新增：菜单项 MCP 高级能力
 #     新增 onOpenMcpAdvanced 回调
 #     对应 MCP 资源订阅 + 参数补全 + 服务器采样 + 根目录管理 4 大高级能力
+#   - 2026-07-31 | v2.22.0 | Cycle 42 G42-04 新增：菜单项 MCP 集成智能体
+#     新增 onOpenMcpIntegrated 回调
+#     对应 MCP × Hermes 深度融合：LLM ↔ Agent ↔ MCP 工具/资源/提示词 端到端链路
 # ============================================================
  */
 
@@ -170,6 +173,8 @@ export interface BrandHeaderProps {
   onOpenMcpRegistry?: () => void;
   /** v2.21.0 (Cycle 41) 新增：打开 MCP 高级能力面板回调（可选） */
   onOpenMcpAdvanced?: () => void;
+  /** v2.22.0 (Cycle 42 G42-04) 新增：打开 MCP 集成智能体面板回调（可选） */
+  onOpenMcpIntegrated?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1088,6 +1093,8 @@ export default function BrandHeader({
   onOpenMcpRegistry,
   /** v2.21.0 (Cycle 41) 新增 */
   onOpenMcpAdvanced,
+  /** v2.22.0 (Cycle 42 G42-04) 新增 */
+  onOpenMcpIntegrated,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -1933,6 +1940,24 @@ export default function BrandHeader({
                 >
                   <Icon name="zap" className="w-4 h-4 text-yellow-500" />
                   <span>⚡ MCP 高级能力</span>
+                </button>
+              )}
+
+              {/* v2.22.0 (Cycle 42 G42-04) 新增：MCP 集成智能体（菜单项）
+               *  行为：点击调 onOpenMcpIntegrated() 弹出 McpIntegratedPanel 集成智能体面板
+               *       提供 MCP × Hermes 端到端融合：LLM ↔ Agent ↔ MCP 工具/资源/提示词 完整链路
+               *       支持资源引用（@mcp://）+ 提示词注入（/prompt mcp:server::name）
+               *  图标：workflow（流程图），表达端到端智能体工作流 */}
+              {onOpenMcpIntegrated && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpIntegrated)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-rose-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="workflow" className="w-4 h-4 text-rose-500" />
+                  <span>🚀 MCP 集成智能体</span>
                 </button>
               )}
 

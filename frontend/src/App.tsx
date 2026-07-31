@@ -160,6 +160,15 @@
 #     ④ BrandHeader 新增 2 个菜单项 (🛍️/📊)
 #     ⑤ AppLayout 新增 2 个回调 prop 透传
 #     ⑥ 对应 Codex Skills Marketplace + Claude Code Analytics Chat
+#   - 2026-07-31 | v6.116.0 | Cycle 42 G42-04 集成 McpIntegratedPanel：
+#     ① McpIntegratedPanel (v1.0.0/Cycle 42 G42-04) MCP × Hermes 端到端融合面板
+#        - 对话 Tab：用户输入 → Agent Loop → MCP 工具调用 → 结果
+#        - 工具 Tab：所有已连接 MCP 服务器的工具列表
+#        - 资源 Tab：所有 MCP 资源列表（含订阅状态）
+#        - 提示词 Tab：所有 MCP 提示词列表（含参数 schema）
+#     ② BrandHeader 新增 1 个菜单项 (🚀 MCP 集成智能体) + workflow SVG 图标
+#     ③ AppLayout 新增 1 个回调 prop 透传 (onOpenMcpIntegrated)
+#     ④ useModals 新增 mcpIntegrated 面板 controller（v3.3.0）
 # ============================================================
  */
 
@@ -205,8 +214,10 @@ import { AppLayout } from './components/AppLayout';
 import McpPanel from './components/McpPanel';
 /** v2.3.0 (Cycle 39 G39-03) 新增：MCP 服务器注册表管理面板 */
 import McpRegistryPanel from './components/McpRegistryPanel';
-/** v2.3.0 (Cycle 41) 新增：MCP 高级能力面板（资源订阅/参数补全/服务器采样/根目录） */
+/** v2.4.0 (Cycle 41) 新增：MCP 高级能力面板（资源订阅/参数补全/服务器采样/根目录） */
 import McpAdvancedPanel from './components/McpAdvancedPanel';
+/** v2.5.0 (Cycle 42 G42-04) 新增：MCP 集成智能体面板（LLM + Agent + MCP 端到端融合） */
+import { McpIntegratedPanel } from './components/McpIntegratedPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -591,6 +602,7 @@ export default function App() {
     customModels: customModelsModal,  // v2.2.0 (Cycle 8 P0-14) 新增
     mcpRegistry: mcpRegistryModal,  // v2.3.0 (Cycle 39 G39-03) 新增
     mcpAdvanced: mcpAdvancedModal,  // v2.4.0 (Cycle 41) 新增
+    mcpIntegrated: mcpIntegratedModal,  // v2.5.0 (Cycle 42 G42-04) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3131,6 +3143,7 @@ export default function App() {
           onOpenCustomModels={() => customModelsModal.onOpen()}
           onOpenMcpRegistry={() => mcpRegistryModal.onOpen()}
           onOpenMcpAdvanced={() => mcpAdvancedModal.onOpen()}
+          onOpenMcpIntegrated={() => mcpIntegratedModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -3294,6 +3307,18 @@ export default function App() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* v2.5.0 (Cycle 42 G42-04) 新增：MCP 集成智能体面板弹窗
+       * 触发：BrandHeader 菜单"🚀 MCP 集成智能体"项
+       * 关闭：McpIntegratedPanel 内部 onClose 回调
+       * 功能：MCP × Hermes 端到端融合面板
+       *       - 对话 Tab：用户输入 → Agent Loop → MCP 工具调用 → 结果
+       *       - 工具 Tab：所有已连接 MCP 服务器的工具列表
+       *       - 资源 Tab：所有 MCP 资源列表（含订阅状态）
+       *       - 提示词 Tab：所有 MCP 提示词列表（含参数 schema） */}
+      {mcpIntegratedModal.open && (
+        <McpIntegratedPanel onClose={mcpIntegratedModal.onClose} llmProviderName="mock" />
       )}
 
       {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗
