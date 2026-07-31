@@ -158,17 +158,18 @@
 - 差距识别
 - 编写 CYCLE35_GAP_ANALYSIS.md
 
-### 4.3 Phase 3: SPEC 编写（1 天）
+### 4.3 Phase 3: SPEC 编写（1.5 天）
 - G35-01 WorkflowOrchestratorEngine SPEC
 - G35-02 AgentCommunicationEngine SPEC
 - G35-03 TaskCheckpointEngine SPEC
+- G35-04 AgentSchedulerEngine SPEC
 
-### 4.4 Phase 4: 核心引擎开发（2-3 天）
-- 3 大引擎 + 单元测试
-- 估计新增 200+ 单元测试
+### 4.4 Phase 4: 核心引擎开发（3-4 天）
+- 4 大引擎 + 单元测试
+- 估计新增 280+ 单元测试
 
 ### 4.5 Phase 5: UI 组件 + 集成（1-2 天）
-- 3 大 UI 面板
+- 4 大 UI 面板
 - 任务流图可视化
 - 主应用集成
 
@@ -181,9 +182,9 @@
 - CYCLE35_ACCEPTANCE_REPORT.md
 - CYCLE35_CODE_MODIFICATION_LOG.md
 - CYCLE36_STARTUP.md
-- 4-5 个 Git commits
+- 5-6 个 Git commits
 
-**总工作量估计**: 6-9 天
+**总工作量估计**: 8-11 天
 
 ---
 
@@ -230,5 +231,7 @@
 ✅ 4534 tests passing / 0 TS errors
 ✅ 主应用集成完成
 ✅ 文档完整
+✅ 用户确认 Cycle 35 调研方向：A（智能体协作+任务编排）
+✅ 用户确认任务节奏：4 大 P0 任务
 
-等待用户确认调研方向后启动 Cycle 35。
+**Cycle 35 启动！**
