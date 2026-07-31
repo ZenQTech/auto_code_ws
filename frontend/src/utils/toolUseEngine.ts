@@ -24,7 +24,7 @@
 /**
  * 工具权限级别
  */
-export type ToolPermission = 'safe' | 'confirmed' | 'dangerous';
+export type ToolPermission = 'safe' | 'confirmed' | 'dangerous' | 'auto';
 
 /**
  * JSON Schema 类型
