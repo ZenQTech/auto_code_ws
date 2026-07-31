@@ -203,6 +203,8 @@ import { UsagePanel, type UsageStats } from './components/UsagePanel';
 import { AppLayout } from './components/AppLayout';
 /** v6.14.0 Cycle 2 新增：MCP 工具调用面板 */
 import McpPanel from './components/McpPanel';
+/** v2.3.0 (Cycle 39 G39-03) 新增：MCP 服务器注册表管理面板 */
+import McpRegistryPanel from './components/McpRegistryPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -585,12 +587,17 @@ export default function App() {
     traceRule: traceRuleModal,  // v2.0.0 (Cycle 7 P0-11) 新增
     slashCommand: slashCommandModal,  // v2.1.0 (Cycle 8 P0-12) 新增
     customModels: customModelsModal,  // v2.2.0 (Cycle 8 P0-14) 新增
+    mcpRegistry: mcpRegistryModal,  // v2.3.0 (Cycle 39 G39-03) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
   const settingsOpen = settingsModal.open;
   const setSettingsOpen = settingsModal.onOpen;
   const closeSettings = settingsModal.onClose;
+  /** v2.3.0 (Cycle 39 G39-03) 别名：MCP 服务器注册表面板 */
+  const mcpRegistryPanelOpen = mcpRegistryModal.open;
+  const setMcpRegistryPanelOpen = mcpRegistryModal.onOpen;
+  const closeMcpRegistryPanel = mcpRegistryModal.onClose;
   /** v4.3.0 别名：MCP 工具面板 */
   const mcpPanelOpen = mcpModal.open;
   const setMcpPanelOpen = mcpModal.onOpen;
@@ -3119,6 +3126,7 @@ export default function App() {
           onOpenTraceRule={() => traceRuleModal.onOpen()}
           onOpenSlashCommand={() => slashCommandModal.onOpen()}
           onOpenCustomModels={() => customModelsModal.onOpen()}
+          onOpenMcpRegistry={() => mcpRegistryModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -3237,6 +3245,25 @@ export default function App() {
             <McpPanel />
             <button
               onClick={closeMcpPanel}
+              className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center text-surface-700"
+              aria-label="关闭"
+            >
+              ✕
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* v2.3.0 (Cycle 39 G39-03) 新增：MCP 服务器注册表管理面板弹窗
+       * 触发：BrandHeader 菜单"🔌 MCP 服务器注册表"项
+       * 关闭：McpRegistryPanel 内部 onClose 回调
+       * 功能：管理 5 个内置 MCP 服务器 + 自定义服务器、连接/断开、工具调用、统计 */}
+      {mcpRegistryPanelOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm" onClick={closeMcpRegistryPanel}>
+          <div className="w-full max-w-6xl max-h-[90vh] overflow-auto bg-white rounded-lg" onClick={(e) => e.stopPropagation()}>
+            <McpRegistryPanel className="min-h-[600px]" />
+            <button
+              onClick={closeMcpRegistryPanel}
               className="absolute top-4 right-4 w-8 h-8 rounded-full bg-white/90 hover:bg-white shadow-lg flex items-center justify-center text-surface-700"
               aria-label="关闭"
             >

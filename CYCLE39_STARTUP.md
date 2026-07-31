@@ -1,7 +1,9 @@
 # CYCLE39 启动文档 (v6.111.0)
 
 > **Cycle**: 39 - MCP 协议深度集成
-> **推荐时间**: 2026-08-01
+> **方向选定**: A. MCP 协议深度集成 (推荐)
+> **任务规模**: B. 4 大 P0 (推荐)
+> **开始时间**: 2026-07-31
 > **目标**: 接入 1000+ 第三方 MCP 服务器，扩展 Agent Loop 工具生态
 
 ---
@@ -28,29 +30,27 @@
 
 ---
 
-## 二、推荐任务 (3 大 P0)
+## 二、4 大 P0 任务
 
-### G39-01 MCP 客户端核心 (优先级 🔥)
+### G39-01 MCP 客户端核心引擎
 
-**目标**: 实现 MCP 协议客户端
-
+**目标**: 实现 MCP 协议客户端核心
 **关键交付**:
 - JSON-RPC 2.0 序列化/反序列化
 - Stdio 传输 (子进程 + stdin/stdout)
 - SSE 传输 (HTTP + Server-Sent Events)
-- WebSocket 传输 (可选)
 - MCP 握手 (initialize + capabilities 协商)
 - 工具/资源/提示词三类能力调用
+- 错误处理 + 心跳 + 自动重连
 
 **对标**: @modelcontextprotocol/sdk (TypeScript 官方 SDK)
 
-### G39-02 MCP 服务器注册表 + 内置服务器 (优先级 🔥)
+### G39-02 MCP 服务器注册表 + 5 个内置服务器
 
 **目标**: 实现 MCP 服务器注册与管理
-
 **关键交付**:
-- 服务器注册表 (Registry + 启停/重启/健康检查)
-- 内置 3-5 个常用服务器:
+- McpServerRegistry (注册/启停/重启/健康检查)
+- 5 个内置常用服务器:
   - FilesystemMcpServer (本地文件操作)
   - GitHubMcpServer (仓库/PR/Issue)
   - MemoryMcpServer (跨会话记忆)
@@ -60,18 +60,24 @@
 
 **对标**: Cursor MCP / Claude Desktop MCP
 
-### G39-03 MCP UI 面板 + 主应用集成 (优先级 🔥)
+### G39-03 MCP UI 面板 + 主应用集成
 
 **目标**: 提供 MCP 服务器管理界面
-
 **关键交付**:
-- McpServerPanel 面板:
-  - 已注册服务器列表
-  - 添加/删除/启停操作
-  - 工具/资源/提示词浏览
-  - 实时调用测试
+- McpServerPanel (5 个标签页: Servers/Tools/Resources/Prompts/Logs)
 - 主应用集成 (BrandHeader + AppLayout + App.tsx)
-- 3 个新菜单项 + 图标
+- 1 个新菜单项 + 图标
+
+### G39-04 MCP Marketplace + Bridge 高级
+
+**目标**: 扩展 MCP 生态与跨协议桥接
+**关键交付**:
+- McpMarketplace 面板 (浏览 + 安装 + 推荐)
+- McpBridge (MCP ↔ OpenAI Function Calling ↔ Anthropic Tool Use)
+- 跨协议转换 (协议无关的中间表示 IR)
+- 推荐策略 (按使用频率/相关性)
+
+**对标**: OpenAI Function Calling 互操作 / MCP Registry
 
 ---
 
@@ -99,21 +105,17 @@
 
 ## 四、API 接入策略
 
-**推荐**:
-- A. 维持 DeepSeek + 火山方舟 (与 Cycle 37/38 一致)
-- B. 评估 Anthropic Claude (MCP 原生支持)
-- C. 双 Provider (DeepSeek + Claude)
+**维持**: DeepSeek + 火山方舟 Coding Plan (与 Cycle 37/38 一致)
 
 ---
 
 ## 五、任务规模
 
-**推荐**:
-- A. 维持 3 大 P0 (与 Cycle 36 一致)
-- B. 扩展到 4 大 (新增 MCP Bridge / MCP Marketplace)
-- C. 缩减到 2 大 (聚焦客户端 + UI)
-
-**建议**: A 方案 3 大 P0 - 客户端 + 服务器注册表 + UI
+**4 大 P0** (用户确认):
+- G39-01: MCP 客户端核心
+- G39-02: 服务器注册表 + 5 个内置服务器
+- G39-03: MCP UI 面板 + 主应用集成
+- G39-04: MCP Marketplace + Bridge 高级
 
 ---
 
@@ -122,8 +124,8 @@
 - TypeScript 严格模式 **0 错误**
 - 单元测试 **100% 通过** (目标 200+ 新测试)
 - 真实 MCP 服务器对接 **至少 1 个** (Filesystem)
-- 主应用集成 **4 个新菜单项**
-- Git 原子化提交 **3 个 commit**
+- 主应用集成 **1 个新菜单项**
+- Git 原子化提交 **4 个 commit**
 
 ---
 
@@ -135,6 +137,7 @@
 | 子进程管理跨平台 | 中 | 使用 Node child_process 标准 API |
 | 长连接稳定性 | 低 | 实现心跳 + 自动重连 |
 | 权限与沙箱 | 高 | 复用 HumanApprovalEngine |
+| 协议互操作 | 中 | 实现 IR 中间表示 |
 
 ---
 
@@ -143,21 +146,43 @@
 | 阶段 | 任务 | 预计时间 |
 |------|------|---------|
 | Phase 1-3 | 调研 + SPEC + 计划 | 1 天 |
-| Phase 4 | G39-01 客户端核心 | 2 天 |
-| Phase 4 | G39-02 注册表 + 内置服务器 | 2 天 |
-| Phase 4 | G39-03 UI + 集成 | 1 天 |
+| Phase 4a | G39-01 MCP 客户端核心 | 2 天 |
+| Phase 4b | G39-02 注册表 + 内置服务器 | 2 天 |
+| Phase 4c | G39-03 UI + 集成 | 1 天 |
+| Phase 4d | G39-04 Marketplace + Bridge | 2 天 |
 | Phase 5 | 测试 + 修复 | 1 天 |
 | Phase 6 | 验收 + 文档 | 1 天 |
 
-**总计**: 7-8 天
+**总计**: 10 天
 
 ---
 
-## 九、待用户确认
+## 九、4 大 P0 任务规格
 
-1. **方向选择**: A. MCP 协议深度集成 (推荐) / B. 其他
-2. **任务规模**: A. 3 大 P0 (推荐) / B. 4 大 / C. 2 大
-3. **API 接入**: A. 维持 DeepSeek + 火山方舟 (推荐) / B. 加入 Claude / C. 其他
-4. **真实服务器**: 必接 FilesystemMcpServer (本地文件) - 是否需要其他？
+| 任务 | 文件 | 测试 | 复杂度 |
+|------|------|------|--------|
+| G39-01 | mcpClient.ts (1 个) | 30+ | 高 (协议层) |
+| G39-02 | mcpServerRegistry.ts + 5 server 文件 | 50+ | 中 |
+| G39-03 | McpServerPanel.tsx | 0 (UI 集成) | 中 |
+| G39-04 | mcpMarketplace.ts + mcpBridge.ts | 40+ | 高 (互操作) |
+| **合计** | **8+ 文件** | **120+ 测试** | - |
 
-请确认后开始 Cycle 39 Phase 1-3 准备。
+---
+
+## 十、用户已确认
+
+- ✅ 方向: A. MCP 协议深度集成
+- ✅ 任务规模: B. 4 大 P0
+- ✅ API 接入: 维持 DeepSeek + 火山方舟
+
+---
+
+## 十一、开始 Phase 1-3
+
+### 1. 关键文件
+
+- [CYCLE39_STARTUP.md](file:///home/qizheng/auto_code_ws/CYCLE39_STARTUP.md) (本文档)
+- [CYCLE39_SPEC_G39_01_MCP_CLIENT.md](file:///home/qizheng/auto_code_ws/CYCLE39_SPEC_G39_01_MCP_CLIENT.md) (待创建)
+- [CYCLE39_SPEC_G39_02_SERVER_REGISTRY.md](file:///home/qizheng/auto_code_ws/CYCLE39_SPEC_G39_02_SERVER_REGISTRY.md) (待创建)
+- [CYCLE39_SPEC_G39_03_MCP_PANEL.md](file:///home/qizheng/auto_code_ws/CYCLE39_SPEC_G39_03_MCP_PANEL.md) (待创建)
+- [CYCLE39_SPEC_G39_04_MARKETPLACE_BRIDGE.md](file:///home/qizheng/auto_code_ws/CYCLE39_SPEC_G39_04_MARKETPLACE_BRIDGE.md) (待创建)

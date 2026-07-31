@@ -163,6 +163,8 @@ export interface BrandHeaderProps {
   onOpenSlashCommand?: () => void;
   /** v2.11.0 (Cycle 8 P0-14) 新增：打开 Custom Models 管理面板回调（可选） */
   onOpenCustomModels?: () => void;
+  /** v2.12.0 (Cycle 39 G39-03) 新增：打开 MCP 服务器注册表面板回调（可选） */
+  onOpenMcpRegistry?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1078,6 +1080,7 @@ export default function BrandHeader({
   onOpenSlashCommand,
   /** v2.11.0 (Cycle 8 P0-14) 新增 */
   onOpenCustomModels,
+  onOpenMcpRegistry,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -1887,6 +1890,24 @@ export default function BrandHeader({
                 >
                   <Icon name="brain-network" className="w-4 h-4 text-emerald-500" />
                   <span>🧠 Custom Models 管理</span>
+                </button>
+              )}
+
+              {/* v2.12.0 (Cycle 39 G39-03) 新增：MCP 服务器注册表（菜单项）
+               *  行为：点击调 onOpenMcpRegistry() 弹出 McpRegistryPanel 服务器管理面板
+               *       内置 5 个 MCP 服务器（filesystem / git / github / fetch / sqlite）
+               *       支持连接/断开/工具调用/添加自定义服务器
+               *  图标：plug（插头），表达外部工具/数据源接入 */}
+              {onOpenMcpRegistry && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpRegistry)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-violet-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="plug" className="w-4 h-4 text-violet-500" />
+                  <span>🔌 MCP 服务器注册表</span>
                 </button>
               )}
 

@@ -20,11 +20,11 @@ import { useModals } from './useModals';
 
 describe('useModals', () => {
   describe('初始状态', () => {
-    it('应该返回 23 个 panel controller + 2 个工具方法', () => {
+    it('应该返回 24 个 panel controller + 2 个工具方法', () => {
       const { result } = renderHook(() => useModals());
       const controllers = Object.keys(result.current);
-      // 23 panel + closeAll + openMulti = 25
-      expect(controllers).toHaveLength(25);
+      // 24 panel + closeAll + openMulti = 26 (v3.1.0 G39-03 新增 mcpRegistry)
+      expect(controllers).toHaveLength(26);
     });
 
     it('fileExplorer 默认应打开', () => {

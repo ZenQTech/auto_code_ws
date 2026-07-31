@@ -143,6 +143,8 @@ export interface AppLayoutProps {
   onOpenSlashCommand: () => void;
   /** v6.24.0 (Cycle 8 P0-14) 新增：Custom Models 管理面板回调 */
   onOpenCustomModels: () => void;
+  /** v6.111.0 (Cycle 39 G39-03) 新增：MCP 服务器注册表面板回调 */
+  onOpenMcpRegistry: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板回调 */
   onOpenComposer: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板回调 */
@@ -394,6 +396,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenTraceRule,  // v6.22.0 (Cycle 7 P0-11) 透传 BrandHeader
   onOpenSlashCommand,  // v6.23.0 (Cycle 8 P0-12) 透传 BrandHeader
   onOpenCustomModels,  // v6.24.0 (Cycle 8 P0-14) 透传 BrandHeader
+  onOpenMcpRegistry,  // v6.111.0 (Cycle 39 G39-03) 透传 BrandHeader
   onOpenComposer,  // v6.36.0 (Cycle 16 P0-1) 透传 BrandHeader
   onOpenBackgroundTasks,  // v6.41.0 (Cycle 19 P0-1) 透传 BrandHeader
   onOpenBestOfN,  // v6.42.0 (Cycle 19 P0-2) 透传 BrandHeader
@@ -653,6 +656,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenTraceRule={onOpenTraceRule}
         onOpenSlashCommand={onOpenSlashCommand}
         onOpenCustomModels={onOpenCustomModels}
+        onOpenMcpRegistry={onOpenMcpRegistry}
         onOpenComposer={onOpenComposer}
         onOpenBackgroundTasks={onOpenBackgroundTasks}
         onOpenBestOfN={onOpenBestOfN}

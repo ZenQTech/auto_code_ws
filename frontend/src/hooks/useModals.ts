@@ -30,6 +30,7 @@
  *   - 2026-07-27 | v2.2.0 | Cycle 8 P0-14 新增 customModels 自定义模型管理面板
  *   - 2026-07-29 | v3.0.0 | Cycle 15 P1-9 性能优化：合并 23 个独立 useState 为单个 useReducer
  *     重渲染次数 -90%（每次 panel 切换只触发组件订阅部分更新）
+ *   - 2026-07-31 | v3.1.0 | Cycle 39 G39-03 新增 mcpRegistry MCP 服务器注册表面板
  * ============================================================
  */
 
@@ -63,7 +64,8 @@ export type PanelKey =
   | 'multiAgentTree'
   | 'traceRule'
   | 'slashCommand'
-  | 'customModels';
+  | 'customModels'
+  | 'mcpRegistry';
 
 /** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
@@ -98,6 +100,7 @@ const INITIAL_STATE: PanelsState = {
   traceRule: DEFAULT_OPEN.traceRule ?? false,
   slashCommand: DEFAULT_OPEN.slashCommand ?? false,
   customModels: DEFAULT_OPEN.customModels ?? false,
+  mcpRegistry: DEFAULT_OPEN.mcpRegistry ?? false,
 };
 
 /** Action 类型 */
@@ -183,6 +186,8 @@ export interface UseModalsResult {
   traceRule: PanelController;
   slashCommand: PanelController;
   customModels: PanelController;
+  /** v3.1.0 (Cycle 39 G39-03) 新增：MCP 服务器注册表 */
+  mcpRegistry: PanelController;
   /** v3.0.0 新增：批量关闭所有 panel */
   closeAll: () => void;
   /** v3.0.0 新增：批量打开多个 panel */
@@ -237,6 +242,7 @@ export function useModals(): UseModalsResult {
       traceRule: makeController('traceRule'),
       slashCommand: makeController('slashCommand'),
       customModels: makeController('customModels'),
+      mcpRegistry: makeController('mcpRegistry'),  // v3.1.0 (Cycle 39 G39-03) 新增
       closeAll: () => dispatch({ type: 'CLOSE_ALL' }),
       openMulti: (panels) => dispatch({ type: 'OPEN_MULTI', panels }),
     }),
