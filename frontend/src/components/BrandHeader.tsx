@@ -76,6 +76,9 @@
 #     新增 onOpenMultiAgentCrew / onOpenLongTermMemory / onOpenReflection / onOpenHumanApproval 回调
 #     新增 multi-agent (三节点网络) / memory (数据库+时钟) / reflection (镜像+箭头) / approval (盾牌+勾) 内联 SVG 图标
 #     对应 Manager-Worker 多 Agent 协作 + MemGPT 风格分层记忆 + Reflexion 反思引擎 + 人机审批流
+#   - 2026-07-31 | v2.21.0 | Cycle 41 G41-01/02/03/04 新增：菜单项 MCP 高级能力
+#     新增 onOpenMcpAdvanced 回调
+#     对应 MCP 资源订阅 + 参数补全 + 服务器采样 + 根目录管理 4 大高级能力
 # ============================================================
  */
 
@@ -165,6 +168,8 @@ export interface BrandHeaderProps {
   onOpenCustomModels?: () => void;
   /** v2.12.0 (Cycle 39 G39-03) 新增：打开 MCP 服务器注册表面板回调（可选） */
   onOpenMcpRegistry?: () => void;
+  /** v2.21.0 (Cycle 41) 新增：打开 MCP 高级能力面板回调（可选） */
+  onOpenMcpAdvanced?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1081,6 +1086,8 @@ export default function BrandHeader({
   /** v2.11.0 (Cycle 8 P0-14) 新增 */
   onOpenCustomModels,
   onOpenMcpRegistry,
+  /** v2.21.0 (Cycle 41) 新增 */
+  onOpenMcpAdvanced,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -1908,6 +1915,24 @@ export default function BrandHeader({
                 >
                   <Icon name="plug" className="w-4 h-4 text-violet-500" />
                   <span>🔌 MCP 服务器注册表</span>
+                </button>
+              )}
+
+              {/* v2.21.0 (Cycle 41) 新增：MCP 高级能力（菜单项）
+               *  行为：点击调 onOpenMcpAdvanced() 弹出 McpAdvancedPanel 高级能力面板
+               *       包含 4 大高级能力：资源订阅 / 参数补全 / 服务器采样 / 根目录管理
+               *       对应 MCP 2024-11-05 规范的 client 侧高级特性
+               *  图标：zap（闪电），表达高性能协议能力 */}
+              {onOpenMcpAdvanced && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpAdvanced)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-yellow-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="zap" className="w-4 h-4 text-yellow-500" />
+                  <span>⚡ MCP 高级能力</span>
                 </button>
               )}
 

@@ -31,6 +31,7 @@
  *   - 2026-07-29 | v3.0.0 | Cycle 15 P1-9 性能优化：合并 23 个独立 useState 为单个 useReducer
  *     重渲染次数 -90%（每次 panel 切换只触发组件订阅部分更新）
  *   - 2026-07-31 | v3.1.0 | Cycle 39 G39-03 新增 mcpRegistry MCP 服务器注册表面板
+ *   - 2026-07-31 | v3.2.0 | Cycle 41 新增 mcpAdvanced MCP 高级能力面板
  * ============================================================
  */
 
@@ -65,7 +66,8 @@ export type PanelKey =
   | 'traceRule'
   | 'slashCommand'
   | 'customModels'
-  | 'mcpRegistry';
+  | 'mcpRegistry'
+  | 'mcpAdvanced';
 
 /** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
@@ -101,6 +103,7 @@ const INITIAL_STATE: PanelsState = {
   slashCommand: DEFAULT_OPEN.slashCommand ?? false,
   customModels: DEFAULT_OPEN.customModels ?? false,
   mcpRegistry: DEFAULT_OPEN.mcpRegistry ?? false,
+  mcpAdvanced: DEFAULT_OPEN.mcpAdvanced ?? false,
 };
 
 /** Action 类型 */
@@ -188,6 +191,8 @@ export interface UseModalsResult {
   customModels: PanelController;
   /** v3.1.0 (Cycle 39 G39-03) 新增：MCP 服务器注册表 */
   mcpRegistry: PanelController;
+  /** v3.2.0 (Cycle 41) 新增：MCP 高级能力面板 */
+  mcpAdvanced: PanelController;
   /** v3.0.0 新增：批量关闭所有 panel */
   closeAll: () => void;
   /** v3.0.0 新增：批量打开多个 panel */
@@ -243,6 +248,7 @@ export function useModals(): UseModalsResult {
       slashCommand: makeController('slashCommand'),
       customModels: makeController('customModels'),
       mcpRegistry: makeController('mcpRegistry'),  // v3.1.0 (Cycle 39 G39-03) 新增
+      mcpAdvanced: makeController('mcpAdvanced'),  // v3.2.0 (Cycle 41) 新增
       closeAll: () => dispatch({ type: 'CLOSE_ALL' }),
       openMulti: (panels) => dispatch({ type: 'OPEN_MULTI', panels }),
     }),
