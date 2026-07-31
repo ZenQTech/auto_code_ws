@@ -11,6 +11,8 @@
  * # ============================================================
  * # 修改记录：
  * #   - 2026-07-29 | v1.0.0 | Cycle 15 P0-3 初次创建
+ * #   - 2026-08-01 | v1.1.0 | Cycle 48 G48-主应用集成：同步更新到 32 panel
+ * #     (新增 mcpRag/mcpRagRealLLM/mcpRagPerformance/mcpMultimodalRag)
  * # ============================================================
  */
 
@@ -20,16 +22,20 @@ import { useModals } from './useModals';
 
 describe('useModals', () => {
   describe('初始状态', () => {
-    it('应该返回 28 个 panel controller + 2 个工具方法', () => {
+    it('应该返回 32 个 panel controller + 2 个工具方法', () => {
       const { result } = renderHook(() => useModals());
       const controllers = Object.keys(result.current);
-      // 28 panel + closeAll + openMulti = 30
+      // 32 panel + closeAll + openMulti = 34
       // (v3.1.0 G39-03 新增 mcpRegistry,
       //  v3.2.0 Cycle 41 新增 mcpAdvanced,
       //  v3.3.0 Cycle 42 G42-04 新增 mcpIntegrated,
       //  v3.4.0 Cycle 43 G43-04 新增 mcpE2E,
-      //  v3.5.0 Cycle 44 G44-04 新增 mcpMultimodal)
-      expect(controllers).toHaveLength(30);
+      //  v3.5.0 Cycle 44 G44-04 新增 mcpMultimodal,
+      //  v3.6.0 Cycle 45 G45-04 新增 mcpRag,
+      //  v3.7.0 Cycle 46 新增 mcpRagRealLLM,
+      //  v3.8.0 Cycle 47 新增 mcpRagPerformance,
+      //  v3.9.0 Cycle 48 新增 mcpMultimodalRag)
+      expect(controllers).toHaveLength(34);
     });
 
     it('fileExplorer 默认应打开', () => {

@@ -32,6 +32,7 @@
 #*#   - 2026-07-31 | v7.01.0 | Cycle 38 G38-01/02/03/04 新增 onOpenMultiAgentCrew/onOpenLongTermMemory/onOpenReflection/onOpenHumanApproval 透传
  *   - 2026-07-31 | v6.115.0 | Cycle 42 G42-04 新增 onOpenMcpIntegrated 透传（MCP 集成智能体面板）
  *   - 2026-08-01 | v6.118.0 | Cycle 44 G44-04 新增 onOpenMcpMultimodal 透传（MCP 多模态智能体面板）
+ *   - 2026-08-01 | v6.122.0 | Cycle 48 G48-主应用集成 新增 onOpenMcpMultimodalRag 透传（MCP × 多模态 RAG 面板）
  * ============================================================
  */
 
@@ -161,6 +162,8 @@ export interface AppLayoutProps {
   onOpenMcpRagRealLLM: () => void;
   /** v6.121.0 (Cycle 47 G47-主应用集成) 新增：MCP × RAG 性能优化面板回调 */
   onOpenMcpRagPerformance: () => void;
+  /** v6.122.0 (Cycle 48 G48-主应用集成) 新增：MCP × 多模态 RAG 面板回调 */
+  onOpenMcpMultimodalRag: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板回调 */
   onOpenComposer: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板回调 */
@@ -420,6 +423,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenMcpRag,  // v6.119.0 (Cycle 45 G45-04) 透传 BrandHeader
   onOpenMcpRagRealLLM,  // v6.120.0 (Cycle 46) 透传 BrandHeader
   onOpenMcpRagPerformance,  // v6.121.0 (Cycle 47) 透传 BrandHeader
+  onOpenMcpMultimodalRag,  // v6.122.0 (Cycle 48) 透传 BrandHeader
   onOpenComposer,  // v6.36.0 (Cycle 16 P0-1) 透传 BrandHeader
   onOpenBackgroundTasks,  // v6.41.0 (Cycle 19 P0-1) 透传 BrandHeader
   onOpenBestOfN,  // v6.42.0 (Cycle 19 P0-2) 透传 BrandHeader
@@ -687,6 +691,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenMcpRag={onOpenMcpRag}
         onOpenMcpRagRealLLM={onOpenMcpRagRealLLM}
         onOpenMcpRagPerformance={onOpenMcpRagPerformance}
+        onOpenMcpMultimodalRag={onOpenMcpMultimodalRag}
         onOpenComposer={onOpenComposer}
         onOpenBackgroundTasks={onOpenBackgroundTasks}
         onOpenBestOfN={onOpenBestOfN}

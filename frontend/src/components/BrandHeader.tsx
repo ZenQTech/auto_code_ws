@@ -185,6 +185,8 @@ export interface BrandHeaderProps {
   onOpenMcpRagRealLLM?: () => void;
   /** v2.27.0 (Cycle 47) 新增：打开 MCP × RAG 性能优化面板回调（可选） */
   onOpenMcpRagPerformance?: () => void;
+  /** v2.28.0 (Cycle 48) 新增：打开 MCP × 多模态 RAG 面板回调（可选） */
+  onOpenMcpMultimodalRag?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1115,6 +1117,8 @@ export default function BrandHeader({
   onOpenMcpRagRealLLM,
   /** v2.27.0 (Cycle 47) 新增 */
   onOpenMcpRagPerformance,
+  /** v2.28.0 (Cycle 48) 新增 */
+  onOpenMcpMultimodalRag,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2067,6 +2071,23 @@ export default function BrandHeader({
                 >
                   <Icon name="zap" className="w-4 h-4 text-amber-500" />
                   <span>⚡ MCP × RAG 性能优化</span>
+                </button>
+              )}
+
+              {/* v2.28.0 (Cycle 48) 新增：MCP × 多模态 RAG（菜单项）
+               *  行为：点击调 onOpenMcpMultimodalRag() 弹出 McpMultimodalRagPanel 多模态 RAG 面板
+               *       5 Tab：多模态 Embedding / 图文混合索引 / 跨模态缓存 / 性能基准 / 系统设置
+               *  图标：image，表达多模态图像语义 */}
+              {onOpenMcpMultimodalRag && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpMultimodalRag)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-pink-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="image" className="w-4 h-4 text-pink-500" />
+                  <span>🎨 MCP × 多模态 RAG</span>
                 </button>
               )}
 
