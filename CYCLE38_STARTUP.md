@@ -2,198 +2,105 @@
 
 > 周期：Cycle 38  
 > 启动日期：2026-07-31  
-> 主题：MCP 协议深度集成（推荐方向）  
-> 状态：**待用户确认方向**
+> 主题：**Agent Loop 高级能力（方向 C）**  
+> 任务规模：**4 大 P0**  
+> API 策略：**维持 DeepSeek + 火山方舟**  
+> 状态：**已确认 ✅**
 
 ---
 
-## 一、Cycle 37 回顾
+## 一、方向确认
 
-### 1.1 交付成果
-
-| 维度 | 数据 |
-|------|------|
-| 核心引擎 | 4 大 P0（G37-01/02/03/04） |
-| UI 面板 | 4 大 P0（RAG/Tool/Loop/Real LLM） |
-| 单元测试 | 212 tests，100% 通过 |
-| TypeScript | 0 errors（严格模式） |
-| 真实 API 接入 | DeepSeek + 火山方舟 Coding Plan |
-| Git Commit | 1 个综合提交 (30e1b10) |
-
-### 1.2 技术亮点
-
-- **RAG 引擎**：混合检索 + RRF 融合 + 引用追踪
-- **Tool Use 引擎**：OpenAI/Anthropic 协议双向转换 + 完整 Schema 校验
-- **Agent Loop 引擎**：ReAct/Plan-Execute 双模式 + 检查点
-- **Real LLM Provider**：DeepSeek reasoning_content + 火山方舟 Coding Plan
-
-### 1.3 遗留事项
-
-1. **MCP 协议**：Tool Use 引擎中 MCPExecutor 仅为占位实现
-2. **Embedding 模型**：当前使用 MockEmbedding，未接入真实服务
-3. **Reranker 模型**：HeuristicReranker 启发式实现，可升级
-4. **E2E 集成测试**：需要真实 API Key 验证
+✅ **调研方向**：C. Agent Loop 高级能力  
+✅ **任务节奏**：B. 扩展到 4 大 P0（推荐）  
+✅ **API 接入**：A. 维持 DeepSeek + 火山方舟（推荐）  
 
 ---
 
-## 二、互联网调研方向
+## 二、4 大 P0 任务清单
 
-### 方向 A：MCP 协议深度集成（推荐）⭐⭐⭐⭐⭐
+### G38-01：多 Agent 协作（Manager-Worker 模式）
 
-**背景**：
-- Cycle 37 G37-02 Tool Use 引擎已实现 MCPExecutor 占位
-- Anthropic 2024-11 推出 MCP（Model Context Protocol）开放标准
-- 2026 年 MCP 生态已突破 1000+ 官方/社区 Server
-- 主流 IDE（Cursor / Cline / Continue）已支持 MCP
+**目标**：实现 Manager Agent 协调多个 Worker Agent 并行/串行协作完成复杂任务
 
-**核心价值**：
-- 一次开发，多端复用（任何 MCP Client 都能用）
-- 工具生态从"自建"转向"集成"
-- 标准化协议降低厂商锁定风险
-
-**P0 任务清单**：
-
-| 任务 | 描述 | 估算 |
-|------|------|------|
-| G38-01 | MCP Stdio 传输层实现 | 3-4 天 |
-| G38-02 | MCP SSE 传输层实现 | 3-4 天 |
-| G38-03 | MCP 工具自动发现 + 动态注册 | 2-3 天 |
-| G38-04 | MCP Resources / Prompts 模板支持 | 2-3 天 |
-| G38-05 | 内置 5+ MCP Server（Filesystem/GitHub/Postgres/Slack/Brave） | 4-5 天 |
-| G38-06 | MCP 权限沙箱（per-server 权限管理） | 2-3 天 |
+**核心能力**：
+- **Manager Agent**：负责任务分解、Worker 调度、结果汇总
+- **Worker Pool**：多个 Worker Agent 并行执行子任务
+- **任务路由**：基于任务类型 / 能力匹配路由到合适的 Worker
+- **结果融合**：多 Worker 输出结果融合为最终结果
+- **失败重试**：单 Worker 失败不影响整体，可单独重试
+- **消息总线**：Manager 与 Worker 之间基于消息传递
 
 **对标产品**：
-- Cursor (MCP 原生支持)
-- Cline (MCP 集成)
-- Continue (MCP 集成)
-- Anthropic Claude Desktop (MCP 协议制定者)
+- AutoGen (Microsoft) - GroupChat 模式
+- LangGraph - Supervisor 模式
+- CrewAI - Crew 协作模式
 
-**风险评估**：低（已有占位实现可平滑升级）
+**关键文件**：
+- `frontend/src/utils/multiAgentEngine.ts`
+- `frontend/src/utils/multiAgentEngine.test.ts`
 
----
+### G38-02：长期记忆（MemGPT 风格分层存储）
 
-### 方向 B：RAG 增强 + 多模态检索
+**目标**：实现 MemGPT 风格的分层记忆系统（核心记忆 + 回忆记忆 + 归档记忆）
 
-**背景**：
-- Cycle 37 G37-01 RAG 引擎已实现文本 RAG
-- 2026 年多模态 RAG 成为新趋势（GPT-4o Vision + RAG）
-- 知识图谱 RAG（GraphRAG / LightRAG）正在崛起
-
-**P0 任务清单**：
-
-| 任务 | 描述 | 估算 |
-|------|------|------|
-| G38-01 | 图像/音频多模态 Embedding | 4-5 天 |
-| G38-02 | ColPali/ColQwen 视觉文档检索 | 3-4 天 |
-| G38-03 | Cross-Encoder 重排序模型 | 3-4 天 |
-| G38-04 | GraphRAG 知识图谱集成 | 5-6 天 |
-| G38-05 | 实时增量索引 | 2-3 天 |
+**核心能力**：
+- **核心记忆（Core Memory）**：当前会话关键信息（用户偏好、当前目标）
+- **回忆记忆（Recall Memory）**：近期对话历史（可全文检索）
+- **归档记忆（Archive Memory）**：长期历史（向量化后语义检索）
+- **记忆衰减**：基于时间/相关性自动衰减重要性分数
+- **记忆整合**：定期将分散记忆合并为高级抽象
+- **记忆索引**：基于 RAG 的语义检索（复用 Cycle 37 RAG 引擎）
 
 **对标产品**：
-- LightRAG (HKUDS)
-- GraphRAG (Microsoft)
-- RAGFlow (InfiniFlow)
-- Vectara (企业级 RAG)
-
-**风险评估**：中高（需要大量基础设施）
-
----
-
-### 方向 C：Agent Loop 高级能力
-
-**背景**：
-- Cycle 37 G37-03 Agent Loop 引擎已实现基础 ReAct/Plan-Execute
-- 2026 年 Agent 框架向多 Agent 协作 + 长期记忆演进
-- LangGraph / AutoGen / CrewAI 已成为事实标准
-
-**P0 任务清单**：
-
-| 任务 | 描述 | 估算 |
-|------|------|------|
-| G38-01 | 多 Agent 协作（Manager-Worker） | 4-5 天 |
-| G38-02 | 长期记忆（MemGPT 风格分层存储） | 4-5 天 |
-| G38-03 | 反思与自我修正（Reflexion 模式） | 3-4 天 |
-| G38-04 | 人机协作审批工作流 | 3-4 天 |
-| G38-05 | Agent Marketplace（社区共享 Agent 模板） | 3-4 天 |
-
-**对标产品**：
-- LangGraph (LangChain)
-- AutoGen (Microsoft)
-- CrewAI
 - MemGPT (Letta)
+- LangChain Memory
+- Zep (企业级长期记忆)
 
-**风险评估**：中（需要 LLM 推理算力）
+**关键文件**：
+- `frontend/src/utils/longTermMemory.ts`
+- `frontend/src/utils/longTermMemory.test.ts`
 
----
+### G38-03：反思与自我修正（Reflexion 模式）
 
-## 三、推荐方向论证
+**目标**：实现 Reflexion 风格的 Agent 自我反思与迭代修正能力
 
-**为什么推荐方向 A（MCP 协议深度集成）**：
+**核心能力**：
+- **执行评估**：执行完成后自动评估结果质量
+- **反思生成**：基于执行轨迹生成反思（成功经验 + 失败教训）
+- **策略调整**：基于反思调整下一步策略
+- **记忆更新**：将反思存入长期记忆
+- **迭代终止**：基于质量阈值 / 最大迭代次数自动终止
+- **决策可解释**：每轮迭代记录决策依据
 
-1. **技术契合度最高**
-   - Cycle 37 G37-02 已有 MCPExecutor 占位实现
-   - 现有 ToolRegistry 架构可平滑升级
-   - ProtocolConverter 已支持 OpenAI/Anthropic 双向
+**对标产品**：
+- Reflexion (Stanford NLP)
+- Self-Refine (MIT)
+- CRITIC (大型语言模型自我批评)
 
-2. **生态价值最大**
-   - 一次集成 1000+ MCP Server
-   - 降低自建工具维护成本
-   - 与 Cursor / Cline 等主流工具互通
+**关键文件**：
+- `frontend/src/utils/reflectionEngine.ts`
+- `frontend/src/utils/reflectionEngine.test.ts`
 
-3. **商业化路径清晰**
-   - 企业用户对标准化工具集成需求强烈
-   - MCP 协议已被 Anthropic / OpenAI / Google 等采纳
-   - 国内大厂（阿里云 / 字节跳动）也在跟进
+### G38-04：人机协作审批工作流
 
-4. **风险最低**
-   - 技术栈成熟（TypeScript SDK 完善）
-   - 协议规范清晰（官方文档详尽）
-   - 社区活跃（GitHub 10k+ stars）
+**目标**：实现危险操作前的人工审批机制，确保关键决策可追溯、可中断
 
----
+**核心能力**：
+- **风险分级**：自动评估操作风险等级（safe / moderate / dangerous / critical）
+- **审批策略**：基于风险等级自动路由审批人（用户 / 管理员 / 安全官）
+- **审批队列**：待审批操作排队展示，支持批量审批
+- **审批日志**：完整记录审批决策（who/when/why）
+- **审批超时**：超过 N 分钟自动降级或拒绝
+- **审批回调**：审批结果异步通知 Agent 继续执行
 
-## 四、任务节奏建议
+**对标产品**：
+- Salesforce Flow Approvals
+- ServiceNow Approval Engine
+- Microsoft Power Automate Approvals
 
-| 选项 | 规模 | 适用场景 |
-|------|------|---------|
-| A | 维持 3 大 P0 | 资源有限，追求深度 |
-| B | 扩展到 4 大 P0 | 资源充足（推荐） |
-| C | 缩减到 2 大 P0 | 资源紧张或风险规避 |
-
-**推荐 B（4 大 P0）**：聚焦 MCP 传输层 + 工具发现 + 内置 Server + 权限沙箱
-
----
-
-## 五、API 接入建议
-
-| Provider | 用途 | 必要性 |
-|----------|------|--------|
-| DeepSeek | LLM 推理（成本最低） | 已接入 |
-| 火山方舟 Coding Plan | LLM 推理（中文优化） | 已接入 |
-| MCP 官方 Registry | Server 发现 | 推荐 |
-| GitHub API | MCP Server 远程安装 | 推荐 |
+**关键文件**：
+- `frontend/src/utils/humanApprovalEngine.ts`
+- `frontend/src/utils/humanApprovalEngine.test.ts`
 
 ---
-
-## 六、用户确认问题
-
-请确认 Cycle 38 的调研方向和任务节奏：
-
-1. **调研方向**：
-   - A. MCP 协议深度集成（推荐）⭐⭐⭐⭐⭐
-   - B. RAG 增强 + 多模态检索
-   - C. Agent Loop 高级能力
-
-2. **任务节奏**：
-   - A. 维持 3 大 P0
-   - B. 扩展到 4 大 P0（推荐）
-   - C. 缩减到 2 大 P0
-
-3. **API 接入**：
-   - A. 维持 DeepSeek + 火山方舟（推荐）
-   - B. 增加 OpenAI / Anthropic（成本上升）
-   - C. 缩减到仅 Mock（无真实 LLM）
-
----
-
-**Cycle 38 准备就绪，等待用户确认方向** 🚀
