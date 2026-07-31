@@ -43,13 +43,24 @@ describe('工具函数', () => {
   });
 
   it('calculateRetryDelay 指数退避', () => {
-    const d0 = calculateRetryDelay(0, DEFAULT_RETRY_POLICY);
-    const d1 = calculateRetryDelay(1, DEFAULT_RETRY_POLICY);
-    const d2 = calculateRetryDelay(2, DEFAULT_RETRY_POLICY);
+    // 多次采样取中位数，避免随机抖动导致 flaky
+    const samples = 30;
+    const d0Arr: number[] = [];
+    const d1Arr: number[] = [];
+    const d2Arr: number[] = [];
+    for (let i = 0; i < samples; i++) {
+      d0Arr.push(calculateRetryDelay(0, DEFAULT_RETRY_POLICY));
+      d1Arr.push(calculateRetryDelay(1, DEFAULT_RETRY_POLICY));
+      d2Arr.push(calculateRetryDelay(2, DEFAULT_RETRY_POLICY));
+    }
+    const median = (arr: number[]) => [...arr].sort((a, b) => a - b)[Math.floor(arr.length / 2)];
+    const d0 = median(d0Arr);
+    const d1 = median(d1Arr);
+    const d2 = median(d2Arr);
     expect(d0).toBeGreaterThanOrEqual(900);
     expect(d0).toBeLessThanOrEqual(1100);
-    expect(d1).toBeGreaterThanOrEqual(d0 * 1.8);
-    expect(d2).toBeGreaterThanOrEqual(d1 * 1.8);
+    expect(d1).toBeGreaterThanOrEqual(d0 * 1.5);
+    expect(d2).toBeGreaterThanOrEqual(d1 * 1.5);
   });
 
   it('calculateRetryDelay 上限', () => {

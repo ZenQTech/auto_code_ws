@@ -58,7 +58,7 @@ export function SmartApprovalPanel({ isOpen, onClose }: SmartApprovalPanelProps)
   const [filter, setFilter] = useState<'all' | 'system' | 'user'>('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   // 编辑规则（未来功能）：保留状态以备后续使用
-  // @ts-expect-error 保留为未来编辑功能状态
+  // 保留为未来编辑功能状态（变量未使用前缀 _ 以避免 unused 警告）
   const [, setEditingRule] = useState<SmartApprovalRule | null>(null);
   const [showHelp, setShowHelp] = useState(false);
 
