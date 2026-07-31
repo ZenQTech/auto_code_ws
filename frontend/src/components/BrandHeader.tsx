@@ -179,6 +179,8 @@ export interface BrandHeaderProps {
   onOpenMcpE2E?: () => void;
   /** v2.24.0 (Cycle 44 G44-04) 新增：打开 MCP 多模态智能体面板回调（可选） */
   onOpenMcpMultimodal?: () => void;
+  /** v2.25.0 (Cycle 45 G45-04) 新增：打开 MCP × RAG 智能体面板回调（可选） */
+  onOpenMcpRag?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1103,6 +1105,8 @@ export default function BrandHeader({
   onOpenMcpE2E,
   /** v2.24.0 (Cycle 44 G44-04) 新增 */
   onOpenMcpMultimodal,
+  /** v2.25.0 (Cycle 45 G45-04) 新增 */
+  onOpenMcpRag,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2002,6 +2006,24 @@ export default function BrandHeader({
                 >
                   <Icon name="multimodal" className="w-4 h-4 text-pink-500" />
                   <span>🎨 MCP 多模态智能体</span>
+                </button>
+              )}
+
+              {/* v2.25.0 (Cycle 45 G45-04) 新增：MCP × RAG 智能体（菜单项）
+               *  行为：点击调 onOpenMcpRag() 弹出 McpRagPanel 智能体面板
+               *       资源 RAG + 工具 RAG + 提示词 RAG 三源融合
+               *       4 Tab：智能对话 / 资源索引 / 工具检索 / 历史记录
+               *  图标：book（知识库），表达 RAG 知识库融合 */}
+              {onOpenMcpRag && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpRag)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-rose-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="book" className="w-4 h-4 text-emerald-500" />
+                  <span>📚 MCP × RAG 智能体</span>
                 </button>
               )}
 
