@@ -14,7 +14,6 @@ import {
   LWWMap,
   generateOperationId,
   generateCRDTId,
-  DEFAULT_OFFLINE_FIRST_CONFIG,
   getDefaultOfflineFirstEngine,
   resetDefaultOfflineFirstEngine,
 } from './offlineFirstEngine';

@@ -61,6 +61,10 @@
 #     新增 onOpenEnterpriseWorkflow / onOpenUnifiedDashboard / onOpenSecurityAudit 回调
 #     新增 workflow (齿轮) / dashboard (仪表盘) / shield (盾牌) 内联 SVG 图标
 #     对应企业级工作流编排 + 30+ 引擎统一 Dashboard + 7 个预置攻击场景自动化
+#   - 2026-07-31 | v2.16.0 | Cycle 34 新增：菜单项 端云模型路由 / 离线优先 / 设备集群
+#     新增 onOpenEdgeModelRouter / onOpenOfflineFirst / onOpenDeviceCluster 回调
+#     新增 edge-cloud (云+端) / offline (云断线) / devices (多设备) 内联 SVG 图标
+#     对应 Cursor Router 端云路由 + Trae Solo 离线优先 + mDNS/DNS-SD 设备发现
 # ============================================================
  */
 
@@ -250,6 +254,12 @@ export interface BrandHeaderProps {
   onOpenUnifiedDashboard?: () => void;
   /** v6.94.0 (Cycle 33 G33-03) 新增：安全审计 */
   onOpenSecurityAudit?: () => void;
+  /** v6.97.0 (Cycle 34 G34-01) 新增：端云模型路由 */
+  onOpenEdgeModelRouter?: () => void;
+  /** v6.97.0 (Cycle 34 G34-02) 新增：离线优先工作流 */
+  onOpenOfflineFirst?: () => void;
+  /** v6.97.0 (Cycle 34 G34-03) 新增：设备集群管理 */
+  onOpenDeviceCluster?: () => void;
 }
 
 /**
@@ -259,7 +269,7 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -833,6 +843,33 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <line x1="12" y1="16" x2="12.01" y2="16" />
         </svg>
       );
+    case 'edge-cloud':
+      // v6.97.0 (Cycle 34 G34-01) 新增：端云模型路由（云 + 端双向箭头）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+          <polyline points="8 14 12 18 16 14" />
+          <line x1="12" y1="18" x2="12" y2="10" />
+        </svg>
+      );
+    case 'offline':
+      // v6.97.0 (Cycle 34 G34-02) 新增：离线优先（云 + 断线符号）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+          <line x1="3" y1="3" x2="21" y2="21" />
+        </svg>
+      );
+    case 'devices':
+      // v6.97.0 (Cycle 34 G34-03) 新增：设备集群管理（多设备 + 信号）
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <rect x="2" y="3" width="14" height="9" rx="1" />
+          <rect x="13" y="12" width="9" height="9" rx="1" />
+          <path d="M5 6h.01M16 15h.01" />
+          <path d="M11 21h-4" />
+        </svg>
+      );
     default:
       return null;
   }
@@ -998,6 +1035,12 @@ export default function BrandHeader({
   onOpenUnifiedDashboard,
   /** v6.94.0 (Cycle 33 G33-03) 新增：安全审计 */
   onOpenSecurityAudit,
+  /** v6.97.0 (Cycle 34 G34-01) 新增：端云模型路由 */
+  onOpenEdgeModelRouter,
+  /** v6.97.0 (Cycle 34 G34-02) 新增：离线优先工作流 */
+  onOpenOfflineFirst,
+  /** v6.97.0 (Cycle 34 G34-03) 新增：设备集群管理 */
+  onOpenDeviceCluster,
 }: BrandHeaderProps) {
   /** 下拉菜单开关状态 */
   const [menuOpen, setMenuOpen] = useState(false);
@@ -2465,6 +2508,45 @@ export default function BrandHeader({
                 >
                   <Icon name="security-shield" className="w-4 h-4 text-red-500" />
                   <span>🛡 安全审计</span>
+                </button>
+              )}
+
+              {/* v2.16.0 (Cycle 34 G34-01) 新增：端云模型路由（菜单项） */}
+              {onOpenEdgeModelRouter && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenEdgeModelRouter)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-sky-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-edge-model-router"
+                >
+                  <Icon name="edge-cloud" className="w-4 h-4 text-sky-500" />
+                  <span>☁ 端云路由</span>
+                </button>
+              )}
+
+              {/* v2.16.0 (Cycle 34 G34-02) 新增：离线优先（菜单项） */}
+              {onOpenOfflineFirst && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenOfflineFirst)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-amber-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-offline-first"
+                >
+                  <Icon name="offline" className="w-4 h-4 text-amber-500" />
+                  <span>📴 离线优先</span>
+                </button>
+              )}
+
+              {/* v2.16.0 (Cycle 34 G34-03) 新增：设备集群（菜单项） */}
+              {onOpenDeviceCluster && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenDeviceCluster)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700 hover:bg-indigo-50 flex items-center gap-2 transition-colors duration-fast"
+                  data-testid="menu-device-cluster"
+                >
+                  <Icon name="devices" className="w-4 h-4 text-indigo-500" />
+                  <span>📱 设备集群</span>
                 </button>
               )}
 

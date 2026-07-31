@@ -552,7 +552,7 @@ export class OfflineFirstEngine {
   }
 
   onNetworkChange(listener: (state: NetworkState) => void): () => void {
-    return this.on('network-status-changed', (e) => listener({ ...this.networkState }));
+    return this.on('network-status-changed', () => listener({ ...this.networkState }));
   }
 
   // ============ 操作队列 ============

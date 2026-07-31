@@ -240,6 +240,12 @@ export interface AppLayoutProps {
   onOpenUnifiedDashboard?: () => void;
   /** v6.94.0 (Cycle 33 G33-03) 新增：安全审计 */
   onOpenSecurityAudit?: () => void;
+  /** v6.97.0 (Cycle 34 G34-01) 新增：端云模型路由 */
+  onOpenEdgeModelRouter?: () => void;
+  /** v6.97.0 (Cycle 34 G34-02) 新增：离线优先工作流 */
+  onOpenOfflineFirst?: () => void;
+  /** v6.97.0 (Cycle 34 G34-03) 新增：设备集群管理 */
+  onOpenDeviceCluster?: () => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：执行 Slash Command 回调 */
   onSlashCommandExecute: (command: string, args: string[]) => void;
   /** v6.23.0 (Cycle 8 P0-12) 新增：关闭 Slash Command 选择器回调 */
@@ -406,6 +412,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenEnterpriseWorkflow,  // v6.94.0 (Cycle 33 G33-01) 透传 BrandHeader
   onOpenUnifiedDashboard,  // v6.94.0 (Cycle 33 G33-02) 透传 BrandHeader
   onOpenSecurityAudit,  // v6.94.0 (Cycle 33 G33-03) 透传 BrandHeader
+  onOpenEdgeModelRouter,  // v6.97.0 (Cycle 34 G34-01) 透传 BrandHeader
+  onOpenOfflineFirst,  // v6.97.0 (Cycle 34 G34-02) 透传 BrandHeader
+  onOpenDeviceCluster,  // v6.97.0 (Cycle 34 G34-03) 透传 BrandHeader
   onSlashCommandExecute,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onSlashCommandClose,  // v6.23.0 (Cycle 8 P0-12) 透传 SlashCommandPicker
   onModelChange,
@@ -647,6 +656,9 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenEnterpriseWorkflow={onOpenEnterpriseWorkflow}
         onOpenUnifiedDashboard={onOpenUnifiedDashboard}
         onOpenSecurityAudit={onOpenSecurityAudit}
+        onOpenEdgeModelRouter={onOpenEdgeModelRouter}
+        onOpenOfflineFirst={onOpenOfflineFirst}
+        onOpenDeviceCluster={onOpenDeviceCluster}
       />
 
       {/* Codex 风格工具栏（v6.10.1 P5 视觉优化：增加分割线 + 渐变背景） */}

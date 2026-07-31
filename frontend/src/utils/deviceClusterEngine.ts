@@ -298,7 +298,7 @@ class TaskRouter {
     return true;
   }
 
-  private routeByCapability(candidates: Device[], task: ClusterTask): Device {
+  private routeByCapability(candidates: Device[], _task: ClusterTask): Device {
     const scored = candidates.map((d) => ({
       device: d,
       score: d.llmSupport.models.length * 0.4 + d.capabilities.cpu.cores / 32 * 0.2 + (d.capabilities.gpu ? 0.2 : 0) + (d.capabilities.memory.availableMb / d.capabilities.memory.totalMb) * 0.2,
@@ -316,13 +316,13 @@ class TaskRouter {
     return sorted[0];
   }
 
-  private routeByBattery(candidates: Device[], task: ClusterTask): Device {
+  private routeByBattery(candidates: Device[], _task: ClusterTask): Device {
     const mobile = candidates.filter((d) => d.type === 'mobile');
     if (mobile.length === 0) return this.routeByLoad(candidates);
     return this.routeByLoad(mobile);
   }
 
-  private routeHybrid(candidates: Device[], task: ClusterTask): Device {
+  private routeHybrid(candidates: Device[], _task: ClusterTask): Device {
     const scored = candidates.map((d) => {
       const capScore = (d.llmSupport.models.length / 5) * 0.4;
       const loadScore = (1 - (d.capabilities.cpu.usagePercent + d.capabilities.memory.usagePercent) / 200) * 0.4;
@@ -519,7 +519,7 @@ export class DeviceClusterEngine {
 
   // ============ 设备发现 ============
 
-  startDiscovery(serviceType: string = '_hermes._tcp.local'): void {
+  startDiscovery(_serviceType: string = '_hermes._tcp.local'): void {
     if (this.config.discoveryProtocol === 'manual') return;
 
     // Mock 设备发现：模拟 3 个设备

@@ -338,6 +338,12 @@ import { EnterpriseWorkflowPanel } from './components/EnterpriseWorkflowPanel';
 import { UnifiedDashboardPanel } from './components/UnifiedDashboardPanel';
 /** v6.94.0 (Cycle 33 G33-03) 新增：安全审计面板 */
 import { SecurityAuditPanel } from './components/SecurityAuditPanel';
+/** v6.97.0 (Cycle 34 G34-01) 新增：端云模型路由面板 */
+import { EdgeModelRouterPanel } from './components/EdgeModelRouterPanel';
+/** v6.97.0 (Cycle 34 G34-02) 新增：离线优先面板 */
+import { OfflineFirstPanel } from './components/OfflineFirstPanel';
+/** v6.97.0 (Cycle 34 G34-03) 新增：设备集群面板 */
+import { DeviceClusterPanel } from './components/DeviceClusterPanel';
 
 /**
  * 对话消息类型定义（v6.4.0 起从 utils/messageFormatters 引入）
@@ -1804,6 +1810,39 @@ export default function App() {
   }, []);
 
   /**
+   * v6.97.0 (Cycle 34 G34-01) 新增：端云模型路由面板
+   * 作用：控制 EdgeModelRouterPanel 弹窗显隐
+   *       端云模型智能路由（Cursor Router 三大优化模式 + Claude Mobile 隐私 Tier + Token Budget）
+   *       覆盖 Codex Desktop / Cursor Router / Claude Mobile / Trae Solo 端云协同
+   */
+  const [edgeModelRouterOpen, setEdgeModelRouterOpen] = useState(false);
+  const handleOpenEdgeModelRouter = useCallback(() => {
+    setEdgeModelRouterOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.97.0 (Cycle 34 G34-02) 新增：离线优先工作流面板
+   * 作用：控制 OfflineFirstPanel 弹窗显隐
+   *       断网检测 + 本地队列 + CRDT 冲突解决 + 引擎降级
+   *       对标 Local-First 七大原则 + Trae Solo 离线模式
+   */
+  const [offlineFirstOpen, setOfflineFirstOpen] = useState(false);
+  const handleOpenOfflineFirst = useCallback(() => {
+    setOfflineFirstOpen((prev) => !prev);
+  }, []);
+
+  /**
+   * v6.97.0 (Cycle 34 G34-03) 新增：设备集群管理面板
+   * 作用：控制 DeviceClusterPanel 弹窗显隐
+   *       多设备发现（mDNS/DNS-SD）+ 任务路由（能力/负载/电量）+ 故障转移
+   *       对标 mDNS（IETF RFC 6762/6763）+ Trae Solo 三端协同
+   */
+  const [deviceClusterOpen, setDeviceClusterOpen] = useState(false);
+  const handleOpenDeviceCluster = useCallback(() => {
+    setDeviceClusterOpen((prev) => !prev);
+  }, []);
+
+  /**
    * 删除会话（v6.35.0 P1-7：升级撤销按钮）
    * 运行步骤：
    *   1. 二次确认
@@ -2867,6 +2906,9 @@ export default function App() {
           onOpenEnterpriseWorkflow={handleOpenEnterpriseWorkflow}
           onOpenUnifiedDashboard={handleOpenUnifiedDashboard}
           onOpenSecurityAudit={handleOpenSecurityAudit}
+          onOpenEdgeModelRouter={handleOpenEdgeModelRouter}
+          onOpenOfflineFirst={handleOpenOfflineFirst}
+          onOpenDeviceCluster={handleOpenDeviceCluster}
           onOpenCycle3={setCycle3PanelOpen}
           onOpenDualCompaction={setDualCompactionOpen}
           onOpenRules={setRulesPanelOpen}
@@ -3772,6 +3814,36 @@ export default function App() {
         <SecurityAuditPanel
           isOpen={securityAuditOpen}
           onClose={() => setSecurityAuditOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.97.0 (Cycle 34 G34-01) 新增：端云模型路由面板
+       *  引擎由 EdgeModelRouterEngine 单例管理，端云智能路由 + Token 预算
+       *  对应 Cursor Router 三大优化模式 + Claude Mobile 隐私 Tier */}
+      <ErrorBoundary level="panel" name="EdgeModelRouter">
+        <EdgeModelRouterPanel
+          isOpen={edgeModelRouterOpen}
+          onClose={() => setEdgeModelRouterOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.97.0 (Cycle 34 G34-02) 新增：离线优先工作流面板
+       *  引擎由 OfflineFirstEngine 单例管理，断网检测 + 本地队列 + CRDT + 引擎降级
+       *  对标 Local-First 七大原则 + Trae Solo 离线模式 */}
+      <ErrorBoundary level="panel" name="OfflineFirst">
+        <OfflineFirstPanel
+          isOpen={offlineFirstOpen}
+          onClose={() => setOfflineFirstOpen(false)}
+        />
+      </ErrorBoundary>
+
+      {/* v6.97.0 (Cycle 34 G34-03) 新增：设备集群管理面板
+       *  引擎由 DeviceClusterEngine 单例管理，多设备发现 + 任务路由 + 故障转移
+       *  对标 mDNS（IETF RFC 6762/6763）+ Trae Solo 三端协同 */}
+      <ErrorBoundary level="panel" name="DeviceCluster">
+        <DeviceClusterPanel
+          isOpen={deviceClusterOpen}
+          onClose={() => setDeviceClusterOpen(false)}
         />
       </ErrorBoundary>
 
