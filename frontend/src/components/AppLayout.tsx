@@ -33,6 +33,9 @@
  *   - 2026-07-31 | v6.115.0 | Cycle 42 G42-04 新增 onOpenMcpIntegrated 透传（MCP 集成智能体面板）
  *   - 2026-08-01 | v6.118.0 | Cycle 44 G44-04 新增 onOpenMcpMultimodal 透传（MCP 多模态智能体面板）
  *   - 2026-08-01 | v6.122.0 | Cycle 48 G48-主应用集成 新增 onOpenMcpMultimodalRag 透传（MCP × 多模态 RAG 面板）
+ *   - 2026-08-01 | v6.123.0 | Cycle 49 G49-主应用集成 新增 onOpenMcpMultimodalProvider 透传（真实多模态 Provider 面板）
+ *   - 2026-08-01 | v6.124.0 | Cycle 50 G50-主应用集成 新增 onOpenMcpE2EProduction 透传（真实 E2E 生产面板）
+ *   - 2026-08-01 | v6.125.0 | Cycle 51 G51-主应用集成 新增 onOpenMcpDeploymentValidation 透传（部署验证面板）
  * ============================================================
  */
 
@@ -168,6 +171,8 @@ export interface AppLayoutProps {
   onOpenMcpMultimodalProvider: () => void;
   /** v6.124.0 (Cycle 50 G50-主应用集成) 新增：MCP × 真实 E2E 生产面板回调 */
   onOpenMcpE2EProduction: () => void;
+  /** v6.125.0 (Cycle 51 G51-主应用集成) 新增：MCP × 部署验证面板回调 */
+  onOpenMcpDeploymentValidation: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板回调 */
   onOpenComposer: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板回调 */

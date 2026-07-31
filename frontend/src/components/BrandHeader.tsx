@@ -191,6 +191,8 @@ export interface BrandHeaderProps {
   onOpenMcpMultimodalProvider?: () => void;
   /** v2.30.0 (Cycle 50) 新增：打开 MCP × 真实 E2E 生产面板回调（可选） */
   onOpenMcpE2EProduction?: () => void;
+  /** v2.31.0 (Cycle 51) 新增：打开 MCP × 部署验证面板回调（可选） */
+  onOpenMcpDeploymentValidation?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1127,6 +1129,8 @@ export default function BrandHeader({
   onOpenMcpMultimodalProvider,
   /** v2.30.0 (Cycle 50) 新增 */
   onOpenMcpE2EProduction,
+  /** v2.31.0 (Cycle 51) 新增 */
+  onOpenMcpDeploymentValidation,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2130,6 +2134,23 @@ export default function BrandHeader({
                 >
                   <Icon name="rocket" className="w-4 h-4 text-cyan-500" />
                   <span>🚀 MCP × 真实 E2E 生产</span>
+                </button>
+              )}
+
+              {/* v2.31.0 (Cycle 51) 新增：MCP × 部署验证（菜单项）
+               *  行为：点击调 onOpenMcpDeploymentValidation() 弹出 McpDeploymentValidationPanel 部署验证面板
+               *       5 Tab：健康检查 / E2E 流程 / 监控验证 / 性能压测 / 部署文档
+               *  图标：check-circle，表达部署验证与生产就绪语义 */}
+              {onOpenMcpDeploymentValidation && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpDeploymentValidation)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="shield-check" className="w-4 h-4 text-cyan-500" />
+                  <span>✅ MCP × 部署验证</span>
                 </button>
               )}
 
