@@ -384,7 +384,9 @@ describe('CRD Generator', () => {
         log: () => {},
       });
       expect(result.requeue).toBe(false);
-      expect(result.reason).toBe('invalid-spec');
+      if (result.requeue === false) {
+        expect(result.reason).toBe('invalid-spec');
+      }
     });
   });
 

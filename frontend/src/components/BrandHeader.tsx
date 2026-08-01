@@ -199,6 +199,8 @@ export interface BrandHeaderProps {
   onOpenMcpObservability?: () => void;
   /** v2.34.0 (Cycle 54) 新增：打开 MCP × 真实平台集成面板回调（可选） */
   onOpenMcpPlatformIntegration?: () => void;
+  /** v2.35.0 (Cycle 55) 新增：打开 MCP × Kubernetes 集成面板回调（可选） */
+  onOpenMcpKubernetes?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -348,7 +350,8 @@ export interface BrandHeaderProps {
  */
 function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices' | 'chat' | 'scheduler' | 'llm' | 'multimodal' | 'rag' | 'tool' | 'loop' | 'real-llm' | 'multi-agent' | 'memory' | 'reflection'
   | 'approval'
-  | 'telescope'; className?: string }) {
+  | 'telescope'
+  | 'kubernetes'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -427,6 +430,21 @@ function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' |
           <path d="M9 7V2" />
           <path d="M15 7V2" />
           <path d="M6 13V8h12v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4z" />
+        </svg>
+      );
+    case 'kubernetes':
+      // v2.35.0 (Cycle 55) 新增：Kubernetes 集群 - 船舵
+      return (
+        <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}>
+          <circle cx="12" cy="12" r="2" />
+          <path d="M12 2v6" />
+          <path d="M12 16v6" />
+          <path d="M4.93 4.93l4.24 4.24" />
+          <path d="M14.83 14.83l4.24 4.24" />
+          <path d="M2 12h6" />
+          <path d="M16 12h6" />
+          <path d="M4.93 19.07l4.24-4.24" />
+          <path d="M14.83 9.17l4.24-4.24" />
         </svg>
       );
     case 'compress':
@@ -1144,6 +1162,8 @@ export default function BrandHeader({
   /** v2.33.0 (Cycle 53) 新增 */
   onOpenMcpObservability,
   onOpenMcpPlatformIntegration,
+  /** v2.35.0 (Cycle 55) 新增 */
+  onOpenMcpKubernetes,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2215,6 +2235,23 @@ export default function BrandHeader({
                 >
                   <Icon name="plug" className="w-4 h-4 text-cyan-500" />
                   <span>🔌 MCP × 真实平台集成</span>
+                </button>
+              )}
+
+              {/* v2.35.0 (Cycle 55) 新增：MCP × Kubernetes 集成（菜单项）
+               *  行为：点击调 onOpenMcpKubernetes() 弹出 McpKubernetesPanel
+               *       5 Tab：Manifest / Helm / CRD / API / 集成文档
+               *  图标：kubernetes（船舵），表达集群编排语义 */}
+              {onOpenMcpKubernetes && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpKubernetes)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="kubernetes" className="w-4 h-4 text-cyan-500" />
+                  <span>☸️ MCP × Kubernetes</span>
                 </button>
               )}
 

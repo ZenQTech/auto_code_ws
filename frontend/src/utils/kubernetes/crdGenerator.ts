@@ -23,6 +23,7 @@ import type {
   ReconcileResult,
 } from './k8sCrdTypes';
 import { buildManifestYaml, buildResourceYaml } from './k8sManifestGenerator';
+import type { K8sResource } from './k8sTypes';
 
 // ============================================================
 // CRD Builder
@@ -483,14 +484,14 @@ export function createMcpAgentReconciler(): Reconciler {
  * 将 CRD 序列化为 K8s YAML Manifest
  */
 export function buildCRDManifest(crds: CustomResourceDefinition[]): string {
-  return buildManifestYaml(crds as Array<Record<string, unknown>>);
+  return buildManifestYaml(crds as unknown as K8sResource[]);
 }
 
 /**
  * 将 CR 实例序列化为 YAML
  */
 export function buildCustomResourceYaml(cr: CustomResource): string {
-  return buildResourceYaml(cr as Record<string, unknown>);
+  return buildResourceYaml(cr as unknown as K8sResource);
 }
 
 /**

@@ -71,7 +71,7 @@ export interface DeploymentBuilderOptions {
   image: string;
   imagePullPolicy?: 'Always' | 'IfNotPresent' | 'Never';
   containerName?: string;
-  ports?: Array<{ name?: string; containerPort: number; protocol?: 'TCP' | 'UDP' }>;
+  ports?: Array<{ name?: string; containerPort: number; protocol?: 'TCP' | 'UDP' | 'SCTP' }>;
   env?: K8sEnvVar[];
   command?: string[];
   args?: string[];
@@ -159,7 +159,7 @@ export function createDeploymentBuilder(options: DeploymentBuilderOptions): K8sD
       replicas: options.replicas ?? 1,
       selector: { matchLabels: selectorLabels },
       template: {
-        metadata: { labels: appLabels },
+        metadata: { name: options.name, labels: appLabels },
         spec: {
           containers: [container],
         },
@@ -363,7 +363,8 @@ function base64Encode(input: string): string {
     }
     return btoa(binary);
   }
-  return Buffer.from(input).toString('base64');
+  // 浏览器环境兜底：使用纯 JavaScript 实现 base64 编码
+  return btoa(unescape(encodeURIComponent(input)));
 }
 
 /**
@@ -598,21 +599,21 @@ export function createServiceAccountBuilder(options: ServiceAccountBuilderOption
  * 将多个 K8s 资源序列化为完整 Manifest YAML
  */
 export function buildManifestYaml(resources: K8sResource[]): string {
-  return serializeK8sManifest(resources as Array<Record<string, unknown>>);
+  return serializeK8sManifest(resources as unknown as Array<Record<string, unknown>>);
 }
 
 /**
  * 将单个资源序列化为 YAML
  */
 export function buildResourceYaml(resource: K8sResource): string {
-  return serializeK8sResource(resource as Record<string, unknown>);
+  return serializeK8sResource(resource as unknown as Record<string, unknown>);
 }
 
 /**
  * 解析 K8s YAML 字符串为资源列表
  */
 export function parseManifestYaml(yaml: string): K8sResource[] {
-  return parseK8sYaml(yaml) as K8sResource[];
+  return parseK8sYaml(yaml) as unknown as K8sResource[];
 }
 
 // ============================================================
@@ -629,7 +630,7 @@ export interface ApplicationStackOptions {
   /** 副本数 */
   replicas?: number;
   /** 容器端口 */
-  ports: Array<{ name?: string; containerPort: number }>;
+  ports: Array<{ name?: string; containerPort: number; protocol?: 'TCP' | 'UDP' | 'SCTP' }>;
   /** 环境变量 */
   env?: K8sEnvVar[];
   /** 资源限制 */

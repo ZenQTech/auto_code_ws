@@ -52,8 +52,9 @@ describe('useModals', () => {
       //  v3.12.0 Cycle 51 新增 mcpDeploymentValidation,
       //  v3.13.0 Cycle 52 新增 mcpProductionEnhancement,
       //  v3.14.0 Cycle 53 新增 mcpObservability,
-      //  v3.15.0 Cycle 54 新增 mcpPlatformIntegration)
-      expect(controllers).toHaveLength(40);
+      //  v3.15.0 Cycle 54 新增 mcpPlatformIntegration,
+      //  v3.16.0 Cycle 55 新增 mcpKubernetes)
+      expect(controllers).toHaveLength(41);
     });
 
     it('fileExplorer 默认应打开', () => {

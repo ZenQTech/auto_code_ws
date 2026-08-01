@@ -89,7 +89,8 @@ export type PanelKey =
   | 'mcpDeploymentValidation'
   | 'mcpProductionEnhancement'
   | 'mcpObservability'
-  | 'mcpPlatformIntegration';
+  | 'mcpPlatformIntegration'
+  | 'mcpKubernetes';
 
 /** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
@@ -139,6 +140,7 @@ const INITIAL_STATE: PanelsState = {
   mcpProductionEnhancement: DEFAULT_OPEN.mcpProductionEnhancement ?? false,
   mcpObservability: DEFAULT_OPEN.mcpObservability ?? false,
   mcpPlatformIntegration: DEFAULT_OPEN.mcpPlatformIntegration ?? false,
+  mcpKubernetes: DEFAULT_OPEN.mcpKubernetes ?? false,
 };
 
 /** Action 类型 */
@@ -254,6 +256,8 @@ export interface UseModalsResult {
   mcpObservability: PanelController;
   /** v3.15.0 (Cycle 54) 新增：MCP × 真实平台集成面板 (OTLP + Prometheus + Grafana + Jaeger/Tempo + 集成文档) */
   mcpPlatformIntegration: PanelController;
+  /** v3.16.0 (Cycle 55) 新增：MCP × Kubernetes 集成面板 (Manifest + Helm + CRD + API + 集成文档) */
+  mcpKubernetes: PanelController;
   /** v3.0.0 新增：批量关闭所有 panel */
   closeAll: () => void;
   /** v3.0.0 新增：批量打开多个 panel */
@@ -323,6 +327,7 @@ export function useModals(): UseModalsResult {
       mcpProductionEnhancement: makeController('mcpProductionEnhancement'),  // v3.13.0 (Cycle 52) 新增
       mcpObservability: makeController('mcpObservability'),  // v3.14.0 (Cycle 53) 新增
       mcpPlatformIntegration: makeController('mcpPlatformIntegration'),  // v3.15.0 (Cycle 54) 新增
+      mcpKubernetes: makeController('mcpKubernetes'),  // v3.16.0 (Cycle 55) 新增
       closeAll: () => dispatch({ type: 'CLOSE_ALL' }),
       openMulti: (panels) => dispatch({ type: 'OPEN_MULTI', panels }),
     }),
