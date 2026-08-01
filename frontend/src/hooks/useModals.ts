@@ -84,7 +84,8 @@ export type PanelKey =
   | 'mcpMultimodalRag'
   | 'mcpMultimodalProvider'
   | 'mcpE2EProduction'
-  | 'mcpDeploymentValidation';
+  | 'mcpDeploymentValidation'
+  | 'mcpProductionEnhancement';
 
 /** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
@@ -131,6 +132,7 @@ const INITIAL_STATE: PanelsState = {
   mcpMultimodalProvider: DEFAULT_OPEN.mcpMultimodalProvider ?? false,
   mcpE2EProduction: DEFAULT_OPEN.mcpE2EProduction ?? false,
   mcpDeploymentValidation: DEFAULT_OPEN.mcpDeploymentValidation ?? false,
+  mcpProductionEnhancement: DEFAULT_OPEN.mcpProductionEnhancement ?? false,
 };
 
 /** Action 类型 */
@@ -240,6 +242,8 @@ export interface UseModalsResult {
   mcpE2EProduction: PanelController;
   /** v3.12.0 (Cycle 51) 新增：MCP × 部署验证面板 (健康检查 + E2E 流程 + 监控验证 + 性能压测 + 部署文档) */
   mcpDeploymentValidation: PanelController;
+  /** v3.13.0 (Cycle 52) 新增：MCP × 生产化增强面板 (灰度发布 + 多区域 + 自动扩缩容 + 灾备恢复 + 集成文档) */
+  mcpProductionEnhancement: PanelController;
   /** v3.0.0 新增：批量关闭所有 panel */
   closeAll: () => void;
   /** v3.0.0 新增：批量打开多个 panel */
@@ -306,6 +310,7 @@ export function useModals(): UseModalsResult {
       mcpMultimodalProvider: makeController('mcpMultimodalProvider'),  // v3.10.0 (Cycle 49) 新增
       mcpE2EProduction: makeController('mcpE2EProduction'),  // v3.11.0 (Cycle 50) 新增
       mcpDeploymentValidation: makeController('mcpDeploymentValidation'),  // v3.12.0 (Cycle 51) 新增
+      mcpProductionEnhancement: makeController('mcpProductionEnhancement'),  // v3.13.0 (Cycle 52) 新增
       closeAll: () => dispatch({ type: 'CLOSE_ALL' }),
       openMulti: (panels) => dispatch({ type: 'OPEN_MULTI', panels }),
     }),

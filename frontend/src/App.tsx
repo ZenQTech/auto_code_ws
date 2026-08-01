@@ -246,6 +246,8 @@ import { McpMultimodalProviderPanel } from './components/McpMultimodalProviderPa
 import McpE2EProductionPanel from './components/McpE2EProductionPanel';
 /** v6.125.0 Cycle 51 G51-主应用集成 新增：MCP × 部署验证面板 (健康检查 + E2E 流程 + 监控验证 + 性能压测 + 部署文档) */
 import McpDeploymentValidationPanel from './components/McpDeploymentValidationPanel';
+/** v6.126.0 Cycle 52 G52-主应用集成 新增：MCP × 生产化增强面板 (灰度发布 + 多区域 + 自动扩缩容 + 灾备恢复 + 集成文档) */
+import McpProductionEnhancementPanel from './components/McpProductionEnhancementPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -640,6 +642,7 @@ export default function App() {
     mcpMultimodalProvider: mcpMultimodalProviderModal,  // v2.12.0 (Cycle 49) 新增
     mcpE2EProduction: mcpE2EProductionModal,  // v2.13.0 (Cycle 50) 新增
     mcpDeploymentValidation: mcpDeploymentValidationModal,  // v2.14.0 (Cycle 51) 新增
+    mcpProductionEnhancement: mcpProductionEnhancementModal,  // v2.15.0 (Cycle 52) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3190,6 +3193,7 @@ export default function App() {
           onOpenMcpMultimodalProvider={() => mcpMultimodalProviderModal.onOpen()}
           onOpenMcpE2EProduction={() => mcpE2EProductionModal.onOpen()}
           onOpenMcpDeploymentValidation={() => mcpDeploymentValidationModal.onOpen()}
+          onOpenMcpProductionEnhancement={() => mcpProductionEnhancementModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -3446,6 +3450,15 @@ export default function App() {
        * 依赖：HealthChecker + E2EFlowValidator + MonitoringStackValidator + LoadTester */}
       {mcpDeploymentValidationModal.open && (
         <McpDeploymentValidationPanel onClose={mcpDeploymentValidationModal.onClose} />
+      )}
+
+      {/* v6.126.0 Cycle 52 G52-主应用集成 新增：MCP × 生产化增强面板弹窗
+       * 触发：BrandHeader 菜单"🚀 MCP × 生产化增强"项
+       * 关闭：McpProductionEnhancementPanel 内部 onClose 回调
+       * 功能：5 Tab（灰度发布 / 多区域 / 自动扩缩容 / 灾备恢复 / 集成文档）
+       * 依赖：CanaryDeployment + MultiRegionRouter + AutoScaler + DisasterRecovery */}
+      {mcpProductionEnhancementModal.open && (
+        <McpProductionEnhancementPanel onClose={mcpProductionEnhancementModal.onClose} />
       )}
 
       {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗

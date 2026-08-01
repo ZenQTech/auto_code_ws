@@ -28,10 +28,10 @@ import { useModals } from './useModals';
 
 describe('useModals', () => {
   describe('初始状态', () => {
-    it('应该返回 35 个 panel controller + 2 个工具方法', () => {
+    it('应该返回 36 个 panel controller + 2 个工具方法', () => {
       const { result } = renderHook(() => useModals());
       const controllers = Object.keys(result.current);
-      // 35 panel + closeAll + openMulti = 37
+      // 36 panel + closeAll + openMulti = 38
       // (v3.1.0 G39-03 新增 mcpRegistry,
       //  v3.2.0 Cycle 41 新增 mcpAdvanced,
       //  v3.3.0 Cycle 42 G42-04 新增 mcpIntegrated,
@@ -43,8 +43,9 @@ describe('useModals', () => {
       //  v3.9.0 Cycle 48 新增 mcpMultimodalRag,
       //  v3.10.0 Cycle 49 新增 mcpMultimodalProvider,
       //  v3.11.0 Cycle 50 新增 mcpE2EProduction,
-      //  v3.12.0 Cycle 51 新增 mcpDeploymentValidation)
-      expect(controllers).toHaveLength(37);
+      //  v3.12.0 Cycle 51 新增 mcpDeploymentValidation,
+      //  v3.13.0 Cycle 52 新增 mcpProductionEnhancement)
+      expect(controllers).toHaveLength(38);
     });
 
     it('fileExplorer 默认应打开', () => {

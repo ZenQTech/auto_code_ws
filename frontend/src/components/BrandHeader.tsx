@@ -193,6 +193,8 @@ export interface BrandHeaderProps {
   onOpenMcpE2EProduction?: () => void;
   /** v2.31.0 (Cycle 51) 新增：打开 MCP × 部署验证面板回调（可选） */
   onOpenMcpDeploymentValidation?: () => void;
+  /** v2.32.0 (Cycle 52) 新增：打开 MCP × 生产化增强面板回调（可选） */
+  onOpenMcpProductionEnhancement?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1131,6 +1133,8 @@ export default function BrandHeader({
   onOpenMcpE2EProduction,
   /** v2.31.0 (Cycle 51) 新增 */
   onOpenMcpDeploymentValidation,
+  /** v2.32.0 (Cycle 52) 新增 */
+  onOpenMcpProductionEnhancement,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2151,6 +2155,23 @@ export default function BrandHeader({
                 >
                   <Icon name="shield-check" className="w-4 h-4 text-cyan-500" />
                   <span>✅ MCP × 部署验证</span>
+                </button>
+              )}
+
+              {/* v2.32.0 (Cycle 52) 新增：MCP × 生产化增强（菜单项）
+               *  行为：点击调 onOpenMcpProductionEnhancement() 弹出 McpProductionEnhancementPanel
+               *       5 Tab：灰度发布 / 多区域 / 自动扩缩容 / 灾备恢复 / 集成文档
+               *  图标：rocket，表达生产化能力扩展语义 */}
+              {onOpenMcpProductionEnhancement && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpProductionEnhancement)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="rocket" className="w-4 h-4 text-cyan-500" />
+                  <span>🚀 MCP × 生产化增强</span>
                 </button>
               )}
 
