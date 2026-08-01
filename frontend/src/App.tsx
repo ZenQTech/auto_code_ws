@@ -248,6 +248,8 @@ import McpE2EProductionPanel from './components/McpE2EProductionPanel';
 import McpDeploymentValidationPanel from './components/McpDeploymentValidationPanel';
 /** v6.126.0 Cycle 52 G52-主应用集成 新增：MCP × 生产化增强面板 (灰度发布 + 多区域 + 自动扩缩容 + 灾备恢复 + 集成文档) */
 import McpProductionEnhancementPanel from './components/McpProductionEnhancementPanel';
+/** v6.127.0 Cycle 53 G53-主应用集成 新增：MCP × 可观测性面板 (分布式追踪 + PromQL/Grafana + SLO/SLI + 混沌工程 + 集成文档) */
+import McpObservabilityPanel from './components/McpObservabilityPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -643,6 +645,7 @@ export default function App() {
     mcpE2EProduction: mcpE2EProductionModal,  // v2.13.0 (Cycle 50) 新增
     mcpDeploymentValidation: mcpDeploymentValidationModal,  // v2.14.0 (Cycle 51) 新增
     mcpProductionEnhancement: mcpProductionEnhancementModal,  // v2.15.0 (Cycle 52) 新增
+    mcpObservability: mcpObservabilityModal,  // v2.16.0 (Cycle 53) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3194,6 +3197,7 @@ export default function App() {
           onOpenMcpE2EProduction={() => mcpE2EProductionModal.onOpen()}
           onOpenMcpDeploymentValidation={() => mcpDeploymentValidationModal.onOpen()}
           onOpenMcpProductionEnhancement={() => mcpProductionEnhancementModal.onOpen()}
+          onOpenMcpObservability={() => mcpObservabilityModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}

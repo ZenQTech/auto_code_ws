@@ -176,6 +176,8 @@ export interface AppLayoutProps {
   onOpenMcpDeploymentValidation: () => void;
   /** v6.126.0 (Cycle 52 G52-主应用集成) 新增：MCP × 生产化增强面板回调 */
   onOpenMcpProductionEnhancement: () => void;
+  /** v6.127.0 (Cycle 53 G53-主应用集成) 新增：MCP × 可观测性面板回调 */
+  onOpenMcpObservability: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板回调 */
   onOpenComposer: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板回调 */
@@ -440,6 +442,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   onOpenMcpE2EProduction,  // v6.124.0 (Cycle 50) 透传 BrandHeader
   onOpenMcpDeploymentValidation,  // v6.125.0 (Cycle 51) 透传 BrandHeader
   onOpenMcpProductionEnhancement,  // v6.126.0 (Cycle 52) 透传 BrandHeader
+  onOpenMcpObservability,  // v6.127.0 (Cycle 53) 透传 BrandHeader
   onOpenComposer,  // v6.36.0 (Cycle 16 P0-1) 透传 BrandHeader
   onOpenBackgroundTasks,  // v6.41.0 (Cycle 19 P0-1) 透传 BrandHeader
   onOpenBestOfN,  // v6.42.0 (Cycle 19 P0-2) 透传 BrandHeader
@@ -709,6 +712,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
         onOpenMcpRagPerformance={onOpenMcpRagPerformance}
         onOpenMcpMultimodalRag={onOpenMcpMultimodalRag}
         onOpenMcpMultimodalProvider={onOpenMcpMultimodalProvider}
+        onOpenMcpObservability={onOpenMcpObservability}
         onOpenComposer={onOpenComposer}
         onOpenBackgroundTasks={onOpenBackgroundTasks}
         onOpenBestOfN={onOpenBestOfN}

@@ -195,6 +195,8 @@ export interface BrandHeaderProps {
   onOpenMcpDeploymentValidation?: () => void;
   /** v2.32.0 (Cycle 52) 新增：打开 MCP × 生产化增强面板回调（可选） */
   onOpenMcpProductionEnhancement?: () => void;
+  /** v2.33.0 (Cycle 53) 新增：打开 MCP × 可观测性面板回调（可选） */
+  onOpenMcpObservability?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -342,7 +344,9 @@ export interface BrandHeaderProps {
  *   - className: 尺寸/颜色类名
  * 返回值：JSX 元素
  */
-function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices' | 'chat' | 'scheduler' | 'llm' | 'multimodal' | 'rag' | 'tool' | 'loop' | 'real-llm' | 'multi-agent' | 'memory' | 'reflection' | 'approval'; className?: string }) {
+function Icon({ name, className = 'w-5 h-5' }: { name: 'zap' | 'plus' | 'more' | 'chart' | 'settings' | 'trash' | 'folder' | 'rocket' | 'plug' | 'compress' | 'sparkles' | 'book' | 'shield' | 'cpu' | 'plan' | 'hook' | 'brain' | 'chain' | 'cache' | 'stream' | 'oauth' | 'rollout' | 'tree' | 'shield-check' | 'brain-network' | 'image' | 'target' | 'layers' | 'background-tasks' | 'best-of-n' | 'design-mode' | 'git-branch' | 'git-commit' | 'webhook' | 'route' | 'side-chat' | 'predict' | 'performance' | 'admin' | 'learning' | 'replay' | 'suggestion' | 'figma' | 'search-check' | 'bot' | 'gauge' | 'csv' | 'shield-alert' | 'palette' | 'nested' | 'checkpoint' | 'messaging' | 'template' | 'remote' | 'cost-threshold' | 'workflow' | 'orchestrate' | 'attribution' | 'cloud' | 'sync' | 'audit' | 'sso' | 'policy' | 'enterprise-workflow' | 'unified-dashboard' | 'security-shield' | 'edge-cloud' | 'offline' | 'devices' | 'chat' | 'scheduler' | 'llm' | 'multimodal' | 'rag' | 'tool' | 'loop' | 'real-llm' | 'multi-agent' | 'memory' | 'reflection'
+  | 'approval'
+  | 'telescope'; className?: string }) {
   switch (name) {
     case 'zap':
       // 闪电 - Logo 内图标
@@ -1135,6 +1139,8 @@ export default function BrandHeader({
   onOpenMcpDeploymentValidation,
   /** v2.32.0 (Cycle 52) 新增 */
   onOpenMcpProductionEnhancement,
+  /** v2.33.0 (Cycle 53) 新增 */
+  onOpenMcpObservability,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2172,6 +2178,23 @@ export default function BrandHeader({
                 >
                   <Icon name="rocket" className="w-4 h-4 text-cyan-500" />
                   <span>🚀 MCP × 生产化增强</span>
+                </button>
+              )}
+
+              {/* v2.33.0 (Cycle 53) 新增：MCP × 可观测性（菜单项）
+               *  行为：点击调 onOpenMcpObservability() 弹出 McpObservabilityPanel
+               *       5 Tab：分布式追踪 / 指标+仪表盘 / SLO/SLI / 混沌工程 / 集成文档
+               *  图标：telescope，表达可观测性语义 */}
+              {onOpenMcpObservability && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpObservability)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="telescope" className="w-4 h-4 text-cyan-500" />
+                  <span>🔭 MCP × 可观测性</span>
                 </button>
               )}
 
