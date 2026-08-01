@@ -201,6 +201,8 @@ export interface BrandHeaderProps {
   onOpenMcpPlatformIntegration?: () => void;
   /** v2.35.0 (Cycle 55) 新增：打开 MCP × Kubernetes 集成面板回调（可选） */
   onOpenMcpKubernetes?: () => void;
+  /** v2.36.0 (Cycle 56) 新增：打开 MCP × Serverless/FaaS 集成面板回调（可选） */
+  onOpenMcpServerless?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1164,6 +1166,8 @@ export default function BrandHeader({
   onOpenMcpPlatformIntegration,
   /** v2.35.0 (Cycle 55) 新增 */
   onOpenMcpKubernetes,
+  /** v2.36.0 (Cycle 56) 新增：Serverless/FaaS 集成面板 */
+  onOpenMcpServerless,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2252,6 +2256,23 @@ export default function BrandHeader({
                 >
                   <Icon name="kubernetes" className="w-4 h-4 text-cyan-500" />
                   <span>☸️ MCP × Kubernetes</span>
+                </button>
+              )}
+
+              {/* v2.36.0 (Cycle 56) 新增：MCP × Serverless/FaaS 集成（菜单项）
+               *  行为：点击调 onOpenMcpServerless() 弹出 McpServerlessPanel
+               *       5 Tab：Knative / KEDA / OpenFaaS / CloudEvents / 集成文档
+               *  图标：cloud，表达 Serverless 云端抽象语义 */}
+              {onOpenMcpServerless && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpServerless)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="cloud" className="w-4 h-4 text-blue-500" />
+                  <span>☁️ MCP × Serverless</span>
                 </button>
               )}
 

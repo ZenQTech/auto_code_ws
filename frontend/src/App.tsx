@@ -253,6 +253,8 @@ import McpObservabilityPanel from './components/McpObservabilityPanel';
 /** v6.128.0 Cycle 54 G54-主应用集成 新增：MCP × 真实平台集成面板 (OTLP + Prometheus + Grafana + Jaeger/Tempo + 集成文档) */
 import McpPlatformIntegrationPanel from './components/McpPlatformIntegrationPanel';
 import McpKubernetesPanel from './components/McpKubernetesPanel';
+/** v6.140.0 Cycle 56 G56-主应用集成 新增：MCP × Serverless/FaaS 集成面板 (Knative + KEDA + OpenFaaS + CloudEvents + 集成文档) */
+import McpServerlessPanel from './components/McpServerlessPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -651,6 +653,7 @@ export default function App() {
     mcpObservability: mcpObservabilityModal,  // v2.16.0 (Cycle 53) 新增
     mcpPlatformIntegration: mcpPlatformIntegrationModal,  // v2.17.0 (Cycle 54) 新增
     mcpKubernetes: mcpKubernetesModal,  // v2.18.0 (Cycle 55) 新增
+    mcpServerless: mcpServerlessModal,  // v2.19.0 (Cycle 56) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3487,6 +3490,15 @@ export default function App() {
        * 依赖：K8sManifest + HelmChart + CRD/Operator + K8sApiClient */}
       {mcpKubernetesModal.open && (
         <McpKubernetesPanel onClose={mcpKubernetesModal.onClose} />
+      )}
+
+      {/* v6.140.0 Cycle 56 G56-主应用集成 新增：MCP × Serverless/FaaS 集成面板弹窗
+       * 触发：BrandHeader 菜单"☁️ MCP × Serverless"项
+       * 关闭：McpServerlessPanel 内部 onClose 回调
+       * 功能：5 Tab（Knative / KEDA / OpenFaaS / CloudEvents / 集成文档）
+       * 依赖：KnativeServing + KEDA + OpenFaaS + CloudEvents */}
+      {mcpServerlessModal.open && (
+        <McpServerlessPanel onClose={mcpServerlessModal.onClose} />
       )}
 
       {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗

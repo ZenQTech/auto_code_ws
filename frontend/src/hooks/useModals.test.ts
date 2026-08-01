@@ -25,6 +25,10 @@
  *     (新增 mcpObservability)
  *   - 2026-08-01 | v1.7.0 | Cycle 54 G54-主应用集成：同步更新到 38 panel
  *     (新增 mcpPlatformIntegration)
+ *   - 2026-08-01 | v1.8.0 | Cycle 55 G55-主应用集成：同步更新到 38 panel
+ *     (新增 mcpKubernetes)
+ *   - 2026-08-01 | v1.9.0 | Cycle 56 G56-主应用集成：同步更新到 39 panel
+ *     (新增 mcpServerless)
  * ====================================
  */
 
@@ -34,10 +38,10 @@ import { useModals } from './useModals';
 
 describe('useModals', () => {
   describe('初始状态', () => {
-    it('应该返回 38 个 panel controller + 2 个工具方法', () => {
+    it('应该返回 40 个 panel controller + 2 个工具方法', () => {
       const { result } = renderHook(() => useModals());
       const controllers = Object.keys(result.current);
-      // 38 panel + closeAll + openMulti = 40
+      // 40 panel + closeAll + openMulti = 42
       // (v3.1.0 G39-03 新增 mcpRegistry,
       //  v3.2.0 Cycle 41 新增 mcpAdvanced,
       //  v3.3.0 Cycle 42 G42-04 新增 mcpIntegrated,
@@ -53,8 +57,9 @@ describe('useModals', () => {
       //  v3.13.0 Cycle 52 新增 mcpProductionEnhancement,
       //  v3.14.0 Cycle 53 新增 mcpObservability,
       //  v3.15.0 Cycle 54 新增 mcpPlatformIntegration,
-      //  v3.16.0 Cycle 55 新增 mcpKubernetes)
-      expect(controllers).toHaveLength(41);
+      //  v3.16.0 Cycle 55 新增 mcpKubernetes,
+      //  v3.17.0 Cycle 56 新增 mcpServerless)
+      expect(controllers).toHaveLength(42);
     });
 
     it('fileExplorer 默认应打开', () => {
