@@ -250,6 +250,8 @@ import McpDeploymentValidationPanel from './components/McpDeploymentValidationPa
 import McpProductionEnhancementPanel from './components/McpProductionEnhancementPanel';
 /** v6.127.0 Cycle 53 G53-主应用集成 新增：MCP × 可观测性面板 (分布式追踪 + PromQL/Grafana + SLO/SLI + 混沌工程 + 集成文档) */
 import McpObservabilityPanel from './components/McpObservabilityPanel';
+/** v6.128.0 Cycle 54 G54-主应用集成 新增：MCP × 真实平台集成面板 (OTLP + Prometheus + Grafana + Jaeger/Tempo + 集成文档) */
+import McpPlatformIntegrationPanel from './components/McpPlatformIntegrationPanel';
 /** v6.14.0 Cycle 2 新增：会话压缩指示器 */
 import CompactionIndicator from './components/CompactionIndicator';
 /** v6.14.0 Cycle 2 新增：Skills 面板内容（弹窗辅助组件） */
@@ -646,6 +648,7 @@ export default function App() {
     mcpDeploymentValidation: mcpDeploymentValidationModal,  // v2.14.0 (Cycle 51) 新增
     mcpProductionEnhancement: mcpProductionEnhancementModal,  // v2.15.0 (Cycle 52) 新增
     mcpObservability: mcpObservabilityModal,  // v2.16.0 (Cycle 53) 新增
+    mcpPlatformIntegration: mcpPlatformIntegrationModal,  // v2.17.0 (Cycle 54) 新增
   } = useModals();
 
   /** v4.3.0 别名：全局设置面板开关（保持原 settingsOpen 引用不变） */
@@ -3198,6 +3201,7 @@ export default function App() {
           onOpenMcpDeploymentValidation={() => mcpDeploymentValidationModal.onOpen()}
           onOpenMcpProductionEnhancement={() => mcpProductionEnhancementModal.onOpen()}
           onOpenMcpObservability={() => mcpObservabilityModal.onOpen()}
+          onOpenMcpPlatformIntegration={() => mcpPlatformIntegrationModal.onOpen()}
           onSlashCommandExecute={handleSlashCommandExecute}
           onSlashCommandClose={handleSlashCommandClose}
           onModelChange={(id) => showToast(`已切换到模型 ${id}`, 'success')}
@@ -3463,6 +3467,15 @@ export default function App() {
        * 依赖：CanaryDeployment + MultiRegionRouter + AutoScaler + DisasterRecovery */}
       {mcpProductionEnhancementModal.open && (
         <McpProductionEnhancementPanel onClose={mcpProductionEnhancementModal.onClose} />
+      )}
+
+      {/* v6.128.0 Cycle 54 G54-主应用集成 新增：MCP × 真实平台集成面板弹窗
+       * 触发：BrandHeader 菜单"🔌 MCP × 真实平台集成"项
+       * 关闭：McpPlatformIntegrationPanel 内部 onClose 回调
+       * 功能：5 Tab（OTLP / Prometheus / Grafana / 追踪后端 / 集成文档）
+       * 依赖：OTLPExporter + PrometheusPushgateway + GrafanaClient + TraceBackendAdapter */}
+      {mcpPlatformIntegrationModal.open && (
+        <McpPlatformIntegrationPanel onClose={mcpPlatformIntegrationModal.onClose} />
       )}
 
       {/* v6.14.0 Cycle 2 新增：会话压缩面板弹窗

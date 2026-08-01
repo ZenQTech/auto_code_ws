@@ -20,7 +20,7 @@ const baseSpan: SpanData = {
   traceId: '0123456789abcdef0123456789abcdef',
   spanId: '0123456789abcdef',
   name: 'test-span',
-  kind: 'SPAN_KIND_INTERNAL',
+  kind: 'internal',
   startTimeMs: 1700000000000,
   endTimeMs: 1700000001000,
   durationMs: 1000,
@@ -32,6 +32,8 @@ const baseSpan: SpanData = {
   status: { code: 'OK' },
   events: [],
   links: [],
+  resource: { serviceName: 'test', serviceVersion: '1.0.0', deploymentEnvironment: 'test' },
+  sampled: true,
 };
 
 describe('convertToOTLPSpan', () => {

@@ -190,7 +190,7 @@ export function convertJaegerSpan(span: JaegerSpan, processes: Record<string, { 
     spanId: span.spanID.toLowerCase(),
     parentSpanId: parentSpanId?.toLowerCase(),
     name: span.operationName,
-    kind: 'SPAN_KIND_INTERNAL',
+    kind: 'internal' as const,
     startTimeMs: Math.floor(span.startTime / 1000),
     endTimeMs: Math.floor((span.startTime + span.duration) / 1000),
     durationMs: Math.floor(span.duration / 1000),
@@ -198,13 +198,45 @@ export function convertJaegerSpan(span: JaegerSpan, processes: Record<string, { 
     status,
     events,
     links: [],
+    resource: { serviceName: 'unknown', serviceVersion: '0.0.0', deploymentEnvironment: 'unknown' },
+    sampled: true,
   };
+}
+
+/** Tempo Span 原始格式 */
+export interface TempoSpanRaw {
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  name: string;
+  kind?: string;
+  startTimeUnixNano: string;
+  endTimeUnixNano: string;
+  attributes?: Array<{ key: string; value: { stringValue?: string; intValue?: string; boolValue?: boolean; doubleValue?: number } }>;
+  status?: { code: number; message?: string };
+  events?: Array<{ timeUnixNano: string; name: string; attributes?: Array<{ key: string; value: { stringValue?: string } }> }>;
+}
+
+/** Tempo Kind → 内部 SpanKind */
+function mapTempoKind(kind: string | undefined): import('../observability/traceTypes').SpanKind {
+  switch (kind) {
+    case 'SPAN_KIND_CLIENT':
+      return 'client';
+    case 'SPAN_KIND_SERVER':
+      return 'server';
+    case 'SPAN_KIND_PRODUCER':
+      return 'producer';
+    case 'SPAN_KIND_CONSUMER':
+      return 'consumer';
+    default:
+      return 'internal';
+  }
 }
 
 /**
  * 将 Tempo Span 转换为内部 SpanData
  */
-export function convertTempoSpan(span: TempoTraceResponse['batches'] extends Array<infer B> ? (B extends { scopeSpans: Array<{ spans: Array<infer S> }> } ? S : never) : never): SpanData {
+export function convertTempoSpan(span: TempoSpanRaw, serviceName = 'unknown'): SpanData {
   const attributes: Record<string, string | number | boolean> = {};
   for (const attr of span.attributes ?? []) {
     const v = attr.value;
@@ -230,7 +262,7 @@ export function convertTempoSpan(span: TempoTraceResponse['batches'] extends Arr
     spanId: span.spanId.toLowerCase(),
     parentSpanId: span.parentSpanId?.toLowerCase(),
     name: span.name,
-    kind: span.kind || 'SPAN_KIND_INTERNAL',
+    kind: mapTempoKind(span.kind),
     startTimeMs: Math.floor(Number(span.startTimeUnixNano) / 1_000_000),
     endTimeMs: Math.floor(Number(span.endTimeUnixNano) / 1_000_000),
     durationMs: Math.floor((Number(span.endTimeUnixNano) - Number(span.startTimeUnixNano)) / 1_000_000),
@@ -238,6 +270,8 @@ export function convertTempoSpan(span: TempoTraceResponse['batches'] extends Arr
     status,
     events,
     links: [],
+    resource: { serviceName, serviceVersion: '0.0.0', deploymentEnvironment: 'unknown' },
+    sampled: true,
   };
 }
 
@@ -313,12 +347,8 @@ export function parseTempoTrace(trace: TempoTraceResponse): TraceDetail {
     processes['p1'] = { serviceName, tags: { 'service.name': serviceName } };
     for (const ss of batch.scopeSpans ?? []) {
       for (const span of ss.spans ?? []) {
-        const converted = convertTempoSpan(span as never);
-        // 修复 processID
-        spans.push({
-          ...converted,
-          attributes: { ...converted.attributes, 'service.name': serviceName },
-        });
+        const converted = convertTempoSpan(span as TempoSpanRaw, serviceName);
+        spans.push(converted);
       }
     }
   }
@@ -484,7 +514,7 @@ export class TraceBackendAdapter {
             traceId: traceIdHex,
             spanId: 'a'.repeat(16),
             name: 'GET /api/users',
-            kind: 'SPAN_KIND_SERVER',
+            kind: 'server' as const,
             startTimeMs: Date.now() - 1000,
             endTimeMs: Date.now(),
             durationMs: 1000,
@@ -492,13 +522,15 @@ export class TraceBackendAdapter {
             status: { code: 'OK' },
             events: [],
             links: [],
+            resource: { serviceName: 'api-gateway', serviceVersion: '0.0.0', deploymentEnvironment: 'mock' },
+            sampled: true,
           },
           {
             traceId: traceIdHex,
             spanId: 'b'.repeat(16),
             parentSpanId: 'a'.repeat(16),
             name: 'GetUser',
-            kind: 'SPAN_KIND_CLIENT',
+            kind: 'client' as const,
             startTimeMs: Date.now() - 800,
             endTimeMs: Date.now() - 100,
             durationMs: 700,
@@ -506,6 +538,8 @@ export class TraceBackendAdapter {
             status: { code: 'OK' },
             events: [],
             links: [],
+            resource: { serviceName: 'user-service', serviceVersion: '0.0.0', deploymentEnvironment: 'mock' },
+            sampled: true,
           },
         ],
         processes: {

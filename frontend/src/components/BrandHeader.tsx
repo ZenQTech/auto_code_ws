@@ -197,6 +197,8 @@ export interface BrandHeaderProps {
   onOpenMcpProductionEnhancement?: () => void;
   /** v2.33.0 (Cycle 53) 新增：打开 MCP × 可观测性面板回调（可选） */
   onOpenMcpObservability?: () => void;
+  /** v2.34.0 (Cycle 54) 新增：打开 MCP × 真实平台集成面板回调（可选） */
+  onOpenMcpPlatformIntegration?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1141,6 +1143,7 @@ export default function BrandHeader({
   onOpenMcpProductionEnhancement,
   /** v2.33.0 (Cycle 53) 新增 */
   onOpenMcpObservability,
+  onOpenMcpPlatformIntegration,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2195,6 +2198,23 @@ export default function BrandHeader({
                 >
                   <Icon name="telescope" className="w-4 h-4 text-cyan-500" />
                   <span>🔭 MCP × 可观测性</span>
+                </button>
+              )}
+
+              {/* v2.34.0 (Cycle 54) 新增：MCP × 真实平台集成（菜单项）
+               *  行为：点击调 onOpenMcpPlatformIntegration() 弹出 McpPlatformIntegrationPanel
+               *       5 Tab：OTLP / Prometheus / Grafana / 追踪后端 / 集成文档
+               *  图标：plug，表达连接真实后端平台语义 */}
+              {onOpenMcpPlatformIntegration && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpPlatformIntegration)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="plug" className="w-4 h-4 text-cyan-500" />
+                  <span>🔌 MCP × 真实平台集成</span>
                 </button>
               )}
 

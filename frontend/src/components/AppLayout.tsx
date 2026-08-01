@@ -37,6 +37,7 @@
  *   - 2026-08-01 | v6.124.0 | Cycle 50 G50-主应用集成 新增 onOpenMcpE2EProduction 透传（真实 E2E 生产面板）
  *   - 2026-08-01 | v6.125.0 | Cycle 51 G51-主应用集成 新增 onOpenMcpDeploymentValidation 透传（部署验证面板）
  *   - 2026-08-01 | v6.126.0 | Cycle 52 G52-主应用集成 新增 onOpenMcpProductionEnhancement 透传（生产化增强面板）
+ *   - 2026-08-01 | v6.128.0 | Cycle 54 G54-主应用集成 新增 onOpenMcpPlatformIntegration 透传（真实平台集成面板）
  * ============================================================
  */
 
@@ -178,6 +179,8 @@ export interface AppLayoutProps {
   onOpenMcpProductionEnhancement: () => void;
   /** v6.127.0 (Cycle 53 G53-主应用集成) 新增：MCP × 可观测性面板回调 */
   onOpenMcpObservability: () => void;
+  /** v6.128.0 (Cycle 54 G54-主应用集成) 新增：MCP × 真实平台集成面板回调 */
+  onOpenMcpPlatformIntegration: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑面板回调 */
   onOpenComposer: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务面板回调 */

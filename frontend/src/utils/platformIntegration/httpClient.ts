@@ -53,7 +53,7 @@ export function buildAuthHeaders(credentials?: PlatformCredentials): Record<stri
       if (!credentials.username) return {};
       const raw = `${credentials.username}:${credentials.password ?? ''}`;
       // 浏览器和 Node.js 都支持 btoa
-      const encoded = typeof btoa !== 'undefined' ? btoa(raw) : Buffer.from(raw).toString('base64');
+      const encoded = btoa(raw);
       return { Authorization: `Basic ${encoded}` };
     }
     case 'bearer':

@@ -45,6 +45,22 @@ const OTLP_STATUS = {
   ERROR: 2,
 } as const;
 
+/** Span Kind 映射：OTLP string → 内部 SpanKind */
+function mapOTLPToSpanKind(kind: string | undefined): import('../observability/traceTypes').SpanKind {
+  switch (kind) {
+    case 'SPAN_KIND_CLIENT':
+      return 'client';
+    case 'SPAN_KIND_SERVER':
+      return 'server';
+    case 'SPAN_KIND_PRODUCER':
+      return 'producer';
+    case 'SPAN_KIND_CONSUMER':
+      return 'consumer';
+    default:
+      return 'internal';
+  }
+}
+
 /**
  * 将内部 SpanData 转换为 OTLP Span 格式
  */
@@ -68,9 +84,9 @@ export function convertToOTLPSpan(span: SpanData): OTLPSpan {
     spanId: span.spanId,
     parentSpanId: span.parentSpanId,
     name: span.name,
-    kind: span.kind ?? 'SPAN_KIND_INTERNAL',
+    kind: span.kind ? `SPAN_KIND_${span.kind.toUpperCase()}` : 'SPAN_KIND_INTERNAL',
     startTimeUnixNano: String(span.startTimeMs * 1_000_000),
-    endTimeUnixNano: String((span.endTimeMs ?? span.startTimeMs) * 1_000_000),
+    endTimeUnixNano: String(((span.endTimeMs ?? span.startTimeMs)) * 1_000_000),
     attributes,
     status: {
       code: span.status.code === 'OK' ? OTLP_STATUS.OK : span.status.code === 'ERROR' ? OTLP_STATUS.ERROR : OTLP_STATUS.UNSET,
@@ -93,6 +109,9 @@ export function convertToOTLPSpan(span: SpanData): OTLPSpan {
   };
   return otlpSpan;
 }
+
+// 保留导出的 map 函数
+export { mapOTLPToSpanKind };
 
 /**
  * 构建 OTLP HTTP/JSON 请求体
