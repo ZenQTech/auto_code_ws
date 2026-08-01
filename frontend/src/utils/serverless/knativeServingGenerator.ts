@@ -459,20 +459,21 @@ function serializeKnativeResource(
   if (resource.metadata.namespace) {
     lines.push(`  namespace: ${resource.metadata.namespace}`);
   }
-  if (resource.metadata.labels && Object.keys(resource.metadata.labels).length > 0) {
+  const metadata = resource.metadata as { labels?: Record<string, string>; annotations?: Record<string, string> };
+  if (metadata.labels && Object.keys(metadata.labels).length > 0) {
     lines.push('  labels:');
-    for (const [k, v] of Object.entries(resource.metadata.labels)) {
+    for (const [k, v] of Object.entries(metadata.labels)) {
       lines.push(`    ${k}: ${v}`);
     }
   }
-  if (resource.metadata.annotations && Object.keys(resource.metadata.annotations).length > 0) {
+  if (metadata.annotations && Object.keys(metadata.annotations).length > 0) {
     lines.push('  annotations:');
-    for (const [k, v] of Object.entries(resource.metadata.annotations)) {
+    for (const [k, v] of Object.entries(metadata.annotations)) {
       lines.push(`    ${k}: "${v}"`);
     }
   }
   lines.push('spec:');
-  lines.push(serializeSpec(resource.spec, 1));
+  lines.push(serializeSpec(resource.spec as unknown as Record<string, unknown>, 1));
   return lines.join('\n');
 }
 

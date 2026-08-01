@@ -20,6 +20,7 @@ import {
   listSupportedScalers,
   normalizeScalerType,
 } from './kedaGenerator';
+import type { ScalerType } from './kedaTypes';
 
 describe('G56-02 KEDA Generator', () => {
   describe('validateScalerMetadata', () => {
@@ -47,7 +48,7 @@ describe('G56-02 KEDA Generator', () => {
 
     it('未知 Scaler 类型不应要求字段', () => {
       const r = validateScalerMetadata({
-        type: 'unknown-scaler',
+        type: 'unknown-scaler' as ScalerType,
         metadata: {},
       });
       expect(r.valid).toBe(true);

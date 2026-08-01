@@ -238,6 +238,8 @@ export interface KafkaScalerConfig {
   offsetResetPolicy?: 'earliest' | 'latest';
   /** 允许空闲消费者 */
   allowIdleConsumers?: boolean;
+  /** TriggerAuthentication 引用 */
+  authenticationRef?: string;
 }
 
 /** KEDA 部署配置 */

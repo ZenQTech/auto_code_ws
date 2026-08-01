@@ -477,7 +477,7 @@ function serializeKedaResource(
     }
   }
   lines.push('spec:');
-  lines.push(serializeObject(resource.spec, 1));
+  lines.push(serializeObject(resource.spec as unknown as Record<string, unknown>, 1));
   return lines.join('\n');
 }
 
