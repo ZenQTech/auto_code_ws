@@ -27,7 +27,10 @@ export interface PolicyPanelProps {
 
 type TabKey = 'policies' | 'logs' | 'templates' | 'tests';
 
-export const PolicyPanel: React.FC<PolicyPanelProps> = ({ engine: engineProp, isOpen: _isOpen, onClose }) => {
+export const PolicyPanel: React.FC<PolicyPanelProps> = ({ engine: engineProp, isOpen, onClose }) => {
+
+  // G60-FIX-13: 面板关闭时早返回，避免在 DOM 中堆积所有面板
+  if (isOpen === false) return null;
   const engine = useMemo(() => engineProp || getDefaultPolicyEngine(), [engineProp]);
   const [tab, setTab] = useState<TabKey>('policies');
   const [refreshKey, setRefreshKey] = useState(0);

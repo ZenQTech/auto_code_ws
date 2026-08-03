@@ -29,9 +29,12 @@ type TabKey = 'models' | 'policies' | 'budget' | 'history';
 
 export const EdgeModelRouterPanel: React.FC<EdgeModelRouterPanelProps> = ({
   engine: engineProp,
-  isOpen: _isOpen,
+  isOpen,
   onClose,
 }) => {
+
+  // G60-FIX-13: 面板关闭时早返回，避免在 DOM 中堆积所有面板
+  if (isOpen === false) return null;
   const engine = useMemo(() => engineProp || getDefaultEdgeModelRouterEngine(), [engineProp]);
   const [tab, setTab] = useState<TabKey>('models');
   const [refreshKey, setRefreshKey] = useState(0);

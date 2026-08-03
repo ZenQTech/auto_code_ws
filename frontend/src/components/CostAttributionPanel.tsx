@@ -27,7 +27,10 @@ export interface CostAttributionPanelProps {
 
 type TabKey = 'overview' | 'analysis' | 'anomalies' | 'export';
 
-export const CostAttributionPanel: React.FC<CostAttributionPanelProps> = ({ engine: engineProp, isOpen: _isOpen, onClose }) => {
+export const CostAttributionPanel: React.FC<CostAttributionPanelProps> = ({ engine: engineProp, isOpen, onClose }) => {
+
+  // G60-FIX-13: 面板关闭时早返回，避免在 DOM 中堆积所有面板
+  if (isOpen === false) return null;
   const engine = useMemo(() => engineProp || getDefaultCostAttributionEngine(), [engineProp]);
   const [tab, setTab] = useState<TabKey>('overview');
   const [refreshKey, setRefreshKey] = useState(0);

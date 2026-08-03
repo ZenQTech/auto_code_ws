@@ -30,9 +30,12 @@ type TabKey = 'scenarios' | 'executions' | 'engines' | 'approvals';
 
 export const EnterpriseWorkflowPanel: React.FC<EnterpriseWorkflowPanelProps> = ({
   engine: engineProp,
-  isOpen: _isOpen,
+  isOpen,
   onClose,
 }) => {
+
+  // G60-FIX-13: 面板关闭时早返回，避免在 DOM 中堆积所有面板
+  if (isOpen === false) return null;
   const engine = useMemo(() => engineProp || getDefaultEnterpriseWorkflowEngine(), [engineProp]);
   const [tab, setTab] = useState<TabKey>('scenarios');
   const [refreshKey, setRefreshKey] = useState(0);

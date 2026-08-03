@@ -26,7 +26,10 @@ export interface AuditTrailPanelProps {
 
 type TabKey = 'stream' | 'compliance' | 'integrity' | 'gdpr';
 
-export const AuditTrailPanel: React.FC<AuditTrailPanelProps> = ({ engine: engineProp, isOpen: _isOpen, onClose }) => {
+export const AuditTrailPanel: React.FC<AuditTrailPanelProps> = ({ engine: engineProp, isOpen, onClose }) => {
+
+  // G60-FIX-13: 面板关闭时早返回，避免在 DOM 中堆积所有面板
+  if (isOpen === false) return null;
   const engine = useMemo(() => engineProp || getDefaultAuditTrailEngine(), [engineProp]);
   const [tab, setTab] = useState<TabKey>('stream');
   const [refreshKey, setRefreshKey] = useState(0);
