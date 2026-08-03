@@ -1,11 +1,12 @@
 /**
  * # ============================================================
- * ModeSelectorPage - 模式选择页 (v1.1.0) - Cycle 58 G58-01
+ * ModeSelectorPage - 模式选择页 (v1.2.0) - Cycle 60 G60-2.3
  * # ============================================================
- * 核心作用：根路由页面,显示 chat/coding/vibe-coding 三模式选择
+ * 核心作用：根路由页面,显示 chat/coding/vibe-coding/solo 四模式选择
  * 修改记录：
  *   - 2026-07-27 | v1.0.0 | Cycle 7 P1-2 新建 - 提取自 App.tsx
  *   - 2026-08-03 | v1.1.0 | Cycle 58 G58-01 新增 vibe-coding 模式卡片
+ *   - 2026-08-03 | v1.2.0 | Cycle 60 G60-2.3 新增 Solo 模式卡片（高亮）
  * ============================================================
  */
 
@@ -14,7 +15,7 @@ import { useNavigate } from 'react-router-dom';
 
 import { useModals } from '../hooks/useModals';
 
-type ModeKey = 'chat' | 'coding' | 'vibe-coding';
+type ModeKey = 'chat' | 'coding' | 'vibe-coding' | 'solo';
 
 interface ModeMeta {
   key: ModeKey;
@@ -23,6 +24,7 @@ interface ModeMeta {
   description: string;
   highlight: string;
   gradient: string;
+  featured?: boolean;
 }
 
 const MODES: ModeMeta[] = [
@@ -47,8 +49,17 @@ const MODES: ModeMeta[] = [
     emoji: '🌊',
     title: 'Vibe Coding 模式',
     description: '对标 Codex/TRAE Solo 的全流程 vibe coding 体验:Loop 状态机持续可见、Auto-Follow 工具联动、ClaudeCodeShell 真实调用、Plan 真正可执行',
-    highlight: 'NEW · 对标 Codex/TRAE',
+    highlight: '经典体验',
     gradient: 'from-fuchsia-500 via-purple-500 to-cyan-500',
+  },
+  {
+    key: 'solo',
+    emoji: '🚀',
+    title: 'Solo 模式',
+    description: '对标 Codex/Trae Solo 的新一代主壳:左会话历史 + 中主舞台 + 右工具矩阵,3 主题切换 + Goal 岛台 + Auto-Follow 全联动',
+    highlight: 'NEW · Solo 主壳',
+    gradient: 'from-orange-400 via-pink-500 to-purple-600',
+    featured: true,
   },
 ];
 
@@ -60,6 +71,10 @@ const ModeSelectorPage: React.FC = () => {
   const handleSelectMode = (mode: ModeKey) => {
     if (mode === 'vibe-coding') {
       navigate('/vibe-coding');
+      return;
+    }
+    if (mode === 'solo') {
+      navigate('/solo');
       return;
     }
     navigate(`/${mode}/new`);
@@ -81,16 +96,25 @@ const ModeSelectorPage: React.FC = () => {
           <p className="text-base text-surface-500">请选择您的工作模式</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {MODES.map((mode) => (
             <button
               key={mode.key}
               onClick={() => handleSelectMode(mode.key)}
-              className="group relative bg-white border-2 border-surface-200 rounded-2xl p-6
-                         text-left hover:border-hermes-400 hover:shadow-lg
-                         transition-all duration-200 overflow-hidden"
+              className={[
+                'group relative bg-white border-2 rounded-2xl p-6 text-left',
+                'transition-all duration-200 overflow-hidden',
+                mode.featured
+                  ? 'border-hermes-400 shadow-lg shadow-hermes-500/20 ring-2 ring-hermes-500/20'
+                  : 'border-surface-200 hover:border-hermes-400 hover:shadow-lg',
+              ].join(' ')}
               data-testid={`mode-card-${mode.key}`}
             >
+              {mode.featured && (
+                <div className="absolute top-2 right-2 px-2 py-0.5 bg-hermes-500 text-white text-[10px] font-bold rounded">
+                  NEW
+                </div>
+              )}
               <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${mode.gradient}`} />
               <div className="text-3xl mb-3">{mode.emoji}</div>
               <h2 className="text-lg font-semibold text-surface-800 mb-1">{mode.title}</h2>

@@ -67,6 +67,9 @@ const GoalTemplatesPage = lazy(() => import('../pages/GoalTemplatesPage'));
 // v1.0.0 (Cycle 58 G58-01) 新增：Vibe Coding 模式主页面
 const VibeCodingPage = lazy(() => import('../pages/VibeCodingPage'));
 
+// v1.0.0 (Cycle 60 G60-2.3) 新增：Solo 模式主壳（对标 Codex/Trae Solo）
+const VibeSoloShell = lazy(() => import('../pages/VibeSoloShell'));
+
 // ============================================================
 // Suspense 包装器: 懒加载页面统一显示 loading
 // ============================================================
@@ -134,6 +137,10 @@ export const AppRouter: React.FC = () => {
 
           {/* v1.0.0 (Cycle 58 G58-01) 新增：Vibe Coding 模式独立访问路由 */}
           <Route path="vibe-coding" element={lazyPage(VibeCodingPage)} />
+
+          {/* v1.0.0 (Cycle 60 G60-2.3) 新增：Solo 模式主壳（对标 Codex/Trae Solo）
+              完整三栏布局 + Goal 岛台 + 会话历史 + 工具矩阵 */}
+          <Route path="solo" element={lazyPage(VibeSoloShell)} />
 
           {/* 模式选择 - 保留独立路由 */}
           <Route path="select-mode" element={lazyPage(ModeSelectorPage)} />
