@@ -133,7 +133,20 @@ async def transition(req: TransitionRequest):
         metadata=req.metadata,
         force=req.force,
     )
-    
+
+    # Auto-Follow 联动：迁移成功时驱动前端面板切换 (v6.34.0 G58-04)
+    if success:
+        try:
+            from ..services.auto_follow import get_service as get_auto_follow
+            await get_auto_follow().handle_stage_change(
+                session_id=machine.session_id,
+                from_stage=from_stage,
+                to_stage=to_stage,
+                metadata=req.metadata,
+            )
+        except Exception as exc:  # noqa: BLE001
+            logger.warning(f"transition: auto-follow 触发失败（不影响主流程）err={exc}")
+
     return TransitionResponse(
         success=success,
         from_state=from_stage.value,
