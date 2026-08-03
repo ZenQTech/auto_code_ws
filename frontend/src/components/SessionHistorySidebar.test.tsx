@@ -6,8 +6,9 @@
  * 核心作用：验证侧边栏拉取 + 渲染 + 切换逻辑
  * ====================================
  * 修改记录：
- *   - 2026-08-03 | v1.0.0 | Cycle 60 G60-3.1 初次创建
- * ============================================================
+ * #   - 2026-08-03 | v1.0.0 | Cycle 60 G60-3.1 初次创建
+ * #   - 2026-08-03 | v1.1.0 | G60-FIX-9 新增 2 个测试：setInterval 定时拉取 + 卸载清理
+ * ====================================
  */
 
 import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -156,4 +157,61 @@ describe('SessionHistorySidebar 组件', () => {
       expect(btn.className).toContain('bg-hermes-500/15');
     });
   });
+
+  /**
+   * G60-FIX-9: 验证 setInterval 轮询机制
+   * - 挂载后默认每 refreshInterval 拉取一次
+   * - 卸载后定时器被清理
+   */
+  test('G60-FIX-9-SHS-07: setInterval 定时拉取（短间隔验证）', async () => {
+    // 多次 mock 响应：组件会反复调用
+    mockFetch.mockImplementation(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ sessions: [mockSession] }),
+    }));
+
+    render(
+      <SessionHistorySidebar
+        vibeCoding={mockVibeCoding as any}
+        refreshInterval={50}
+      />,
+    );
+
+    // 初始挂载：等待组件触发首次 fetch
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const initialCount = mockFetch.mock.calls.length;
+    expect(initialCount).toBeGreaterThanOrEqual(1);
+
+    // 等待 ~150ms：定时器应触发多次
+    await new Promise((resolve) => setTimeout(resolve, 180));
+    const finalCount = mockFetch.mock.calls.length;
+    expect(finalCount).toBeGreaterThan(initialCount);
+  }, 5000);
+
+  test('G60-FIX-9-SHS-08: 卸载后定时器被清理（无额外拉取）', async () => {
+    mockFetch.mockImplementation(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ sessions: [mockSession] }),
+    }));
+
+    const { unmount } = render(
+      <SessionHistorySidebar
+        vibeCoding={mockVibeCoding as any}
+        refreshInterval={50}
+      />,
+    );
+
+    // 等待初始挂载
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    const beforeUnmount = mockFetch.mock.calls.length;
+    expect(beforeUnmount).toBeGreaterThan(0);
+
+    unmount();
+
+    // 等待 ~200ms：卸载后不应再调用
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    expect(mockFetch.mock.calls.length).toBe(beforeUnmount);
+  }, 5000);
 });

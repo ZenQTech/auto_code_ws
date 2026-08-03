@@ -23,6 +23,8 @@
  * #   - 2026-08-03 | v1.0.0 | Cycle 58 G58-01 初次创建
  * #   - 2026-08-03 | v1.0.1 | G60-FIX-7 修复：startSession 解析后端 { session } 包装响应，
  * #                 避免 session.id 为 undefined 导致 SSE 连接到 /session/undefined/events
+ * #   - 2026-08-03 | v1.0.2 | G60-FIX-8 修复：SSE step 事件从 { type, step, timestamp } 包装中
+ * #                 正确提取 step 字段，否则 UPDATE_STEP reducer 找不到 id 导致步骤不更新
  * ============================================================
  */
 
@@ -214,8 +216,14 @@ export function useVibeCoding(options: UseVibeCodingOptions = {}): UseVibeCoding
 
     es.addEventListener('vibe_step_completed', (e: MessageEvent) => {
       try {
-        const step = JSON.parse(e.data) as VibeStep;
-        dispatch({ type: 'UPDATE_STEP', step });
+        // 后端推送格式：{ type, step: VibeStep, timestamp }，需要取出 step 字段
+        const data = JSON.parse(e.data) as { step?: VibeStep; type?: string };
+        if (data?.step) {
+          dispatch({ type: 'UPDATE_STEP', step: data.step });
+        } else {
+          // 兼容直接发送 step 的旧格式
+          dispatch({ type: 'UPDATE_STEP', step: data as unknown as VibeStep });
+        }
       } catch (err) {
         console.warn('useVibeCoding: parse step failed', err);
       }
@@ -223,8 +231,13 @@ export function useVibeCoding(options: UseVibeCodingOptions = {}): UseVibeCoding
 
     es.addEventListener('vibe_step_started', (e: MessageEvent) => {
       try {
-        const step = JSON.parse(e.data) as VibeStep;
-        dispatch({ type: 'UPDATE_STEP', step });
+        // 后端推送格式：{ type, step: VibeStep, timestamp }，需要取出 step 字段
+        const data = JSON.parse(e.data) as { step?: VibeStep; type?: string };
+        if (data?.step) {
+          dispatch({ type: 'UPDATE_STEP', step: data.step });
+        } else {
+          dispatch({ type: 'UPDATE_STEP', step: data as unknown as VibeStep });
+        }
       } catch (err) {
         console.warn('useVibeCoding: parse step started failed', err);
       }
@@ -232,8 +245,13 @@ export function useVibeCoding(options: UseVibeCodingOptions = {}): UseVibeCoding
 
     es.addEventListener('vibe_step_failed', (e: MessageEvent) => {
       try {
-        const step = JSON.parse(e.data) as VibeStep;
-        dispatch({ type: 'UPDATE_STEP', step });
+        // 后端推送格式：{ type, step: VibeStep, timestamp }，需要取出 step 字段
+        const data = JSON.parse(e.data) as { step?: VibeStep; type?: string };
+        if (data?.step) {
+          dispatch({ type: 'UPDATE_STEP', step: data.step });
+        } else {
+          dispatch({ type: 'UPDATE_STEP', step: data as unknown as VibeStep });
+        }
       } catch (err) {
         console.warn('useVibeCoding: parse step failed', err);
       }

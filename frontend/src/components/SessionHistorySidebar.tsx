@@ -19,8 +19,11 @@
  * 输出结果：左侧侧边栏 UI
  * ====================================
  * 修改记录：
- *   - 2026-08-03 | v1.0.0 | Cycle 60 G60-3.1 初次创建
- * ============================================================
+ * #   - 2026-08-03 | v1.0.0 | Cycle 60 G60-3.1 初次创建
+ * #   - 2026-08-03 | v1.1.0 | G60-FIX-9 修复：添加 setInterval 轮询，自动刷新会话状态
+ * #                 （之前只在 mount/session.id 变化时刷新，导致进行中的 session
+ * #                 状态在侧边栏一直停留在初始 clarifying）
+ * ====================================
  */
 
 import React, { useEffect, useState, useCallback } from 'react';
@@ -161,6 +164,14 @@ export const SessionHistorySidebar: React.FC<SessionHistorySidebarProps> = ({
   useEffect(() => {
     fetchHistory();
   }, [vibeCoding.session?.id, fetchHistory]);
+
+  // G60-FIX-9: 添加 setInterval 轮询，自动刷新进行中 session 的状态
+  useEffect(() => {
+    const id = window.setInterval(() => {
+      fetchHistory(true);
+    }, refreshInterval);
+    return () => window.clearInterval(id);
+  }, [fetchHistory, refreshInterval]);
 
   // 切换 session
   const handleSelect = useCallback(

@@ -14,6 +14,7 @@
  * # 修改记录：
  * #   - 2026-08-03 | v1.0.0 | Cycle 58 G58-01 初次创建
  * #   - 2026-08-03 | v1.0.1 | G60-FIX-7 修复：测试 mock 改为 { session: ... } 包装格式
+ * #   - 2026-08-03 | v1.0.2 | G60-FIX-8 修复：新增 SSE step 事件格式测试
  * ====================================
  */
 
@@ -249,5 +250,95 @@ describe('useVibeCoding - 派生数据', () => {
 
     expect(result.current.completedSteps).toHaveLength(2);
     expect(result.current.completedSteps.map((s) => s.id)).toEqual(['s1', 's3']);
+  });
+});
+
+/**
+ * G60-FIX-8: SSE step 事件数据格式修复
+ * 后端通过 _broadcast_step 推送 { type, step: VibeStep, timestamp } 格式
+ * 前端需要从 data.step 提取 step 对象，否则 UPDATE_STEP reducer 找不到 step.id
+ */
+describe('useVibeCoding - SSE step 事件格式 (G60-FIX-8)', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
+  it('应能从 { type, step, timestamp } 格式中正确提取 step 并更新 session', async () => {
+    const initialSession: VibeSession = {
+      id: 'test-sse-1',
+      prompt: '测试 SSE',
+      model: 'claude-sonnet-4-20250514',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      state: 'clarifying',
+      steps: [
+        { id: 'step-1', name: '澄清需求', status: 'pending' } as VibeStep,
+        { id: 'step-2', name: '生成 Plan', status: 'pending' } as VibeStep,
+      ],
+      metrics: { tokens: 0, duration: 0, filesChanged: 0 },
+    };
+
+    const updatedStep: VibeStep = {
+      id: 'step-1',
+      name: '澄清需求',
+      status: 'completed',
+      startedAt: new Date().toISOString(),
+      completedAt: new Date().toISOString(),
+    };
+
+    // 模拟后端 SSE 推送的事件格式：{ type, step, timestamp }
+    const sseEvent = {
+      type: 'vibe_step_completed',
+      step: updatedStep,
+      timestamp: Date.now(),
+    };
+
+    // mock EventSource
+    class MockEventSource {
+      url: string;
+      onerror: ((e: Event) => void) | null = null;
+      private listeners: Map<string, Array<(e: MessageEvent) => void>> = new Map();
+      constructor(url: string) {
+        this.url = url;
+        // 模拟接收 step_completed 事件
+        setTimeout(() => {
+          const handler = this.listeners.get('vibe_step_completed')?.[0];
+          if (handler) {
+            handler({ data: JSON.stringify(sseEvent) } as MessageEvent);
+          }
+        }, 10);
+      }
+      addEventListener(type: string, listener: (e: MessageEvent) => void) {
+        if (!this.listeners.has(type)) this.listeners.set(type, []);
+        this.listeners.get(type)!.push(listener);
+      }
+      close() { /* noop */ }
+    }
+    (global as any).EventSource = MockEventSource;
+
+    global.fetch = vi.fn().mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ session: initialSession }),
+    } as Response);
+
+    const { result } = renderHook(() => useVibeCoding());
+
+    await act(async () => {
+      await result.current.startSession('测试 SSE');
+    });
+
+    await waitFor(() => {
+      expect(result.current.session).toEqual(initialSession);
+    });
+
+    // 等待 SSE 事件处理
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    });
+
+    // 验证 step-1 状态已更新为 completed
+    const step1 = result.current.session?.steps.find((s) => s.id === 'step-1');
+    expect(step1?.status).toBe('completed');
   });
 });
