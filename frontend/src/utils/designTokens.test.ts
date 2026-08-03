@@ -21,7 +21,7 @@ import {
   lighten,
   withAlpha,
 } from './designTokens';
-import { useDesignTokens } from '../hooks/useDesignTokens';
+import { useDesignTokens, __resetDesignTokensForTest } from '../hooks/useDesignTokens';
 
 describe('designTokens values', () => {
   it('hermes 500 = #f0a030', () => {
@@ -100,9 +100,12 @@ describe('utility functions', () => {
 describe('useDesignTokens (P1-3)', () => {
   beforeEach(() => {
     window.localStorage.clear();
+    // v2.0.0 G60-FIX-10: 重置单例 state
+    __resetDesignTokensForTest('dark');
   });
   afterEach(() => {
     window.localStorage.clear();
+    __resetDesignTokensForTest('dark');
   });
 
   it('默认主题为 dark', () => {
@@ -121,6 +124,8 @@ describe('useDesignTokens (P1-3)', () => {
 
   it('从 localStorage 恢复主题', () => {
     window.localStorage.setItem('hermes.theme', 'high-contrast');
+    // v2.0.0 G60-FIX-10: 让单例重新从 localStorage 读取
+    __resetDesignTokensForTest();
     const { result } = renderHook(() => useDesignTokens());
     expect(result.current.theme).toBe('high-contrast');
   });

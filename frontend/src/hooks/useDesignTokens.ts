@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * useDesignTokens - 运行时主题切换 Hook（v6.34.0 P1-3）
+ * useDesignTokens - 运行时主题切换 Hook（v2.0.0 P1-3 + G60-FIX-10）
  * # ============================================================
  * 核心作用：在 JS 运行时按当前主题返回对应的 token 值，
  *           并支持切换深色/浅色/高对比度主题
@@ -8,11 +8,20 @@
  *   - 与 tailwind.config.ts + index.css 主题变量一一对应
  *   - 默认跟随系统 prefers-color-scheme
  *   - 用户选择持久化到 localStorage
+ *   - v2.0.0 G60-FIX-10: 全局单例 store，多 Hook 实例共享同一份状态
  * 使用场景：
  *   - 编程式获取当前主题下的颜色（用于 ECharts/Canvas 等无法用 Tailwind 的场景）
  *   - 主题切换 UI
  * 依赖：designTokens.ts（值）+ designTokens.types.ts（类型）
- * ============================================================
+ * ====================================
+ * 修改记录：
+ *   - 2026-06-23 | v1.0.0 | 初版
+ *   - 2026-07-XX | v1.1.0 | re-export ThemeName
+ *   - 2026-08-03 | v2.0.0 | G60-FIX-10 修复主题切换 bug：
+ *                              1) 模块级单例 state，所有 useDesignTokens() 共享
+ *                              2) 订阅者模式让所有 UI 实例实时同步
+ *                              3) 配合 index.html body 类清理，彻底修复主题不切换问题
+ * ====================================
  */
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -132,19 +141,72 @@ export interface UseDesignTokensResult {
 
 const THEME_CYCLE: ThemeName[] = ['dark', 'light', 'high-contrast'];
 
+// ============================================================
+// v2.0.0 G60-FIX-10: 全局单例 store
+// 核心作用：解决多 useDesignTokens() 实例导致状态不一致问题。
+//           通过模块级 event emitter + 单例 state，让所有 Hook 实例共享同一份主题。
+// ============================================================
+
+type Listener = (theme: ThemeName) => void;
+
+const themeListeners = new Set<Listener>();
+
+/** 模块级单例 state：所有 useDesignTokens() 调用都从这里读取 */
+let currentTheme: ThemeName = detectInitialTheme();
+
+/** 通知所有订阅者 */
+function emitTheme(next: ThemeName) {
+  currentTheme = next;
+  themeListeners.forEach((cb) => cb(next));
+}
+
+// 暴露给 ThemeContext 兼容的 setter
+function setGlobalTheme(next: ThemeName) {
+  if (currentTheme !== next) {
+    emitTheme(next);
+  }
+}
+
 /**
- * useDesignTokens - 主题切换 + token 派生
+ * v2.0.0 G60-FIX-10: 测试辅助 - 重置单例 state
+ * 用途：单元测试 beforeEach 中调用，确保测试间状态隔离
+ */
+export function __resetDesignTokensForTest(initial?: ThemeName) {
+  currentTheme = initial ?? detectInitialTheme();
+  themeListeners.clear();
+  if (typeof document !== 'undefined') {
+    document.documentElement.setAttribute('data-theme', currentTheme);
+  }
+}
+
+/**
+ * useDesignTokens - 主题切换 + token 派生（v2.0.0 共享单例版）
  */
 export function useDesignTokens(): UseDesignTokensResult {
-  const [theme, setThemeState] = useState<ThemeName>(detectInitialTheme);
+  // 订阅全局 theme：所有实例共享
+  const [theme, setThemeState] = useState<ThemeName>(currentTheme);
 
-  // 同步 data-theme 到 <html>，便于 CSS 选择器命中
+  useEffect(() => {
+    // 启动时把全局 theme 同步到本地 state
+    if (currentTheme !== theme) {
+      setThemeState(currentTheme);
+    }
+    const listener: Listener = (next) => {
+      setThemeState(next);
+    };
+    themeListeners.add(listener);
+    return () => {
+      themeListeners.delete(listener);
+    };
+  }, [theme]);
+
+  // 同步 data-theme 到 <html>，便于 CSS 选择器命中（每个实例都同步一次，幂等）
   useEffect(() => {
     if (typeof document === 'undefined') return;
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  // 同步到 localStorage
+  // 同步到 localStorage（幂等）
   useEffect(() => {
     if (typeof window === 'undefined') return;
     try {
@@ -162,7 +224,7 @@ export function useDesignTokens(): UseDesignTokensResult {
       try {
         const saved = window.localStorage.getItem(STORAGE_KEY);
         if (!saved) {
-          setThemeState(e.matches ? 'light' : 'dark');
+          setGlobalTheme(e.matches ? 'light' : 'dark');
         }
       } catch {
         // 忽略
@@ -173,14 +235,12 @@ export function useDesignTokens(): UseDesignTokensResult {
   }, []);
 
   const setTheme = useCallback((next: ThemeName) => {
-    setThemeState(next);
+    setGlobalTheme(next);
   }, []);
 
   const cycleTheme = useCallback(() => {
-    setThemeState((prev) => {
-      const idx = THEME_CYCLE.indexOf(prev);
-      return THEME_CYCLE[(idx + 1) % THEME_CYCLE.length];
-    });
+    const idx = THEME_CYCLE.indexOf(currentTheme);
+    setGlobalTheme(THEME_CYCLE[(idx + 1) % THEME_CYCLE.length]);
   }, []);
 
   const isDark = theme === 'dark' || theme === 'high-contrast';

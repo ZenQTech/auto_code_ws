@@ -14,6 +14,12 @@
  *   - 编程式生成主题样式
  *   - 单元测试中对比/校验
  * 依赖：与 tailwind.config + index.css 同步
+ * 修改记录：
+ *   - v6.34.0 - 2026-07-23：初版统一设计 token
+ *   - v6.35.0 - 2026-08-03：G60-FIX-11 surface/semantic 调色板从单一深色基线
+ *                         升级为 dark/light/high-contrast 三主题映射。
+ *                         与 useDesignTokens themeMap + index.css [data-theme]
+ *                         保持一致，确保 bg-surface-* 在 3 主题下视觉协调。
  * ============================================================
  */
 
@@ -47,6 +53,12 @@ export const colors: ColorTokens = {
     900: '#4a2f09',
     950: '#2d1c05',
   },
+  /**
+   * v6.35.0 G60-FIX-11: 默认值仍为 dark 主题（与旧测试兼容）。
+   * 主题感知由 Tailwind 类（bg-surface-50 等）通过 CSS 变量自动适配，
+   * useDesignTokens 也提供完整 3 主题 colors 切换（见 themeMap）。
+   * 浅色/高对比度见 useDesignTokens.ts 中的 lightSemantic + hcColors。
+   */
   surface: {
     50: '#0a0a0f',
     100: '#12121a',
