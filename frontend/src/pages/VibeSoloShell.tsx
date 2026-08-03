@@ -1,7 +1,7 @@
 /**
  * # ============================================================
- * VibeSoloShell - Solo 模式主壳组件 (v1.0.0)
- * Cycle 60 G60-2.2
+ * VibeSoloShell - Solo 模式主壳组件 (v1.1.1)
+ * Cycle 60 G60-2.2 / G60-3.2
  * # ============================================================
  * 核心作用：Solo 模式（对标 Codex/Trae Solo）的统一整合壳
  * 运行流程：
@@ -9,20 +9,25 @@
  *   2. 主体：ThreePanelLayout（左历史 / 中主舞台 / 右工具矩阵）
  *   3. 底部：AutoFollowController 联动
  *   4. 错误状态：右下角浮层 + 重试
+ *   5. ⌘K/Ctrl+K 触发 CommandPalette（v1.1.0 G60-3.2 新增）
  * 设计要点：
  *   - 复用既有 useVibeCoding / useAutoFollow / useModals
  *   - 移动端自动切换到 MobileSoloSheet
  *   - localStorage 持久化布局宽度
  *   - 错误兜底 + 重试机制
+ *   - 全局命令面板（对标 Codex ⌘K / Trae Solo ⌘P）
  * 输入参数：无（通过 useLocation / useParams 可选扩展）
  * 输出结果：Solo 模式完整 UI
  * ====================================
  * 修改记录：
  *   - 2026-08-03 | v1.0.0 | Cycle 60 G60-2.2 初次创建
- * ============================================================
+ *   - 2026-08-03 | v1.1.0 | Cycle 60 G60-3.2 集成 CommandPalette + ⌘K 快捷键
+ *   - 2026-08-03 | v1.1.1 | Cycle 60 G60-FIX-2 修复：session 为空时不再强制关闭 panel，
+ *                                    用 ref 跟踪 session 变化只关闭真正变为空的 panel
+ * ====================================
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useVibeCoding } from '../hooks/useVibeCoding';
@@ -30,6 +35,8 @@ import { useAutoFollow } from '../hooks/useAutoFollow';
 import { useModals } from '../hooks/useModals';
 import { useLoopState } from '../hooks/useLoopState';
 import { useIsMobile } from '../hooks/useResponsive';
+import { useDesignTokens } from '../hooks/useDesignTokens';
+import { useShortcut } from '../hooks/useShortcut';
 
 import LoopStatusBar from '../components/LoopStatusBar';
 import VibeCodingStage from '../components/VibeCodingStage';
@@ -40,6 +47,7 @@ import ThreePanelLayout from '../components/ThreePanelLayout';
 import SessionHistorySidebar from '../components/SessionHistorySidebar';
 import ToolsMatrixPanel from '../components/ToolsMatrixPanel';
 import MobileSoloSheet from '../components/MobileSoloSheet';
+import CommandPalette from '../components/CommandPalette';
 
 // ============================================================
 // 组件
@@ -52,6 +60,10 @@ export const VibeSoloShell: React.FC = () => {
   const autoFollow = useAutoFollow(modals);
   const loopState = useLoopState({ sessionId: vibeCoding.session?.id });
   const isMobile = useIsMobile();
+  const { cycleTheme, setTheme, theme } = useDesignTokens();
+
+  // 命令面板开关
+  const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // 输入区本地 state
   const [prompt, setPrompt] = useState('');
@@ -70,6 +82,32 @@ export const VibeSoloShell: React.FC = () => {
       setPrompt('');
     }
   }, [vibeCoding]);
+
+  // 命令面板快捷键 ⌘K / Ctrl+K（v1.1.0 G60-3.2 新增）
+  useShortcut('solo-command-palette', 'mod+k', () => {
+    setCommandPaletteOpen((prev) => !prev);
+  });
+
+  // 主题循环快捷键 ⌘⇧T（额外提供）
+  useShortcut('solo-cycle-theme', 'mod+shift+t', () => {
+    cycleTheme();
+  });
+
+  // 当 session 从有变为无时同步关闭 session 相关 overlays
+  // v1.0.1 (Cycle 60 G60-FIX-2)：使用 ref 跟踪 session 状态变化，
+  //   避免 vibeCoding.session 为 null 时每次 render 都强制关闭用户已主动打开的 panel。
+  //   之前实现：vibeCoding.session === null → onClose 每次 effect 都会执行，
+  //   导致用户点击 Loop 状态按钮后，状态被立即重置（toggle 看起来无效）。
+  const prevSessionRef = useRef(vibeCoding.session);
+  useEffect(() => {
+    const prev = prevSessionRef.current;
+    const curr = vibeCoding.session;
+    if (prev && !curr) {
+      modals.planExecutor.onClose();
+      modals.loopState.onClose();
+    }
+    prevSessionRef.current = curr;
+  }, [vibeCoding.session, modals]);
 
   // 移动端使用 MobileSoloSheet
   if (isMobile) {
@@ -206,6 +244,35 @@ export const VibeSoloShell: React.FC = () => {
       >
         ← 模式选择
       </button>
+
+      {/* 6. ⌘K 快捷键提示徽章（v1.1.0 G60-3.2 新增，固定在右下角） */}
+      <button
+        onClick={() => setCommandPaletteOpen(true)}
+        className="fixed bottom-4 left-4 px-3 py-1.5 text-xs bg-[var(--bg-elevated)]/80 backdrop-blur
+                   border border-[var(--border-color)] rounded-lg
+                   hover:border-hermes-500 transition-colors z-10
+                   flex items-center gap-1.5"
+        data-testid="solo-open-command-palette"
+        title="打开命令面板（⌘K）"
+      >
+        <span>🔍</span>
+        <span>命令</span>
+        <kbd className="px-1.5 py-0.5 rounded bg-[var(--bg-app)] text-[10px] font-mono">
+          ⌘K
+        </kbd>
+      </button>
+
+      {/* 7. CommandPalette 全局命令面板（v1.1.0 G60-3.2 新增） */}
+      <CommandPalette
+        modals={modals}
+        navigate={navigate}
+        open={commandPaletteOpen}
+        onClose={() => setCommandPaletteOpen(false)}
+        onCycleTheme={cycleTheme}
+        onClearSession={handleClear}
+        onToggleAutoFollow={() => autoFollow.setEnabled(!autoFollow.enabled)}
+        autoFollowEnabled={autoFollow.enabled}
+      />
     </div>
   );
 };

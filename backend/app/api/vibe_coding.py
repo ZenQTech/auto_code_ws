@@ -254,6 +254,11 @@ class GetSessionResponse(BaseModel):
     session: VibeSession
 
 
+class ListSessionsResponse(BaseModel):
+    sessions: List[VibeSession]
+    total: int
+
+
 class StateResponse(BaseModel):
     success: bool
     session_id: str

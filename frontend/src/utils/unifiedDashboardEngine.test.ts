@@ -81,11 +81,19 @@ describe('UnifiedDashboardEngine - 初始化', () => {
     expect(engine.listCollectors().length).toBeGreaterThan(0);
   });
 
-  it('持久化：从 localStorage 恢复', () => {
+  // v1.0.1 (Cycle 60 G60-FIX-2) 更新：collectors 不再持久化
+  //   因为 collect() 是函数，JSON 序列化后会丢失。
+  //   测试改为验证：重启后 DEFAULT_COLLECTORS 自动重新加载，函数引用有效。
+  it('持久化：collectors 不被持久化（collect 函数不可序列化）', () => {
     const engine1 = new UnifiedDashboardEngine({ persist: true });
     engine1.registerCollector({ id: 'test-collector', engineId: 'test', name: 'Test', collect: () => [] });
     const engine2 = new UnifiedDashboardEngine({ persist: true });
-    expect(engine2.listCollectors().find((c) => c.id === 'test-collector')).toBeDefined();
+    // user-registered collector 不会持久化，但 DEFAULT_COLLECTORS 会重新加载
+    expect(engine2.listCollectors().find((c) => c.id === 'test-collector')).toBeUndefined();
+    // 默认 collectors 始终存在且 collect 函数有效
+    const defaultCollector = engine2.listCollectors().find((c) => c.id === 'collector-sso');
+    expect(defaultCollector).toBeDefined();
+    expect(typeof defaultCollector?.collect).toBe('function');
   });
 });
 

@@ -6,18 +6,20 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // 2026-07-28 | v1.0.1 | P1-7 UI 测试：兼容后端默认端口 8765
-      //   默认指向 8765（实际运行环境），保留 8000 作为可覆盖的环境变量
-      '/api': `http://localhost:${process.env.BACKEND_PORT || 8765}`,
+      // 2026-08-03 | v1.0.3 | Cycle 60 G60-FIX-2：默认指向 8000
+      //   实测后端 8765 不包含 Cycle 58 G58-01 新增的 /vibe-coding 端点，
+      //   而 8000 才是当前测试/验收环境下完整运行的 FastAPI 进程。
+      //   保留 BACKEND_PORT 环境变量作为可覆盖配置。
+      '/api': `http://localhost:${process.env.BACKEND_PORT || 8000}`,
       '/ws': {
-        target: `ws://localhost:${process.env.BACKEND_PORT || 8765}`,
+        target: `ws://localhost:${process.env.BACKEND_PORT || 8000}`,
         ws: true,
       },
       // v5.3.0 (Cycle 7 P0-8) 新增：OAuth 2.1 + PKCE 端点代理
       //   - /.well-known/oauth-authorization-server (RFC 8414 metadata)
       //   - /oauth/{register,authorize,token,revoke}
-      '/.well-known': `http://localhost:${process.env.BACKEND_PORT || 8765}`,
-      '/oauth': `http://localhost:${process.env.BACKEND_PORT || 8765}`,
+      '/.well-known': `http://localhost:${process.env.BACKEND_PORT || 8000}`,
+      '/oauth': `http://localhost:${process.env.BACKEND_PORT || 8000}`,
     },
   },
   build: {

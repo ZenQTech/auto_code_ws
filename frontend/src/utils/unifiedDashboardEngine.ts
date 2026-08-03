@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * # Unified Dashboard Engine - 集成 Dashboard 引擎 (v1.0.0 Cycle 33 G33-02)
+ * # Unified Dashboard Engine - 集成 Dashboard 引擎 (v1.0.1 Cycle 60 G60-FIX-2)
  * # ============================================================
  * # 核心作用：聚合 30+ 引擎关键指标，提供统一 Dashboard 视图
  * # 12+ 预置面板：健康度/成本/任务/审计/告警/用户/模型/Worktree/安全/合规/Skill/会话
@@ -20,6 +20,8 @@
  * # ============================================================
  * # 修改记录：
  * #   - 2026-07-30 | v1.0.0 | Cycle 33 G33-02 初次创建
+ * #   - 2026-08-03 | v1.0.1 | Cycle 60 G60-FIX-2 修复：始终使用 DEFAULT_COLLECTORS，
+ * #                                    避免 localStorage 反序列化丢失 collect() 函数
  * # ============================================================
  */
 
@@ -442,9 +444,13 @@ export class UnifiedDashboardEngine {
     if (this.config.persist) {
       this.load();
     }
-    if (this.collectors.size === 0) {
-      this.loadDefaultCollectors();
-    }
+    // v1.0.1 (Cycle 60 G60-FIX-2)：始终加载默认 collectors
+    //   localStorage 序列化的 collector 会丢失 collect() 方法（函数不可序列化），
+    //   加载后调用 collector.collect() 会报 "is not a function"。
+    //   修复策略：忽略持久化的 collectors，始终用 DEFAULT_COLLECTORS 重新填充，
+    //   保证 collect 始终是有效函数。
+    this.collectors.clear();
+    this.loadDefaultCollectors();
     if (this.config.enableAutoCollect) {
       this.startCollectorTimer();
     }
