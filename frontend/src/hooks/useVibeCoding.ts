@@ -81,6 +81,10 @@ export interface UseVibeCodingResult {
   pause: () => Promise<void>;
   resume: () => Promise<void>;
   cancel: () => Promise<void>;
+  /** v1.1.0 G60-2.2 新增：清空当前 session（重置本地状态） */
+  clearSession: () => void;
+  /** v1.1.0 G60-2.2 新增：恢复/订阅指定历史 session */
+  resumeSession: (sessionId: string) => Promise<void>;
   retryStep: (stepId: string) => Promise<void>;
   /** 已完成的 step 折叠列表 */
   completedSteps: VibeStep[];
@@ -324,6 +328,43 @@ export function useVibeCoding(options: UseVibeCodingOptions = {}): UseVibeCoding
     }
   }, [state.session, baseUrl]);
 
+  // v1.1.0 G60-2.2 新增：清空当前 session
+  const clearSession = useCallback(() => {
+    if (eventSourceRef.current) {
+      eventSourceRef.current.close();
+      eventSourceRef.current = null;
+    }
+    dispatch({ type: 'RESET' });
+  }, []);
+
+  // v1.1.0 G60-2.2 新增：恢复/订阅指定历史 session
+  const resumeSession = useCallback(
+    async (sessionId: string) => {
+      if (!isBrowser) return;
+      if (!sessionId) {
+        dispatch({ type: 'SET_ERROR', error: 'sessionId 不能为空' });
+        return;
+      }
+      dispatch({ type: 'SET_LOADING', isLoading: true });
+      dispatch({ type: 'SET_ERROR', error: null });
+      try {
+        const res = await fetch(`${baseUrl}/session/${sessionId}`);
+        if (!res.ok) {
+          throw new Error(`Session 拉取失败: ${res.status}`);
+        }
+        const data = (await res.json()) as { session: VibeSession };
+        dispatch({ type: 'SET_SESSION', session: data.session });
+        subscribeSSE(sessionId);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        dispatch({ type: 'SET_ERROR', error: message });
+      } finally {
+        dispatch({ type: 'SET_LOADING', isLoading: false });
+      }
+    },
+    [baseUrl, subscribeSSE],
+  );
+
   // 重试 step
   const retryStep = useCallback(
     async (stepId: string) => {
@@ -371,6 +412,8 @@ export function useVibeCoding(options: UseVibeCodingOptions = {}): UseVibeCoding
     pause,
     resume,
     cancel,
+    clearSession, // v1.1.0 G60-2.2
+    resumeSession, // v1.1.0 G60-2.2
     retryStep,
     completedSteps,
   };

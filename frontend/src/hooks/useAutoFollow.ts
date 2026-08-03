@@ -31,6 +31,7 @@ import { useModals, type UseModalsResult, type PanelKey } from './useModals';
 // ====================================
 
 /** 触发 Auto-Follow 的事件类型 */
+/** v1.1.0 G60-4.1 扩展：从 9 个扩展到 15 个事件类型 */
 export type AutoFollowEventType =
   | 'vibe_step_started'
   | 'vibe_plan_generated'
@@ -40,7 +41,14 @@ export type AutoFollowEventType =
   | 'vibe_step_failed'
   | 'vibe_plan_completed'
   | 'loop_state_changed'
-  | 'claude_shell_output';
+  | 'claude_shell_output'
+  // v1.1.0 G60-4.1 新增
+  | 'spec_review_requested'
+  | 'goal_progress_updated'
+  | 'subagent_spawned'
+  | 'subagent_completed'
+  | 'diff_preview_ready'
+  | 'test_results_ready';
 
 /** Auto-Follow 事件 */
 export interface AutoFollowEvent {
@@ -75,8 +83,9 @@ const DEFAULT_ENABLED = true;
 const DEBOUNCE_MS = 500;
 const isBrowser = typeof window !== 'undefined';
 
-/** 阶段到 panel 的映射（v1.0.0） */
+/** 阶段到 panel 的映射（v1.1.0 扩展 6 个新事件） */
 const STAGE_TO_PANEL: Record<AutoFollowEventType, PanelKey | null> = {
+  // v1.0.0 既有
   vibe_step_started: 'planExecutor',
   vibe_plan_generated: 'planExecutor',
   vibe_code_writing: 'vibeCoding',
@@ -86,9 +95,16 @@ const STAGE_TO_PANEL: Record<AutoFollowEventType, PanelKey | null> = {
   vibe_plan_completed: 'vibeCoding',
   loop_state_changed: 'loopState',
   claude_shell_output: 'vibeCoding',
+  // v1.1.0 G60-4.1 新增（使用现有 PanelKey）
+  spec_review_requested: 'loopState',
+  goal_progress_updated: 'loopV7',
+  subagent_spawned: 'multiAgentTree',
+  subagent_completed: 'multiAgentTree',
+  diff_preview_ready: 'planEditor',
+  test_results_ready: 'planExecutor',
 };
 
-/** 事件类型到 reason 文案 */
+/** 事件类型到 reason 文案（v1.1.0 扩展） */
 const EVENT_TO_REASON: Record<AutoFollowEventType, string> = {
   vibe_step_started: 'Step 启动',
   vibe_plan_generated: 'Plan 已生成',
@@ -99,6 +115,13 @@ const EVENT_TO_REASON: Record<AutoFollowEventType, string> = {
   vibe_plan_completed: 'Plan 已完成',
   loop_state_changed: 'Loop 状态变更',
   claude_shell_output: 'Claude Shell 输出',
+  // v1.1.0 G60-4.1 新增
+  spec_review_requested: 'Spec 审核',
+  goal_progress_updated: 'Goal 进度',
+  subagent_spawned: 'SubAgent 启动',
+  subagent_completed: 'SubAgent 完成',
+  diff_preview_ready: 'Diff 预览就绪',
+  test_results_ready: '测试结果就绪',
 };
 
 // ============================================================

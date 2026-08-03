@@ -22,6 +22,9 @@ import {
 } from '../utils/designTokens';
 import type { ThemeName, ThemeMap } from '../utils/designTokens.types';
 
+// v1.1.0 G60-1.3: re-export ThemeName 供 ThemeSwitcher 等使用
+export type { ThemeName };
+
 const STORAGE_KEY = 'hermes.theme';
 const DEFAULT_THEME: ThemeName = 'dark';
 
