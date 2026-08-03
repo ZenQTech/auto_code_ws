@@ -288,6 +288,16 @@ async def list_sessions():
     return GetSessionResponse(session=sessions_sorted[0])
 
 
+# v1.0.1 G60-3.1 新增：列出全部 sessions（Solo 模式会话历史侧边栏用）
+@router.get("/sessions", response_model=ListSessionsResponse)
+async def list_all_sessions(limit: int = 20):
+    """列出全部 sessions（按 createdAt 倒序，limit 默认 20）"""
+    sessions = await get_registry().list_all()
+    sessions_sorted = sorted(sessions, key=lambda s: s.createdAt, reverse=True)
+    limited = sessions_sorted[: max(1, min(limit, 100))]
+    return ListSessionsResponse(sessions=limited, total=len(sessions))
+
+
 @router.get("/session/{session_id}", response_model=GetSessionResponse)
 async def get_session(session_id: str):
     """获取 session 详情"""
