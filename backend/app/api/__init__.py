@@ -82,6 +82,9 @@ api_router.include_router(loop_state_router, tags=["LoopStateMachine"])
 # v6.34.0 Cycle 58 G58-04：Auto-Follow 联动（Loop 阶段→前端面板）
 from .auto_follow import router as auto_follow_router
 api_router.include_router(auto_follow_router, tags=["Auto-Follow"])
+# v6.35.0 Cycle 58 G58-05：ComposerPlan 真正可执行（计划编排+执行+控制）
+from .composer_plan import router as composer_plan_router
+api_router.include_router(composer_plan_router, tags=["ComposerPlan"])
 # v1.4.0 P0-4 Cycle 4：SubAgent 记忆继承与独立 Context
 from .subagent_memory import router as subagent_memory_router
 api_router.include_router(subagent_memory_router, prefix="/agents", tags=["SubAgent 记忆"])
