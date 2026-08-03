@@ -74,9 +74,9 @@ describe('useModals', () => {
       expect(result.current.autoFollow.open).toBe(false);
     });
 
-    it('fileExplorer 默认应打开', () => {
+    it('fileExplorer 默认应关闭（G60-FIX-5 修复：所有 panel 默认关闭）', () => {
       const { result } = renderHook(() => useModals());
-      expect(result.current.fileExplorer.open).toBe(true);
+      expect(result.current.fileExplorer.open).toBe(false);
     });
 
     it('其他 panel 默认应关闭', () => {

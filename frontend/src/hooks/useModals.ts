@@ -42,6 +42,7 @@
  *   - 2026-08-01 | v3.13.0 | Cycle 52 G52-INTEGRATION 新增 mcpProductionEnhancement 生产化增强面板
  *   - 2026-08-01 | v3.14.0 | Cycle 53 G53-INTEGRATION 新增 mcpObservability 可观测性面板
  *   - 2026-08-03 | v3.19.0 | Cycle 58 G58-01 新增 vibeCoding/planExecutor/loopState/autoFollow 4 个 panel
+ *   - 2026-08-03 | v3.19.1 | Cycle 60 G60-FIX-5 修复 fileExplorer 默认打开（所有 panel 默认关闭）
  * ============================================================
  */
 
@@ -99,9 +100,9 @@ export type PanelKey =
   | 'loopState'
   | 'autoFollow';
 
-/** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
+/** panel 显隐状态：默认值（所有 panel 默认关闭，G60-FIX-5 修复） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
-  fileExplorer: true,
+  // fileExplorer: true, // G60-FIX-5: 修复初始不自动打开文件浏览器，避免遮挡主舞台
 };
 
 /** 所有 panel 的显隐状态（v3.0.0 P1-9 合并为单个对象） */
