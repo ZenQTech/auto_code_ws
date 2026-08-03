@@ -76,6 +76,9 @@ api_router.include_router(fix_router, prefix="/fix", tags=["代码自动修复"]
 # v6.32.0 Cycle 58 G58-02：Claude Code CLI 进程化 (高风险)
 from .claude_shell import router as claude_shell_router
 api_router.include_router(claude_shell_router, tags=["Claude Code CLI Shell"])
+# v6.33.0 Cycle 58 G58-03：LoopStateMachine 显式状态机
+from .loop_state import router as loop_state_router
+api_router.include_router(loop_state_router, tags=["LoopStateMachine"])
 # v1.4.0 P0-4 Cycle 4：SubAgent 记忆继承与独立 Context
 from .subagent_memory import router as subagent_memory_router
 api_router.include_router(subagent_memory_router, prefix="/agents", tags=["SubAgent 记忆"])
