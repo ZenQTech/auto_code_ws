@@ -2989,8 +2989,10 @@ export default function App() {
       {/* ============================================================ */}
       {/* 模式已选择 → 渲染主界面 */}
       {/* ============================================================ */}
+      {/* v2.0.0 G60-FIX-10: 移除 bg-surface-50 硬编码（Tailwind 的 surface 调色板
+           是深色固定色，不响应 [data-theme] 切换）。改用 bg-[var(--bg-app)] 主题变量。*/}
       {appMode && (
-    <div className="min-h-screen bg-surface-50 flex">
+    <div className="min-h-screen bg-[var(--bg-app)] flex">
       {/* Toast 通知容器（v6.35.0 P1-7：替换旧 Toast 组件，支持多 Toast 堆叠 + 撤销按钮） */}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
 

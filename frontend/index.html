@@ -11,7 +11,10 @@
     <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" /></noscript>
     <title>Claude Code CLI 智能体调度平台</title>
   </head>
-  <body class="bg-surface-50 bg-noise text-surface-900">
+  <!-- v2.0.0 | 2026-08-03 | 修复主题切换: 移除硬编码 bg-surface-50/text-surface-900，
+       body 背景由 [data-theme] CSS 变量统一控制，实现 dark/light/high-contrast 真正切换。
+       保留 bg-noise 作为 .bg-noise 类的语义标记（CSS 中已定义）。-->
+  <body class="bg-noise">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>
