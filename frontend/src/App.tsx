@@ -1118,15 +1118,26 @@ export default function App() {
   }, []);
 
   /**
-   * v3.0.0：ModeSelector 模式选择回调
+   * v3.0.0 + v6.60 Cycle 60：ModeSelector 模式选择回调（支持 4 模式）
    * 运行步骤：
-   *   1. 将选中的 mode 写入 localStorage
-   *   2. 设置 appMode → 触发会话初始化
+   *   1. Vibe Coding / Solo：直接 navigate 到对应路由（专用页面，绕过 appMode 体系）
+   *   2. chat / coding：写入 localStorage + 设置 appMode（保留原有逻辑）
    */
-  const handleModeSelect = useCallback((mode: 'chat' | 'coding') => {
+  const handleModeSelect = useCallback((mode: 'chat' | 'coding' | 'vibe-coding' | 'solo') => {
+    // v6.60 Cycle 60 G60-2.3：Vibe Coding 和 Solo 是专用路由，直接跳转
+    if (mode === 'vibe-coding') {
+      try { localStorage.setItem(LS_APP_MODE, 'vibe-coding'); } catch { /* 静默降级 */ }
+      navigate('/vibe-coding');
+      return;
+    }
+    if (mode === 'solo') {
+      try { localStorage.setItem(LS_APP_MODE, 'solo'); } catch { /* 静默降级 */ }
+      navigate('/solo');
+      return;
+    }
     try { localStorage.setItem(LS_APP_MODE, mode); } catch { /* 静默降级 */ }
     setAppMode(mode);
-  }, []);
+  }, [navigate]);
 
   /**
    * v3.0.0：Sidebar 模式切换回调
