@@ -21,6 +21,8 @@
  * ============================================================
  * # 修改记录：
  * #   - 2026-08-03 | v1.0.0 | Cycle 58 G58-01 初次创建
+ * #   - 2026-08-03 | v1.0.1 | G60-FIX-7 修复：startSession 解析后端 { session } 包装响应，
+ * #                 避免 session.id 为 undefined 导致 SSE 连接到 /session/undefined/events
  * ============================================================
  */
 
@@ -267,7 +269,12 @@ export function useVibeCoding(options: UseVibeCodingOptions = {}): UseVibeCoding
         if (!res.ok) {
           throw new Error(`创建 session 失败: ${res.status}`);
         }
-        const session = (await res.json()) as VibeSession;
+        // 后端响应格式：{ session: VibeSession }
+        const payload = (await res.json()) as { session: VibeSession };
+        const session = payload.session;
+        if (!session || !session.id) {
+          throw new Error('创建 session 失败: 响应数据无效');
+        }
         dispatch({ type: 'SET_SESSION', session });
         subscribeSSE(session.id);
       } catch (err) {

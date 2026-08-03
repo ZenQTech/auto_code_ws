@@ -13,6 +13,7 @@
  * ====================================
  * # 修改记录：
  * #   - 2026-08-03 | v1.0.0 | Cycle 58 G58-01 初次创建
+ * #   - 2026-08-03 | v1.0.1 | G60-FIX-7 修复：测试 mock 改为 { session: ... } 包装格式
  * ====================================
  */
 
@@ -80,9 +81,10 @@ describe('useVibeCoding - startSession', () => {
       metrics: { tokens: 0, duration: 0, filesChanged: 0 },
     };
 
+    // 后端响应格式：{ session: VibeSession } (G60-FIX-7 修复)
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: async () => mockSession,
+      json: async () => ({ session: mockSession }),
     } as Response);
 
     const { result } = renderHook(() => useVibeCoding());
@@ -146,7 +148,7 @@ describe('useVibeCoding - 状态控制', () => {
   it('pause 应将状态改为 paused', async () => {
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: async () => mockSession,
+      json: async () => ({ session: mockSession }),
     } as Response).mockResolvedValueOnce({
       ok: true,
     } as Response);
@@ -171,7 +173,7 @@ describe('useVibeCoding - 状态控制', () => {
   it('cancel 应将状态改为 cancelled', async () => {
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: async () => mockSession,
+      json: async () => ({ session: mockSession }),
     } as Response).mockResolvedValueOnce({
       ok: true,
     } as Response);
@@ -232,7 +234,7 @@ describe('useVibeCoding - 派生数据', () => {
 
     global.fetch = vi.fn().mockResolvedValueOnce({
       ok: true,
-      json: async () => mockSession,
+      json: async () => ({ session: mockSession }),
     } as Response);
 
     const { result } = renderHook(() => useVibeCoding());
