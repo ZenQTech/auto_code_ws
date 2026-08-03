@@ -242,10 +242,10 @@ const LlmJudgePanel: React.FC<{ onClose?: () => void; standalone?: boolean }> = 
   // 渲染
   // ============================================================
   return (
-    <div className="flex flex-col h-full bg-gray-50">
+    <div className="flex flex-col h-full bg-[var(--bg-elevated)]">
       {/* 顶部工具栏 */}
-      <div className="p-3 bg-white border-b border-gray-200 flex items-center gap-2 flex-wrap">
-        <h2 className="text-base font-semibold text-gray-800 mr-2">
+      <div className="p-3 bg-[var(--bg-panel)] border-b border-[var(--border-color)] flex items-center gap-2 flex-wrap">
+        <h2 className="text-base font-semibold text-[var(--text-primary)] mr-2">
           ⚖️ LLM-as-Judge
         </h2>
         <button
@@ -253,7 +253,7 @@ const LlmJudgePanel: React.FC<{ onClose?: () => void; standalone?: boolean }> = 
           className={`px-3 py-1.5 text-sm rounded ${
             viewMode === 'submit'
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : 'bg-surface-100 text-[var(--text-primary)] hover:bg-gray-200'
           }`}
         >
           提交评分
@@ -263,7 +263,7 @@ const LlmJudgePanel: React.FC<{ onClose?: () => void; standalone?: boolean }> = 
           className={`px-3 py-1.5 text-sm rounded ${
             viewMode === 'tasks'
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : 'bg-surface-100 text-[var(--text-primary)] hover:bg-gray-200'
           }`}
         >
           任务列表 ({tasks.length})
@@ -273,7 +273,7 @@ const LlmJudgePanel: React.FC<{ onClose?: () => void; standalone?: boolean }> = 
           className={`px-3 py-1.5 text-sm rounded ${
             viewMode === 'pool'
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : 'bg-surface-100 text-[var(--text-primary)] hover:bg-gray-200'
           }`}
         >
           Judge 池 ({judges.length})
@@ -283,7 +283,7 @@ const LlmJudgePanel: React.FC<{ onClose?: () => void; standalone?: boolean }> = 
           className={`px-3 py-1.5 text-sm rounded ${
             viewMode === 'stats'
               ? 'bg-blue-600 text-white'
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              : 'bg-surface-100 text-[var(--text-primary)] hover:bg-gray-200'
           }`}
         >
           统计
@@ -292,14 +292,14 @@ const LlmJudgePanel: React.FC<{ onClose?: () => void; standalone?: boolean }> = 
         <button
           onClick={loadAll}
           disabled={loading}
-          className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+          className="px-3 py-1.5 text-sm bg-surface-100 text-[var(--text-primary)] rounded hover:bg-gray-200 disabled:opacity-50"
         >
           {loading ? '加载中…' : '🔄 刷新'}
         </button>
         {onClose && (
           <button
             onClick={onClose}
-            className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+            className="px-3 py-1.5 text-sm bg-surface-100 text-[var(--text-primary)] rounded hover:bg-gray-200"
           >
             ✕ 关闭
           </button>
@@ -435,11 +435,11 @@ const SubmitView: React.FC<SubmitViewProps> = ({
   selectedTask,
 }) => (
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-    <div className="bg-white rounded border border-gray-200 p-4 space-y-3">
-      <h3 className="text-sm font-semibold text-gray-700">📝 评分表单</h3>
+    <div className="bg-[var(--bg-panel)] rounded border border-[var(--border-color)] p-4 space-y-3">
+      <h3 className="text-sm font-semibold text-[var(--text-primary)]">📝 评分表单</h3>
 
       <div>
-        <label className="block text-xs text-gray-600 mb-1">任务描述 *</label>
+        <label className="block text-xs text-[var(--text-secondary)] mb-1">任务描述 *</label>
         <textarea
           value={formTaskDescription}
           onChange={(e) => setFormTaskDescription(e.target.value)}
@@ -450,7 +450,7 @@ const SubmitView: React.FC<SubmitViewProps> = ({
       </div>
 
       <div>
-        <label className="block text-xs text-gray-600 mb-1">代码 Diff *</label>
+        <label className="block text-xs text-[var(--text-secondary)] mb-1">代码 Diff *</label>
         <textarea
           value={formCodeDiff}
           onChange={(e) => setFormCodeDiff(e.target.value)}
@@ -461,7 +461,7 @@ const SubmitView: React.FC<SubmitViewProps> = ({
       </div>
 
       <div>
-        <label className="block text-xs text-gray-600 mb-1">测试结果（可选）</label>
+        <label className="block text-xs text-[var(--text-secondary)] mb-1">测试结果（可选）</label>
         <textarea
           value={formTestResults}
           onChange={(e) => setFormTestResults(e.target.value)}
@@ -473,7 +473,7 @@ const SubmitView: React.FC<SubmitViewProps> = ({
 
       <div className="grid grid-cols-2 gap-3">
         <div>
-          <label className="block text-xs text-gray-600 mb-1">难度</label>
+          <label className="block text-xs text-[var(--text-secondary)] mb-1">难度</label>
           <select
             value={formDifficulty}
             onChange={(e) => setFormDifficulty(e.target.value as Difficulty)}
@@ -487,7 +487,7 @@ const SubmitView: React.FC<SubmitViewProps> = ({
           </select>
         </div>
         <div>
-          <label className="block text-xs text-gray-600 mb-1">领域</label>
+          <label className="block text-xs text-[var(--text-secondary)] mb-1">领域</label>
           <select
             value={formDomain}
             onChange={(e) => setFormDomain(e.target.value as Domain)}
@@ -509,14 +509,14 @@ const SubmitView: React.FC<SubmitViewProps> = ({
           onChange={(e) => setFormUseConsensus(e.target.checked)}
           id="use-consensus"
         />
-        <label htmlFor="use-consensus" className="text-sm text-gray-700">
+        <label htmlFor="use-consensus" className="text-sm text-[var(--text-primary)]">
           多 Judge 共识
         </label>
       </div>
 
       {formUseConsensus && (
         <div>
-          <label className="block text-xs text-gray-600 mb-1">共识策略</label>
+          <label className="block text-xs text-[var(--text-secondary)] mb-1">共识策略</label>
           <select
             value={formConsensusStrategy}
             onChange={(e) => setFormConsensusStrategy(e.target.value as ConsensusStrategy)}
@@ -532,7 +532,7 @@ const SubmitView: React.FC<SubmitViewProps> = ({
       )}
 
       <div>
-        <label className="block text-xs text-gray-600 mb-1">标签（逗号分隔）</label>
+        <label className="block text-xs text-[var(--text-secondary)] mb-1">标签（逗号分隔）</label>
         <input
           type="text"
           value={formTags}
@@ -555,7 +555,7 @@ const SubmitView: React.FC<SubmitViewProps> = ({
       {selectedTask ? (
         <TaskDetailCard task={selectedTask} />
       ) : (
-        <div className="bg-white rounded border border-gray-200 p-8 text-center text-sm text-gray-500">
+        <div className="bg-[var(--bg-panel)] rounded border border-[var(--border-color)] p-8 text-center text-sm text-[var(--text-secondary)]">
           提交评分任务后，结果将显示在此处
         </div>
       )}
@@ -603,18 +603,18 @@ const TasksView: React.FC<TasksViewProps> = ({
             <option value="vetoed">vetoed</option>
             <option value="cancelled">cancelled</option>
           </select>
-          <span className="text-sm text-gray-600">共 {filtered.length} 个任务</span>
+          <span className="text-sm text-[var(--text-secondary)]">共 {filtered.length} 个任务</span>
         </div>
 
         {filtered.length === 0 ? (
-          <div className="bg-white rounded border border-gray-200 p-8 text-center text-sm text-gray-500">
+          <div className="bg-[var(--bg-panel)] rounded border border-[var(--border-color)] p-8 text-center text-sm text-[var(--text-secondary)]">
             暂无任务
           </div>
         ) : (
           filtered.map((t) => (
             <div
               key={t.task_id}
-              className={`p-3 bg-white rounded border cursor-pointer transition ${
+              className={`p-3 bg-[var(--bg-panel)] rounded border cursor-pointer transition ${
                 selectedTask?.task_id === t.task_id
                   ? 'border-blue-500 ring-2 ring-blue-200'
                   : 'border-gray-200 hover:border-blue-300'
@@ -631,19 +631,19 @@ const TasksView: React.FC<TasksViewProps> = ({
                     >
                       {t.status}
                     </span>
-                    <span className="text-xs text-gray-500">{t.difficulty}</span>
-                    <span className="text-xs text-gray-500">·</span>
-                    <span className="text-xs text-gray-500">{t.domain}</span>
+                    <span className="text-xs text-[var(--text-secondary)]">{t.difficulty}</span>
+                    <span className="text-xs text-[var(--text-secondary)]">·</span>
+                    <span className="text-xs text-[var(--text-secondary)]">{t.domain}</span>
                     {t.consensus && t.consensus.safety_veto && (
                       <span className="px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded">
                         ⚠️ Safety Veto
                       </span>
                     )}
                   </div>
-                  <div className="text-sm text-gray-800 truncate">
+                  <div className="text-sm text-[var(--text-primary)] truncate">
                     {t.task_description}
                   </div>
-                  <div className="text-xs text-gray-500 mt-1">
+                  <div className="text-xs text-[var(--text-secondary)] mt-1">
                     {t.created_at.substring(0, 19)}
                   </div>
                 </div>
@@ -672,7 +672,7 @@ const TasksView: React.FC<TasksViewProps> = ({
             <div className="flex justify-end mb-2">
               <button
                 onClick={onClose}
-                className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                className="px-3 py-1 text-xs bg-surface-100 text-[var(--text-primary)] rounded hover:bg-gray-200"
               >
                 ✕ 关闭
               </button>
@@ -680,7 +680,7 @@ const TasksView: React.FC<TasksViewProps> = ({
             <TaskDetailCard task={selectedTask} />
           </div>
         ) : (
-          <div className="bg-white rounded border border-gray-200 p-8 text-center text-sm text-gray-500">
+          <div className="bg-[var(--bg-panel)] rounded border border-[var(--border-color)] p-8 text-center text-sm text-[var(--text-secondary)]">
             点击任务查看详情
           </div>
         )}
@@ -728,7 +728,7 @@ const PoolView: React.FC<PoolViewProps> = ({
 }) => (
   <div className="space-y-3">
     <div className="flex justify-between items-center">
-      <span className="text-sm text-gray-600">共 {judges.length} 个 Judge</span>
+      <span className="text-sm text-[var(--text-secondary)]">共 {judges.length} 个 Judge</span>
       <button
         onClick={onRegister}
         className="px-3 py-1.5 text-sm bg-blue-600 text-white rounded hover:bg-blue-700"
@@ -738,19 +738,19 @@ const PoolView: React.FC<PoolViewProps> = ({
     </div>
 
     {showRegister && (
-      <div className="bg-white rounded border border-blue-300 p-4 space-y-3">
+      <div className="bg-[var(--bg-panel)] rounded border border-blue-300 p-4 space-y-3">
         <div className="flex justify-between items-center">
-          <h3 className="text-sm font-semibold text-gray-700">📋 注册新 Judge</h3>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">📋 注册新 Judge</h3>
           <button
             onClick={onCloseRegister}
-            className="px-2 py-0.5 text-xs bg-gray-100 text-gray-700 rounded"
+            className="px-2 py-0.5 text-xs bg-surface-100 text-[var(--text-primary)] rounded"
           >
             ✕
           </button>
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-xs text-gray-600 mb-1">名称 *</label>
+            <label className="block text-xs text-[var(--text-secondary)] mb-1">名称 *</label>
             <input
               type="text"
               value={regName}
@@ -760,7 +760,7 @@ const PoolView: React.FC<PoolViewProps> = ({
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">模型 *</label>
+            <label className="block text-xs text-[var(--text-secondary)] mb-1">模型 *</label>
             <input
               type="text"
               value={regModel}
@@ -770,7 +770,7 @@ const PoolView: React.FC<PoolViewProps> = ({
             />
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">Adapter</label>
+            <label className="block text-xs text-[var(--text-secondary)] mb-1">Adapter</label>
             <select
               value={regAdapter}
               onChange={(e) => setRegAdapter(e.target.value as AdapterType)}
@@ -784,7 +784,7 @@ const PoolView: React.FC<PoolViewProps> = ({
             </select>
           </div>
           <div>
-            <label className="block text-xs text-gray-600 mb-1">权重 (0-2)</label>
+            <label className="block text-xs text-[var(--text-secondary)] mb-1">权重 (0-2)</label>
             <input
               type="number"
               step="0.1"
@@ -797,7 +797,7 @@ const PoolView: React.FC<PoolViewProps> = ({
           </div>
         </div>
         <div>
-          <label className="block text-xs text-gray-600 mb-1">专长（逗号分隔）</label>
+          <label className="block text-xs text-[var(--text-secondary)] mb-1">专长（逗号分隔）</label>
           <input
             type="text"
             value={regSpecialties}
@@ -819,28 +819,28 @@ const PoolView: React.FC<PoolViewProps> = ({
       {judges.map((j) => (
         <div
           key={j.judge_id}
-          className={`p-3 bg-white rounded border ${
+          className={`p-3 bg-[var(--bg-panel)] rounded border ${
             j.enabled ? 'border-green-300' : 'border-gray-300'
           }`}
         >
           <div className="flex items-start justify-between gap-2 mb-2">
             <div className="flex-1 min-w-0">
-              <div className="text-sm font-medium text-gray-800 truncate">
+              <div className="text-sm font-medium text-[var(--text-primary)] truncate">
                 {j.name}
               </div>
-              <div className="text-xs text-gray-500 truncate">{j.model}</div>
+              <div className="text-xs text-[var(--text-secondary)] truncate">{j.model}</div>
             </div>
             <span
               className={`px-2 py-0.5 text-xs rounded ${
                 j.enabled
                   ? 'bg-green-100 text-green-700'
-                  : 'bg-gray-100 text-gray-600'
+                  : 'bg-surface-100 text-[var(--text-secondary)]'
               }`}
             >
               {j.enabled ? '启用' : '禁用'}
             </span>
           </div>
-          <div className="space-y-1 text-xs text-gray-600">
+          <div className="space-y-1 text-xs text-[var(--text-secondary)]">
             <div>Adapter: {j.adapter}</div>
             <div>权重: {j.weight}</div>
             <div>运行: {j.total_runs} / 失败: {j.total_failures}</div>
@@ -876,13 +876,13 @@ const PoolView: React.FC<PoolViewProps> = ({
 
 const StatsView: React.FC<{ stats: JudgeStats }> = ({ stats }) => (
   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-    <div className="bg-white rounded border border-gray-200 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">🤖 Judge 池</h3>
+    <div className="bg-[var(--bg-panel)] rounded border border-[var(--border-color)] p-4">
+      <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">🤖 Judge 池</h3>
       <div className="space-y-2">
         <StatRow label="总 Judge 数" value={stats.pool_stats.total_judges} />
         <StatRow label="启用数" value={stats.pool_stats.enabled_judges} />
         <div>
-          <div className="text-xs text-gray-600 mb-1">按 Adapter</div>
+          <div className="text-xs text-[var(--text-secondary)] mb-1">按 Adapter</div>
           <div className="flex flex-wrap gap-1">
             {Object.entries(stats.pool_stats.adapters || {}).map(([k, v]) => (
               <span
@@ -897,8 +897,8 @@ const StatsView: React.FC<{ stats: JudgeStats }> = ({ stats }) => (
       </div>
     </div>
 
-    <div className="bg-white rounded border border-gray-200 p-4">
-      <h3 className="text-sm font-semibold text-gray-700 mb-3">📊 任务统计</h3>
+    <div className="bg-[var(--bg-panel)] rounded border border-[var(--border-color)] p-4">
+      <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">📊 任务统计</h3>
       <div className="space-y-2">
         <StatRow label="总任务数" value={stats.store_stats.total_tasks} />
         <StatRow
@@ -912,7 +912,7 @@ const StatsView: React.FC<{ stats: JudgeStats }> = ({ stats }) => (
           color="text-red-600"
         />
         <div>
-          <div className="text-xs text-gray-600 mb-1">按状态</div>
+          <div className="text-xs text-[var(--text-secondary)] mb-1">按状态</div>
           <div className="flex flex-wrap gap-1">
             {Object.entries(stats.store_stats.by_status || {}).map(([k, v]) => (
               <span
@@ -932,46 +932,46 @@ const StatsView: React.FC<{ stats: JudgeStats }> = ({ stats }) => (
 const StatRow: React.FC<{ label: string; value: any; color?: string }> = ({
   label,
   value,
-  color = 'text-gray-800',
+  color = 'text-[var(--text-primary)]',
 }) => (
   <div className="flex justify-between items-center">
-    <span className="text-xs text-gray-600">{label}</span>
+    <span className="text-xs text-[var(--text-secondary)]">{label}</span>
     <span className={`text-sm font-semibold ${color}`}>{value}</span>
   </div>
 );
 
 const TaskDetailCard: React.FC<{ task: JudgeTask }> = ({ task }) => (
-  <div className="bg-white rounded border border-gray-200 p-4 space-y-3">
+  <div className="bg-[var(--bg-panel)] rounded border border-[var(--border-color)] p-4 space-y-3">
     <div>
-      <h3 className="text-sm font-semibold text-gray-700">📋 任务详情</h3>
-      <div className="text-xs text-gray-500 mt-1">ID: {task.task_id}</div>
+      <h3 className="text-sm font-semibold text-[var(--text-primary)]">📋 任务详情</h3>
+      <div className="text-xs text-[var(--text-secondary)] mt-1">ID: {task.task_id}</div>
     </div>
 
     <div>
-      <div className="text-xs text-gray-600 mb-1">任务描述</div>
-      <div className="text-sm text-gray-800 bg-gray-50 p-2 rounded">
+      <div className="text-xs text-[var(--text-secondary)] mb-1">任务描述</div>
+      <div className="text-sm text-[var(--text-primary)] bg-[var(--bg-elevated)] p-2 rounded">
         {task.task_description}
       </div>
     </div>
 
     <div className="grid grid-cols-3 gap-2 text-xs">
       <div>
-        <div className="text-gray-500">难度</div>
+        <div className="text-[var(--text-secondary)]">难度</div>
         <div className="font-medium">{task.difficulty}</div>
       </div>
       <div>
-        <div className="text-gray-500">领域</div>
+        <div className="text-[var(--text-secondary)]">领域</div>
         <div className="font-medium">{task.domain}</div>
       </div>
       <div>
-        <div className="text-gray-500">共识</div>
+        <div className="text-[var(--text-secondary)]">共识</div>
         <div className="font-medium">{task.use_consensus ? '是' : '否'}</div>
       </div>
     </div>
 
     {task.tags.length > 0 && (
       <div>
-        <div className="text-xs text-gray-600 mb-1">标签</div>
+        <div className="text-xs text-[var(--text-secondary)] mb-1">标签</div>
         <div className="flex flex-wrap gap-1">
           {task.tags.map((t, i) => (
             <span
@@ -987,10 +987,10 @@ const TaskDetailCard: React.FC<{ task: JudgeTask }> = ({ task }) => (
 
     {task.code_diff && (
       <details className="text-xs">
-        <summary className="cursor-pointer text-gray-600 hover:text-gray-800">
+        <summary className="cursor-pointer text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
           📄 代码 Diff
         </summary>
-        <pre className="mt-1 p-2 bg-gray-50 rounded font-mono text-xs overflow-auto max-h-40">
+        <pre className="mt-1 p-2 bg-[var(--bg-elevated)] rounded font-mono text-xs overflow-auto max-h-40">
           {task.code_diff}
         </pre>
       </details>
@@ -998,7 +998,7 @@ const TaskDetailCard: React.FC<{ task: JudgeTask }> = ({ task }) => (
 
     {task.consensus && (
       <div className="border-t pt-3">
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+        <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-2">
           🎯 共识结果
           {task.consensus.safety_veto && (
             <span className="ml-2 px-2 py-0.5 text-xs bg-red-100 text-red-700 rounded">
@@ -1041,7 +1041,7 @@ const TaskDetailCard: React.FC<{ task: JudgeTask }> = ({ task }) => (
 
         {Object.keys(task.consensus.divergence).length > 0 && (
           <div className="mt-2">
-            <div className="text-xs text-gray-600 mb-1">分歧度</div>
+            <div className="text-xs text-[var(--text-secondary)] mb-1">分歧度</div>
             <div className="flex flex-wrap gap-1">
               {Object.entries(task.consensus.divergence).map(([k, v]) => (
                 <span
@@ -1065,13 +1065,13 @@ const TaskDetailCard: React.FC<{ task: JudgeTask }> = ({ task }) => (
 
     {task.reports && task.reports.length > 0 && (
       <div className="border-t pt-3">
-        <h4 className="text-sm font-semibold text-gray-700 mb-2">
+        <h4 className="text-sm font-semibold text-[var(--text-primary)] mb-2">
           👥 Judge 报告 ({task.reports.length})
         </h4>
         {task.reports.map((r) => (
           <div
             key={r.report_id}
-            className="p-2 bg-gray-50 rounded mb-2 text-xs"
+            className="p-2 bg-[var(--bg-elevated)] rounded mb-2 text-xs"
           >
             <div className="flex items-center justify-between mb-1">
               <span className="font-medium">{r.judge_name || r.judge_id}</span>
@@ -1091,7 +1091,7 @@ const TaskDetailCard: React.FC<{ task: JudgeTask }> = ({ task }) => (
             {r.suggestions.length > 0 && (
               <div className="text-blue-600">💡 {r.suggestions.join('; ')}</div>
             )}
-            <div className="text-gray-500 mt-1">
+            <div className="text-[var(--text-secondary)] mt-1">
               延迟: {r.latency_ms}ms
             </div>
           </div>

@@ -15,11 +15,18 @@
  * #   v2.0.0 - 2026-08-03：G60-FIX-11 surface 调色板改为 CSS 变量驱动，
  * #                        使 bg-surface-* / text-surface-* / border-surface-* 等类响应主题切换。
  * #                        不再硬编码 dark 颜色，dark/light/high-contrast 三主题自动适配。
- * # ============================================================
+ * #   v2.0.1 - 2026-08-03：G60-FIX-17 启用 darkMode: selector 配置，
+ * #                        让所有 dark: 修饰符在 [data-theme="dark"|"high-contrast"] 时自动生效，
+ * #                        解决 MarketplacePanel/MemoryPanel 等大量 dark: 类失效问题
+ * # ====================================
  */
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  // v2.0.1 G60-FIX-17: 启用 darkMode: ['selector', '[data-theme="dark"], [data-theme="high-contrast"]']
+  // 这样所有 dark: 修饰符在 dark 和 high-contrast 主题下自动生效，修复大量
+  // bg-white dark:bg-slate-X 等组件在主题切换后样式不跟随的问题
+  darkMode: ['selector', '[data-theme="dark"], [data-theme="high-contrast"]'],
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",

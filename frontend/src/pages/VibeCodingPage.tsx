@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * VibeCodingPage - Vibe Coding 一等页面 (v1.0.0)
+ * VibeCodingPage - Vibe Coding 一等页面 (v1.0.1)
  * Cycle 58 G58-01
  * # ============================================================
  * 核心作用：Vibe Coding 模式的主入口页面
@@ -15,12 +15,14 @@
  *   - 使用 useVibeCoding Hook 管理会话
  *   - 集成 5 大 P0 组件
  *   - 响应式布局
+ *   - v1.0.1 主题感知：背景渐变改为 var(--bg-app) 驱动，按钮 bg-white 替换为 var(--bg-panel)
  * 输入参数：无（通过路由参数）
  * 输出结果：完整 Vibe Coding 体验
- * ============================================================
+ * ====================================
  * # 修改记录：
  * #   - 2026-08-03 | v1.0.0 | Cycle 58 G58-01 初次创建
- * ============================================================
+ * #   - 2026-08-03 | v1.0.1 | G60-FIX-16 修复主题感知：硬编码 bg-white/light 渐变替换为 CSS 变量
+ * ====================================
  */
 
 import React, { useState } from 'react';
@@ -53,8 +55,7 @@ const VibeCodingPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-fuchsia-50/30
-                    flex flex-col" data-testid="vibe-coding-page">
+    <div className="min-h-screen bg-[var(--bg-app)] flex flex-col" data-testid="vibe-coding-page">
       {/* 顶部 LoopStatusBar 持续可见 */}
       <LoopStatusBar
         loopState={loopState.state}
@@ -105,11 +106,12 @@ const VibeCodingPage: React.FC = () => {
             />
           )}
 
-          {/* panel 控制按钮 */}
+          {/* panel 控制按钮 - v1.0.1 G60-FIX-16 主题感知 */}
           <div className="flex flex-wrap gap-2">
             <button
               onClick={modals.planExecutor.onToggle}
-              className="px-3 py-1.5 text-sm bg-white border border-surface-200 rounded-lg
+              className="px-3 py-1.5 text-sm bg-[var(--bg-panel)] text-[var(--text-primary)]
+                         border border-surface-200 rounded-lg
                          hover:border-hermes-400 transition-colors"
               data-testid="toggle-plan-executor"
             >
@@ -117,7 +119,8 @@ const VibeCodingPage: React.FC = () => {
             </button>
             <button
               onClick={modals.loopState.onToggle}
-              className="px-3 py-1.5 text-sm bg-white border border-surface-200 rounded-lg
+              className="px-3 py-1.5 text-sm bg-[var(--bg-panel)] text-[var(--text-primary)]
+                         border border-surface-200 rounded-lg
                          hover:border-hermes-400 transition-colors"
               data-testid="toggle-loop-state"
             >
@@ -125,7 +128,8 @@ const VibeCodingPage: React.FC = () => {
             </button>
             <button
               onClick={modals.vibeCoding.onToggle}
-              className="px-3 py-1.5 text-sm bg-white border border-surface-200 rounded-lg
+              className="px-3 py-1.5 text-sm bg-[var(--bg-panel)] text-[var(--text-primary)]
+                         border border-surface-200 rounded-lg
                          hover:border-hermes-400 transition-colors"
             >
               🌊 Vibe Coding
@@ -135,7 +139,7 @@ const VibeCodingPage: React.FC = () => {
               className={`px-3 py-1.5 text-sm border rounded-lg transition-colors ${
                 autoFollow.enabled
                   ? 'bg-hermes-100 border-hermes-400 text-hermes-700'
-                  : 'bg-white border-surface-200 text-surface-500'
+                  : 'bg-[var(--bg-panel)] border-surface-200 text-[var(--text-primary)]'
               }`}
               data-testid="toggle-auto-follow"
             >
@@ -160,11 +164,12 @@ const VibeCodingPage: React.FC = () => {
         </div>
       )}
 
-      {/* 返回按钮 */}
+      {/* 返回按钮 - v1.0.1 G60-FIX-16 主题感知 */}
       <button
         onClick={() => navigate('/select-mode')}
-        className="fixed top-20 right-4 px-3 py-1.5 text-sm bg-white/80 backdrop-blur
-                   border border-surface-200 rounded-lg hover:border-hermes-400 transition-colors"
+        className="fixed top-20 right-4 px-3 py-1.5 text-sm bg-[var(--bg-panel)]/80 backdrop-blur
+                   text-[var(--text-primary)] border border-surface-200 rounded-lg
+                   hover:border-hermes-400 transition-colors"
         data-testid="back-to-mode-selector"
       >
         ← 返回模式选择

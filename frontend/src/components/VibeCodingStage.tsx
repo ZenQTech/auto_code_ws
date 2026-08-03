@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * VibeCodingStage - Vibe Coding 主舞台 (v1.0.1)
+ * VibeCodingStage - Vibe Coding 主舞台 (v1.0.2)
  * Cycle 58 G58-01
  * # ============================================================
  * 核心作用：Vibe Coding 的核心输入与进度展示舞台
@@ -13,12 +13,16 @@
  *   - 大型可视化输入区
  *   - session 状态实时显示
  *   - 步骤列表可滚动
+ *   - v1.0.2 主题感知：所有 bg-white 替换为 --bg-panel 主题变量
  * 输入参数：{ prompt, setPrompt, model, setModel, vibeCoding, onStart }
  * 输出结果：完整 Vibe Coding 输入与进度
  * ====================================
  * # 修改记录：
  * #   - 2026-08-03 | v1.0.0 | Cycle 58 G58-01 初次创建
  * #   - 2026-08-03 | v1.0.1 | G60-FIX 修复 metrics 字段未定义崩溃（防御性 fallback）
+ * #   - 2026-08-03 | v1.0.2 | G60-FIX-16 修复主题感知：bg-white 替换为 var(--bg-panel) 主题变量
+ * #                                    修复 textarea/select 文本框主题冲突（白底白字不可见）
+ * #                                    修复卡片背景在 dark/light/high-contrast 三主题下可见
  * ====================================
  */
 
@@ -89,8 +93,8 @@ const VibeCodingStage: React.FC<VibeCodingStageProps> = ({
 
   return (
     <div className="space-y-4" data-testid="vibe-coding-stage">
-      {/* Session 状态卡片 */}
-      <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm">
+      {/* Session 状态卡片 - v1.0.2 G60-FIX-16 主题感知 */}
+      <div className="bg-[var(--bg-panel)] rounded-2xl border border-surface-200 p-6 shadow-sm">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-lg font-semibold text-surface-800">Vibe Session</h2>
           <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${badge.color}`}
@@ -148,15 +152,16 @@ const VibeCodingStage: React.FC<VibeCodingStageProps> = ({
         )}
       </div>
 
-      {/* 输入区（无 session 时显示） */}
+      {/* 输入区（无 session 时显示）- v1.0.2 G60-FIX-16 主题感知 */}
       {!session && (
-        <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm">
+        <div className="bg-[var(--bg-panel)] rounded-2xl border border-surface-200 p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-surface-800 mb-3">描述你的需求</h2>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="例如：创建一个 React TODO 应用，支持添加、删除、标记完成，使用 TypeScript + TailwindCSS..."
-            className="w-full h-40 px-4 py-3 text-sm border border-surface-200 rounded-xl
+            className="w-full h-40 px-4 py-3 text-sm bg-[var(--bg-elevated)] text-[var(--text-primary)]
+                       border border-surface-200 rounded-xl placeholder:text-surface-500
                        focus:outline-none focus:ring-2 focus:ring-hermes-400 resize-none"
             disabled={isLoading}
             data-testid="prompt-textarea"
@@ -165,7 +170,8 @@ const VibeCodingStage: React.FC<VibeCodingStageProps> = ({
             <select
               value={model}
               onChange={(e) => setModel(e.target.value)}
-              className="px-3 py-2 text-sm border border-surface-200 rounded-lg
+              className="px-3 py-2 text-sm bg-[var(--bg-elevated)] text-[var(--text-primary)]
+                         border border-surface-200 rounded-lg
                          focus:outline-none focus:ring-2 focus:ring-hermes-400"
               data-testid="model-select"
             >
@@ -188,9 +194,9 @@ const VibeCodingStage: React.FC<VibeCodingStageProps> = ({
         </div>
       )}
 
-      {/* Steps 列表 */}
+      {/* Steps 列表 - v1.0.2 G60-FIX-16 主题感知 */}
       {session && session.steps && session.steps.length > 0 && (
-        <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm">
+        <div className="bg-[var(--bg-panel)] rounded-2xl border border-surface-200 p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-surface-800 mb-3">执行步骤</h2>
           <div className="space-y-2" data-testid="steps-list">
             {session.steps.map((step) => (

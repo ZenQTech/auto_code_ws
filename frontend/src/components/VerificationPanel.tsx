@@ -347,17 +347,17 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
 
   return (
     <div
-      className={`flex flex-col h-full bg-gray-50 ${
-        standalone ? '' : 'rounded-lg shadow border border-gray-200'
+      className={`flex flex-col h-full bg-[var(--bg-elevated)] ${
+        standalone ? '' : 'rounded-lg shadow border border-[var(--border-color)]'
       }`}
     >
       {/* 头部 */}
-      <div className="px-4 py-3 bg-white border-b border-gray-200 flex items-center justify-between">
+      <div className="px-4 py-3 bg-[var(--bg-panel)] border-b border-[var(--border-color)] flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <h2 className="text-base font-semibold text-gray-800">
+          <h2 className="text-base font-semibold text-[var(--text-primary)]">
             🔁 Verification Loop
             {health && (
-              <span className="ml-2 text-xs text-gray-500 font-normal">
+              <span className="ml-2 text-xs text-[var(--text-secondary)] font-normal">
                 v{health.version}
               </span>
             )}
@@ -390,7 +390,7 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
           {onClose && (
             <button
               onClick={onClose}
-              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              className="px-3 py-1.5 text-sm bg-surface-100 text-[var(--text-primary)] rounded hover:bg-surface-200"
             >
               ✕
             </button>
@@ -410,37 +410,37 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
 
       {/* 统计概览 */}
       {stats && (
-        <div className="px-4 py-2 bg-white border-b border-gray-200 grid grid-cols-6 gap-3 text-xs">
+        <div className="px-4 py-2 bg-[var(--bg-panel)] border-b border-[var(--border-color)] grid grid-cols-6 gap-3 text-xs">
           <div>
-            <div className="text-gray-500">总任务</div>
-            <div className="text-lg font-semibold text-gray-800">{stats.total_tasks}</div>
+            <div className="text-[var(--text-secondary)]">总任务</div>
+            <div className="text-lg font-semibold text-[var(--text-primary)]">{stats.total_tasks}</div>
           </div>
           <div>
-            <div className="text-gray-500">通过</div>
+            <div className="text-[var(--text-secondary)]">通过</div>
             <div className="text-lg font-semibold text-green-600">
               {stats.by_status.passed || 0}
             </div>
           </div>
           <div>
-            <div className="text-gray-500">失败</div>
+            <div className="text-[var(--text-secondary)]">失败</div>
             <div className="text-lg font-semibold text-red-600">
               {stats.by_status.failed || 0}
             </div>
           </div>
           <div>
-            <div className="text-gray-500">运行中</div>
+            <div className="text-[var(--text-secondary)]">运行中</div>
             <div className="text-lg font-semibold text-blue-600">
               {stats.by_status.running || 0}
             </div>
           </div>
           <div>
-            <div className="text-gray-500">待执行</div>
+            <div className="text-[var(--text-secondary)]">待执行</div>
             <div className="text-lg font-semibold text-yellow-600">
               {stats.by_status.pending || 0}
             </div>
           </div>
           <div>
-            <div className="text-gray-500">性能基线</div>
+            <div className="text-[var(--text-secondary)]">性能基线</div>
             <div className="text-lg font-semibold text-amber-600">
               {stats.total_baselines}
             </div>
@@ -451,13 +451,13 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
       {/* 主体：左侧任务列表 + 右侧任务详情 */}
       <div className="flex-1 flex overflow-hidden">
         {/* 左侧：任务列表 + 基线 */}
-        <div className="w-1/2 border-r border-gray-200 flex flex-col overflow-hidden">
+        <div className="w-1/2 border-r border-[var(--border-color)] flex flex-col overflow-hidden">
           {/* 过滤器 */}
-          <div className="px-3 py-2 bg-white border-b border-gray-200 flex items-center gap-2 text-xs">
+          <div className="px-3 py-2 bg-[var(--bg-panel)] border-b border-[var(--border-color)] flex items-center gap-2 text-xs">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="px-2 py-1 border border-gray-300 rounded"
+              className="px-2 py-1 border border-[var(--border-color)] rounded"
             >
               <option value="">所有状态</option>
               <option value="pending">pending</option>
@@ -470,7 +470,7 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
             <select
               value={triggerFilter}
               onChange={(e) => setTriggerFilter(e.target.value)}
-              className="px-2 py-1 border border-gray-300 rounded"
+              className="px-2 py-1 border border-[var(--border-color)] rounded"
             >
               <option value="">所有触发源</option>
               <option value="manual">manual</option>
@@ -480,12 +480,12 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
             </select>
             <button
               onClick={loadAll}
-              className="px-2 py-1 bg-gray-100 hover:bg-gray-200 rounded"
+              className="px-2 py-1 bg-surface-100 hover:bg-surface-200 rounded"
             >
               🔄 刷新
             </button>
             <div className="flex-1" />
-            <span className="text-gray-500">
+            <span className="text-[var(--text-secondary)]">
               显示 {filteredTasks.length} / {tasks.length}
             </span>
           </div>
@@ -493,23 +493,23 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
           {/* 任务列表 */}
           <div className="flex-1 overflow-y-auto">
             {loading && tasks.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 text-sm">加载中...</div>
+              <div className="p-8 text-center text-[var(--text-tertiary)] text-sm">加载中...</div>
             ) : filteredTasks.length === 0 ? (
-              <div className="p-8 text-center text-gray-400 text-sm">暂无任务</div>
+              <div className="p-8 text-center text-[var(--text-tertiary)] text-sm">暂无任务</div>
             ) : (
               <ul className="divide-y divide-gray-100">
                 {filteredTasks.map((task) => (
                   <li
                     key={task.task_id}
                     onClick={() => setSelectedTaskId(task.task_id)}
-                    className={`px-3 py-2 cursor-pointer hover:bg-gray-50 ${
+                    className={`px-3 py-2 cursor-pointer hover:bg-[var(--bg-elevated)] ${
                       selectedTaskId === task.task_id ? 'bg-blue-50' : ''
                     }`}
                   >
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
                         <span className="text-sm">{getTriggerIcon(task.trigger)}</span>
-                        <span className="text-xs font-mono text-gray-600">
+                        <span className="text-xs font-mono text-[var(--text-secondary)]">
                           {task.commit_sha || '(no-sha)'}
                         </span>
                       </div>
@@ -533,7 +533,7 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                         </span>
                       ))}
                     </div>
-                    <div className="flex items-center justify-between text-xs text-gray-500">
+                    <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
                       <span>{task.task_id.slice(-12)}</span>
                       <span>{formatTime(task.created_at)}</span>
                     </div>
@@ -545,17 +545,17 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
 
           {/* 基线列表 */}
           {baselines.length > 0 && (
-            <div className="border-t border-gray-200 bg-white">
-              <div className="px-3 py-1.5 text-xs font-semibold text-gray-600 border-b border-gray-100">
+            <div className="border-t border-[var(--border-color)] bg-[var(--bg-panel)]">
+              <div className="px-3 py-1.5 text-xs font-semibold text-[var(--text-secondary)] border-b border-[var(--border-color)]">
                 📏 性能基线 ({baselines.length})
               </div>
               <div className="max-h-32 overflow-y-auto">
                 {baselines.slice(0, 5).map((bl) => (
                   <div
                     key={bl.baseline_id}
-                    className="px-3 py-1 text-xs flex items-center justify-between hover:bg-gray-50"
+                    className="px-3 py-1 text-xs flex items-center justify-between hover:bg-[var(--bg-elevated)]"
                   >
-                    <span className="font-mono text-gray-700">{bl.name}</span>
+                    <span className="font-mono text-[var(--text-primary)]">{bl.name}</span>
                     <span className="text-amber-600">
                       {bl.metric_value}
                       {bl.unit}
@@ -568,19 +568,19 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
         </div>
 
         {/* 右侧：任务详情 */}
-        <div className="w-1/2 overflow-y-auto bg-white">
+        <div className="w-1/2 overflow-y-auto bg-[var(--bg-panel)]">
           {!selectedTaskId ? (
-            <div className="h-full flex items-center justify-center text-gray-400 text-sm">
+            <div className="h-full flex items-center justify-center text-[var(--text-tertiary)] text-sm">
               ← 请选择左侧任务查看详情
             </div>
           ) : !taskDetail ? (
-            <div className="p-8 text-center text-gray-400 text-sm">加载中...</div>
+            <div className="p-8 text-center text-[var(--text-tertiary)] text-sm">加载中...</div>
           ) : (
             <div className="p-4">
               {/* 任务基本信息 */}
               <div className="mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="text-sm font-semibold text-gray-800">任务详情</h3>
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)]">任务详情</h3>
                   <span
                     className={`text-xs px-2 py-0.5 rounded border ${getStatusColor(
                       taskDetail.task.status,
@@ -589,41 +589,41 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                     {taskDetail.task.status}
                   </span>
                 </div>
-                <div className="bg-gray-50 rounded p-3 text-xs space-y-1">
+                <div className="bg-[var(--bg-elevated)] rounded p-3 text-xs space-y-1">
                   <div>
-                    <span className="text-gray-500">Task ID:</span>{' '}
+                    <span className="text-[var(--text-secondary)]">Task ID:</span>{' '}
                     <span className="font-mono">{taskDetail.task.task_id}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Trigger:</span>{' '}
+                    <span className="text-[var(--text-secondary)]">Trigger:</span>{' '}
                     {getTriggerIcon(taskDetail.task.trigger)} {taskDetail.task.trigger}
                   </div>
                   <div>
-                    <span className="text-gray-500">Commit SHA:</span>{' '}
+                    <span className="text-[var(--text-secondary)]">Commit SHA:</span>{' '}
                     <span className="font-mono">{taskDetail.task.commit_sha || '-'}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Project:</span>{' '}
+                    <span className="text-[var(--text-secondary)]">Project:</span>{' '}
                     <span className="font-mono">{taskDetail.task.project_path}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Created:</span>{' '}
+                    <span className="text-[var(--text-secondary)]">Created:</span>{' '}
                     {formatTime(taskDetail.task.created_at)}
                   </div>
                   {taskDetail.task.started_at && (
                     <div>
-                      <span className="text-gray-500">Started:</span>{' '}
+                      <span className="text-[var(--text-secondary)]">Started:</span>{' '}
                       {formatTime(taskDetail.task.started_at)}
                     </div>
                   )}
                   {taskDetail.task.completed_at && (
                     <div>
-                      <span className="text-gray-500">Completed:</span>{' '}
+                      <span className="text-[var(--text-secondary)]">Completed:</span>{' '}
                       {formatTime(taskDetail.task.completed_at)}
                     </div>
                   )}
                   <div>
-                    <span className="text-gray-500">Retry Count:</span>{' '}
+                    <span className="text-[var(--text-secondary)]">Retry Count:</span>{' '}
                     {taskDetail.task.retry_count} / 3
                   </div>
                 </div>
@@ -640,7 +640,7 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                     taskDetail.task.status === 'running') && (
                     <button
                       onClick={() => handleCancelTask(taskDetail.task.task_id)}
-                      className="px-3 py-1 text-xs bg-gray-500 text-white rounded hover:bg-gray-600"
+                      className="px-3 py-1 text-xs bg-[var(--bg-elevated)]0 text-white rounded hover:bg-surface-200"
                     >
                       ⏸ 取消
                     </button>
@@ -660,17 +660,17 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
 
               {/* 维度结果 */}
               <div className="mb-4">
-                <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">
                   验证结果 ({taskDetail.results.length})
                 </h3>
                 {taskDetail.results.length === 0 ? (
-                  <div className="text-xs text-gray-400">暂无结果（任务可能未执行）</div>
+                  <div className="text-xs text-[var(--text-tertiary)]">暂无结果（任务可能未执行）</div>
                 ) : (
                   <div className="space-y-2">
                     {taskDetail.results.map((r) => (
                       <div
                         key={r.result_id}
-                        className="border border-gray-200 rounded p-2 text-xs"
+                        className="border border-[var(--border-color)] rounded p-2 text-xs"
                       >
                         <div className="flex items-center justify-between mb-1">
                           <span
@@ -688,25 +688,25 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                             {r.status}
                           </span>
                         </div>
-                        <div className="grid grid-cols-3 gap-2 text-gray-600">
+                        <div className="grid grid-cols-3 gap-2 text-[var(--text-secondary)]">
                           <div>
-                            <div className="text-gray-400">总检查</div>
+                            <div className="text-[var(--text-tertiary)]">总检查</div>
                             <div className="font-mono">{r.total_checks}</div>
                           </div>
                           <div>
-                            <div className="text-gray-400">通过</div>
+                            <div className="text-[var(--text-tertiary)]">通过</div>
                             <div className="font-mono text-green-600">
                               {r.passed_checks}
                             </div>
                           </div>
                           <div>
-                            <div className="text-gray-400">失败</div>
+                            <div className="text-[var(--text-tertiary)]">失败</div>
                             <div className="font-mono text-red-600">
                               {r.failed_checks}
                             </div>
                           </div>
                         </div>
-                        <div className="mt-1 text-gray-500">
+                        <div className="mt-1 text-[var(--text-secondary)]">
                           耗时: {formatDuration(r.duration_seconds)}
                         </div>
                         {r.error_details && r.error_details.length > 0 && (
@@ -721,10 +721,10 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                         )}
                         {r.output && (
                           <details className="mt-1">
-                            <summary className="text-gray-600 cursor-pointer">
+                            <summary className="text-[var(--text-secondary)] cursor-pointer">
                               完整输出
                             </summary>
-                            <pre className="mt-1 text-xs bg-gray-50 p-2 rounded overflow-x-auto max-h-40">
+                            <pre className="mt-1 text-xs bg-[var(--bg-elevated)] p-2 rounded overflow-x-auto max-h-40">
                               {r.output}
                             </pre>
                           </details>
@@ -738,7 +738,7 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
               {/* 修复记录 */}
               {taskDetail.fix_actions.length > 0 && (
                 <div>
-                  <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                  <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-2">
                     自动修复 ({taskDetail.fix_actions.length})
                   </h3>
                   <div className="space-y-2">
@@ -759,17 +759,17 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                             {a.status}
                           </span>
                         </div>
-                        <div className="text-gray-600">
+                        <div className="text-[var(--text-secondary)]">
                           <div>
-                            <span className="text-gray-400">Agent:</span> {a.agent_invoked}
+                            <span className="text-[var(--text-tertiary)]">Agent:</span> {a.agent_invoked}
                           </div>
                           <div>
-                            <span className="text-gray-400">Strategy:</span>{' '}
+                            <span className="text-[var(--text-tertiary)]">Strategy:</span>{' '}
                             {a.fix_strategy}
                           </div>
                           {a.result_summary && (
                             <div>
-                              <span className="text-gray-400">Result:</span>{' '}
+                              <span className="text-[var(--text-tertiary)]">Result:</span>{' '}
                               {a.result_summary}
                             </div>
                           )}
@@ -787,17 +787,17 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
       {/* 创建任务弹窗 */}
       {showCreateForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-[500px] p-5">
-            <h3 className="text-base font-semibold text-gray-800 mb-3">新建验证任务</h3>
+          <div className="bg-[var(--bg-panel)] rounded-lg shadow-xl w-[500px] p-5">
+            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">新建验证任务</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">触发源</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">触发源</label>
                 <select
                   value={formState.trigger}
                   onChange={(e) =>
                     setFormState((s) => ({ ...s, trigger: e.target.value as TriggerType }))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                  className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded"
                 >
                   {TRIGGERS.map((t) => (
                     <option key={t} value={t}>
@@ -807,7 +807,7 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Commit SHA</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">Commit SHA</label>
                 <input
                   type="text"
                   value={formState.commit_sha}
@@ -815,28 +815,28 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                     setFormState((s) => ({ ...s, commit_sha: e.target.value }))
                   }
                   placeholder="例如：abc1234"
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded font-mono"
+                  className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded font-mono"
                 />
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-xs text-[var(--text-tertiary)] mt-1">
                   7-40 字符 hex（小写 a-f0-9），空表示 cron 任务
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">项目路径</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">项目路径</label>
                 <input
                   type="text"
                   value={formState.project_path}
                   onChange={(e) =>
                     setFormState((s) => ({ ...s, project_path: e.target.value }))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded font-mono"
+                  className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded font-mono"
                 />
-                <div className="text-xs text-gray-400 mt-1">
+                <div className="text-xs text-[var(--text-tertiary)] mt-1">
                   必须在白名单内：/home/qizheng/auto_code_ws 或 /home/qizheng/auto_code_data
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">验证维度</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">验证维度</label>
                 <div className="space-y-1">
                   {DIMENSIONS.map((d) => (
                     <label key={d} className="flex items-start gap-2 text-xs">
@@ -854,8 +854,8 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                         className="mt-0.5"
                       />
                       <div>
-                        <div className="font-medium text-gray-700">{d}</div>
-                        <div className="text-gray-500">{DIMENSION_DESC[d]}</div>
+                        <div className="font-medium text-[var(--text-primary)]">{d}</div>
+                        <div className="text-[var(--text-secondary)]">{DIMENSION_DESC[d]}</div>
                       </div>
                     </label>
                   ))}
@@ -865,7 +865,7 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setShowCreateForm(false)}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                className="px-3 py-1.5 text-sm bg-surface-100 text-[var(--text-primary)] rounded hover:bg-surface-200"
               >
                 取消
               </button>
@@ -883,11 +883,11 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
       {/* 创建基线弹窗 */}
       {showBaselineForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-[450px] p-5">
-            <h3 className="text-base font-semibold text-gray-800 mb-3">新建性能基线</h3>
+          <div className="bg-[var(--bg-panel)] rounded-lg shadow-xl w-[450px] p-5">
+            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">新建性能基线</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">基线名称</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">基线名称</label>
                 <input
                   type="text"
                   value={baselineForm.name}
@@ -895,46 +895,46 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                     setBaselineForm((s) => ({ ...s, name: e.target.value }))
                   }
                   placeholder="例如：python_list_op"
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                  className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">项目路径</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">项目路径</label>
                 <input
                   type="text"
                   value={baselineForm.project_path}
                   onChange={(e) =>
                     setBaselineForm((s) => ({ ...s, project_path: e.target.value }))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded font-mono"
+                  className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded font-mono"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">指标名</label>
+                  <label className="block text-xs text-[var(--text-secondary)] mb-1">指标名</label>
                   <input
                     type="text"
                     value={baselineForm.metric_name}
                     onChange={(e) =>
                       setBaselineForm((s) => ({ ...s, metric_name: e.target.value }))
                     }
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                    className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs text-gray-600 mb-1">单位</label>
+                  <label className="block text-xs text-[var(--text-secondary)] mb-1">单位</label>
                   <input
                     type="text"
                     value={baselineForm.unit}
                     onChange={(e) =>
                       setBaselineForm((s) => ({ ...s, unit: e.target.value }))
                     }
-                    className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                    className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded"
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">指标值</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">指标值</label>
                 <input
                   type="number"
                   step="0.01"
@@ -945,25 +945,25 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                       metric_value: parseFloat(e.target.value) || 0,
                     }))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                  className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded"
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Commit SHA（可选）</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">Commit SHA（可选）</label>
                 <input
                   type="text"
                   value={baselineForm.commit_sha}
                   onChange={(e) =>
                     setBaselineForm((s) => ({ ...s, commit_sha: e.target.value }))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded font-mono"
+                  className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded font-mono"
                 />
               </div>
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setShowBaselineForm(false)}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                className="px-3 py-1.5 text-sm bg-surface-100 text-[var(--text-primary)] rounded hover:bg-surface-200"
               >
                 取消
               </button>
@@ -981,11 +981,11 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
       {/* Webhook 触发弹窗 */}
       {showWebhookForm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg shadow-xl w-[400px] p-5">
-            <h3 className="text-base font-semibold text-gray-800 mb-3">触发 Webhook</h3>
+          <div className="bg-[var(--bg-panel)] rounded-lg shadow-xl w-[400px] p-5">
+            <h3 className="text-base font-semibold text-[var(--text-primary)] mb-3">触发 Webhook</h3>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">事件类型</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">事件类型</label>
                 <select
                   value={webhookForm.event}
                   onChange={(e) =>
@@ -994,14 +994,14 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                       event: e.target.value as 'push' | 'pull_request',
                     }))
                   }
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded"
+                  className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded"
                 >
                   <option value="push">push</option>
                   <option value="pull_request">pull_request</option>
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">Commit SHA</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">Commit SHA</label>
                 <input
                   type="text"
                   value={webhookForm.commit_sha}
@@ -1009,14 +1009,14 @@ const VerificationPanel: React.FC<VerificationPanelProps> = ({
                     setWebhookForm((s) => ({ ...s, commit_sha: e.target.value }))
                   }
                   placeholder="例如：abc1234"
-                  className="w-full px-2 py-1.5 text-sm border border-gray-300 rounded font-mono"
+                  className="w-full px-2 py-1.5 text-sm border border-[var(--border-color)] rounded font-mono"
                 />
               </div>
             </div>
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setShowWebhookForm(false)}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                className="px-3 py-1.5 text-sm bg-surface-100 text-[var(--text-primary)] rounded hover:bg-surface-200"
               >
                 取消
               </button>

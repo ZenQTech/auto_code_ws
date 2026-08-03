@@ -1,13 +1,15 @@
 /**
  * # ============================================================
- * ModeSelectorPage - 模式选择页 (v1.2.0) - Cycle 60 G60-2.3
+ * ModeSelectorPage - 模式选择页 (v1.3.0) - Cycle 60 G60-2.3
  * # ============================================================
  * 核心作用：根路由页面,显示 chat/coding/vibe-coding/solo 四模式选择
  * 修改记录：
  *   - 2026-07-27 | v1.0.0 | Cycle 7 P1-2 新建 - 提取自 App.tsx
  *   - 2026-08-03 | v1.1.0 | Cycle 58 G58-01 新增 vibe-coding 模式卡片
  *   - 2026-08-03 | v1.2.0 | Cycle 60 G60-2.3 新增 Solo 模式卡片（高亮）
- * ============================================================
+ *   - 2026-08-03 | v1.3.0 | G60-FIX-16 修复主题感知：bg-white 替换为 var(--bg-panel)
+ *                                       页面背景渐变替换为 var(--bg-app)
+ * ====================================
  */
 
 import React from 'react';
@@ -81,8 +83,7 @@ const ModeSelectorPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br
-                    from-surface-50 via-white to-hermes-50/30 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)] p-4">
       <div className="max-w-3xl w-full">
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-20 h-20 mb-4
@@ -90,10 +91,10 @@ const ModeSelectorPage: React.FC = () => {
                           shadow-lg shadow-hermes-500/30">
             <span className="text-3xl">⚡</span>
           </div>
-          <h1 className="text-3xl font-bold text-surface-800 mb-2">
+          <h1 className="text-3xl font-bold text-[var(--text-primary)] mb-2">
             欢迎使用 Hermes 智能调度平台
           </h1>
-          <p className="text-base text-surface-500">请选择您的工作模式</p>
+          <p className="text-base text-[var(--text-secondary)]">请选择您的工作模式</p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -102,7 +103,7 @@ const ModeSelectorPage: React.FC = () => {
               key={mode.key}
               onClick={() => handleSelectMode(mode.key)}
               className={[
-                'group relative bg-white border-2 rounded-2xl p-6 text-left',
+                'group relative bg-[var(--bg-panel)] border-2 rounded-2xl p-6 text-left',
                 'transition-all duration-200 overflow-hidden',
                 mode.featured
                   ? 'border-hermes-400 shadow-lg shadow-hermes-500/20 ring-2 ring-hermes-500/20'
@@ -117,8 +118,8 @@ const ModeSelectorPage: React.FC = () => {
               )}
               <div className={`absolute inset-x-0 top-0 h-1 bg-gradient-to-r ${mode.gradient}`} />
               <div className="text-3xl mb-3">{mode.emoji}</div>
-              <h2 className="text-lg font-semibold text-surface-800 mb-1">{mode.title}</h2>
-              <p className="text-sm text-surface-500 mb-3">{mode.description}</p>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-1">{mode.title}</h2>
+              <p className="text-sm text-[var(--text-secondary)] mb-3">{mode.description}</p>
               <div className="text-xs text-hermes-600 font-medium">{mode.highlight}</div>
             </button>
           ))}
@@ -127,7 +128,7 @@ const ModeSelectorPage: React.FC = () => {
         <div className="mt-6 text-center">
           <button
             onClick={() => navigate('/settings')}
-            className="text-sm text-surface-500 hover:text-hermes-600 transition-colors"
+            className="text-sm text-[var(--text-secondary)] hover:text-hermes-600 transition-colors"
           >
             前往设置 →
           </button>

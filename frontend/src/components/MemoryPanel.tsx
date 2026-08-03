@@ -132,7 +132,7 @@ const EntityCard: React.FC<EntityCardProps> = ({ entity, selected, onClick }) =>
               {entity.name}
             </span>
           </div>
-          <div className="flex items-center gap-2 text-xs text-gray-500">
+          <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
             <span
               className="px-1.5 py-0.5 rounded text-white"
               style={{ backgroundColor: color }}
@@ -140,11 +140,11 @@ const EntityCard: React.FC<EntityCardProps> = ({ entity, selected, onClick }) =>
               {entity.entity_type}
             </span>
             {entity.project && entity.project !== '_global' && (
-              <span className="text-gray-400">@ {entity.project}</span>
+              <span className="text-[var(--text-tertiary)]">@ {entity.project}</span>
             )}
           </div>
         </div>
-        <div className="text-xs text-gray-400 text-right flex-shrink-0">
+        <div className="text-xs text-[var(--text-tertiary)] text-right flex-shrink-0">
           {entity.observations?.length || 0} obs
         </div>
       </div>
@@ -230,7 +230,7 @@ const EntityDetail: React.FC<EntityDetailProps> = ({
       <div className="flex items-start justify-between">
         <div>
           <h2 className="text-xl font-bold font-mono">{entity.name}</h2>
-          <div className="flex items-center gap-2 mt-1 text-sm text-gray-500">
+          <div className="flex items-center gap-2 mt-1 text-sm text-[var(--text-secondary)]">
             <span
               className="px-2 py-0.5 rounded text-white text-xs"
               style={{ backgroundColor: ENTITY_COLORS[entity.entity_type] || '#6b7280' }}
@@ -253,8 +253,8 @@ const EntityDetail: React.FC<EntityDetailProps> = ({
       </div>
 
       {/* Observations */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold mb-2 text-gray-700">
+      <div className="bg-[var(--bg-panel)] rounded-lg border border-[var(--border-color)] p-4">
+        <h3 className="text-sm font-semibold mb-2 text-[var(--text-primary)]">
           观察记录 ({entity.observations?.length || 0})
         </h3>
         <div className="space-y-2 mb-3 max-h-64 overflow-y-auto">
@@ -265,8 +265,8 @@ const EntityDetail: React.FC<EntityDetailProps> = ({
                 className="flex items-start justify-between gap-2 p-2 bg-gray-50 rounded"
               >
                 <div className="flex-1 text-sm">
-                  <div className="text-gray-700">{obs.content}</div>
-                  <div className="text-xs text-gray-400 mt-1">
+                  <div className="text-[var(--text-primary)]">{obs.content}</div>
+                  <div className="text-xs text-[var(--text-tertiary)] mt-1">
                     {obs.source} · confidence {obs.confidence.toFixed(1)} · {formatDate(obs.created_at)}
                   </div>
                 </div>
@@ -279,7 +279,7 @@ const EntityDetail: React.FC<EntityDetailProps> = ({
               </div>
             ))
           ) : (
-            <div className="text-sm text-gray-400">暂无观察记录</div>
+            <div className="text-sm text-[var(--text-tertiary)]">暂无观察记录</div>
           )}
         </div>
         <div className="flex gap-2">
@@ -302,8 +302,8 @@ const EntityDetail: React.FC<EntityDetailProps> = ({
       </div>
 
       {/* Relations */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold mb-2 text-gray-700">
+      <div className="bg-[var(--bg-panel)] rounded-lg border border-[var(--border-color)] p-4">
+        <h3 className="text-sm font-semibold mb-2 text-[var(--text-primary)]">
           实体关系 ({relations.length})
         </h3>
         <div className="space-y-1 mb-3">
@@ -327,7 +327,7 @@ const EntityDetail: React.FC<EntityDetailProps> = ({
                       <><span className="text-hermes-600">{rel.source}</span> →</>
                     )}
                   </span>
-                  <span className="text-xs text-gray-400">w={rel.weight.toFixed(1)}</span>
+                  <span className="text-xs text-[var(--text-tertiary)]">w={rel.weight.toFixed(1)}</span>
                 </div>
                 <button
                   onClick={() => onDeleteRelation(rel.id)}
@@ -338,7 +338,7 @@ const EntityDetail: React.FC<EntityDetailProps> = ({
               </div>
             ))
           ) : (
-            <div className="text-sm text-gray-400">暂无关系</div>
+            <div className="text-sm text-[var(--text-tertiary)]">暂无关系</div>
           )}
         </div>
         <div className="flex gap-2">
@@ -374,8 +374,8 @@ const EntityDetail: React.FC<EntityDetailProps> = ({
       </div>
 
       {/* Metadata */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4">
-        <h3 className="text-sm font-semibold mb-2 text-gray-700">元数据 (metadata)</h3>
+      <div className="bg-[var(--bg-panel)] rounded-lg border border-[var(--border-color)] p-4">
+        <h3 className="text-sm font-semibold mb-2 text-[var(--text-primary)]">元数据 (metadata)</h3>
         <textarea
           value={metadataText}
           onChange={(e) => setMetadataText(e.target.value)}
@@ -428,8 +428,8 @@ const GraphView: React.FC<GraphViewProps> = ({ graph, selectedEntity, onSelectEn
   const getPos = (name: string) => positions.find((p) => p.name === name);
 
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4">
-      <h3 className="text-sm font-semibold mb-2 text-gray-700">
+    <div className="bg-[var(--bg-panel)] rounded-lg border border-[var(--border-color)] p-4">
+      <h3 className="text-sm font-semibold mb-2 text-[var(--text-primary)]">
         知识图谱 ({graph.entities.length} 实体 / {graph.relations.length} 关系)
       </h3>
       <div className="relative bg-gray-50 rounded" style={{ height: 400 }}>
@@ -502,7 +502,7 @@ const GraphView: React.FC<GraphViewProps> = ({ graph, selectedEntity, onSelectEn
           })}
         </svg>
         {graph.entities.length === 0 && (
-          <div className="absolute inset-0 flex items-center justify-center text-sm text-gray-400">
+          <div className="absolute inset-0 flex items-center justify-center text-sm text-[var(--text-tertiary)]">
             暂无实体
           </div>
         )}
@@ -511,7 +511,7 @@ const GraphView: React.FC<GraphViewProps> = ({ graph, selectedEntity, onSelectEn
         {Object.entries(ENTITY_COLORS).map(([type, color]) => (
           <span key={type} className="flex items-center gap-1">
             <span className="inline-block w-2 h-2 rounded-full" style={{ backgroundColor: color }} />
-            <span className="text-gray-600">{type}</span>
+            <span className="text-[var(--text-secondary)]">{type}</span>
           </span>
         ))}
       </div>
@@ -734,14 +734,14 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
   // ============================================================
 
   return (
-    <div className={`flex flex-col h-full bg-gray-50 ${standalone ? '' : 'rounded-lg border border-gray-200'}`}>
+    <div className={`flex flex-col h-full bg-[var(--bg-app)] ${standalone ? '' : 'rounded-lg border border-[var(--border-color)]'}`}>
       {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+      <div className="flex items-center justify-between p-4 border-b border-[var(--border-color)] bg-[var(--bg-panel)]">
         <div>
-          <h1 className="text-lg font-bold text-gray-800">
+          <h1 className="text-lg font-bold text-[var(--text-primary)]">
             🧠 Memory System
           </h1>
-          <p className="text-xs text-gray-500 mt-0.5">
+          <p className="text-xs text-[var(--text-secondary)] mt-0.5">
             Dual-Track Persistent Memory v{version} · {stats ? `${stats.total_entities} entities / ${stats.total_relations} relations / ${stats.total_observations} observations` : '加载中...'}
           </p>
         </div>
@@ -749,7 +749,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
           <button
             onClick={refresh}
             disabled={isLoading}
-            className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50"
+            className="px-3 py-1.5 text-sm bg-gray-100 text-[var(--text-primary)] rounded hover:bg-gray-200 disabled:opacity-50"
           >
             {isLoading ? '刷新中...' : '🔄 刷新'}
           </button>
@@ -762,7 +762,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
           {onClose && (
             <button
               onClick={onClose}
-              className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+              className="px-3 py-1.5 text-sm bg-gray-100 text-[var(--text-primary)] rounded hover:bg-gray-200"
             >
               ✕ 关闭
             </button>
@@ -788,9 +788,9 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
             { label: '关系', value: stats.total_relations, color: 'green' },
             { label: '观察', value: stats.total_observations, color: 'amber' },
           ].map((s) => (
-            <div key={s.label} className="bg-white rounded-lg p-3 border border-gray-200">
-              <div className="text-xs text-gray-500">{s.label}</div>
-              <div className="text-2xl font-bold text-gray-800">{s.value}</div>
+            <div key={s.label} className="bg-[var(--bg-panel)] rounded-lg p-3 border border-[var(--border-color)]">
+              <div className="text-xs text-[var(--text-secondary)]">{s.label}</div>
+              <div className="text-2xl font-bold text-[var(--text-primary)]">{s.value}</div>
             </div>
           ))}
         </div>
@@ -799,7 +799,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
       {/* 主内容区 */}
       <div className="flex-1 grid grid-cols-12 gap-3 p-4 overflow-hidden">
         {/* 左侧：实体列表 */}
-        <div className="col-span-3 flex flex-col bg-white rounded-lg border border-gray-200 overflow-hidden">
+        <div className="col-span-3 flex flex-col bg-[var(--bg-panel)] rounded-lg border border-[var(--border-color)] overflow-hidden">
           <div className="p-3 border-b border-gray-200 space-y-2">
             <input
               type="text"
@@ -842,7 +842,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
                 />
               ))
             ) : (
-              <div className="text-sm text-gray-400 text-center p-4">
+              <div className="text-sm text-[var(--text-tertiary)] text-center p-4">
                 {isLoading ? '加载中...' : '暂无数据'}
               </div>
             )}
@@ -859,7 +859,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
         </div>
 
         {/* 右侧：实体详情 */}
-        <div className="col-span-5 bg-white rounded-lg border border-gray-200 p-4 overflow-y-auto">
+        <div className="col-span-5 bg-[var(--bg-panel)] rounded-lg border border-[var(--border-color)] p-4 overflow-y-auto">
           {selectedEntity ? (
             <EntityDetail
               entity={selectedEntity}
@@ -873,7 +873,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
               allEntities={entities}
             />
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-gray-400 text-sm">
+            <div className="h-full flex flex-col items-center justify-center text-[var(--text-tertiary)] text-sm">
               <div className="text-4xl mb-2">👈</div>
               <div>从左侧列表选择一个实体查看详情</div>
             </div>
@@ -884,11 +884,11 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
       {/* 新建实体对话框 */}
       {showCreate && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-96 max-w-full">
+          <div className="bg-[var(--bg-panel)] rounded-lg p-6 w-96 max-w-full">
             <h2 className="text-lg font-bold mb-4">新建实体</h2>
             <div className="space-y-3">
               <div>
-                <label className="block text-xs text-gray-600 mb-1">名称 (snake_case, 3-128 字符)</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">名称 (snake_case, 3-128 字符)</label>
                 <input
                   type="text"
                   value={newEntity.name}
@@ -898,7 +898,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
                 />
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">类型</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">类型</label>
                 <select
                   value={newEntity.entity_type}
                   onChange={(e) => setNewEntity({ ...newEntity, entity_type: e.target.value as EntityTypeName })}
@@ -910,7 +910,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
                 </select>
               </div>
               <div>
-                <label className="block text-xs text-gray-600 mb-1">项目</label>
+                <label className="block text-xs text-[var(--text-secondary)] mb-1">项目</label>
                 <input
                   type="text"
                   value={newEntity.project}
@@ -922,7 +922,7 @@ export const MemoryPanel: React.FC<MemoryPanelProps> = ({ onClose, standalone = 
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setShowCreate(false)}
-                className="px-3 py-1.5 text-sm bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+                className="px-3 py-1.5 text-sm bg-gray-100 text-[var(--text-primary)] rounded hover:bg-gray-200"
               >
                 取消
               </button>

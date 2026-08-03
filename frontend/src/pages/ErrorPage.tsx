@@ -1,12 +1,13 @@
 /**
  * # ============================================================
- * ErrorPage - 路由错误页 (v1.0.0) - Cycle 7 P1-2
+ * ErrorPage - 路由错误页 (v1.0.1) - Cycle 7 P1-2
  * # ============================================================
  * 核心作用：路由未匹配或渲染错误时显示
  * 修改记录：
  *   - 2026-07-27 | v1.0.0 | Cycle 7 P1-2 新建
+ *   - 2026-08-03 | v1.0.1 | G60-FIX-16 修复主题感知：bg-white 替换为 var(--bg-panel)
  # 兼容：react-router-dom v6.3 (无 useRouteError)
- # ============================================================
+ # ====================================
  */
 
 import React from 'react';
@@ -17,13 +18,13 @@ const ErrorPage: React.FC = () => {
   const isNotFound = location.pathname !== '/';
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-surface-50/30 p-4">
-      <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8 text-center">
+    <div className="min-h-screen flex items-center justify-center bg-[var(--bg-app)] p-4">
+      <div className="max-w-md w-full bg-[var(--bg-panel)] rounded-2xl shadow-lg p-8 text-center">
         <div className="text-7xl mb-4">😵</div>
-        <h1 className="text-2xl font-bold text-surface-800 mb-2">
+        <h1 className="text-2xl font-bold text-[var(--text-primary)] mb-2">
           {isNotFound ? '页面未找到' : '出错了'}
         </h1>
-        <p className="text-sm text-surface-500 mb-6">
+        <p className="text-sm text-[var(--text-secondary)] mb-6">
           {isNotFound
             ? `路径 "${location.pathname}" 不存在`
             : '发生未知错误,请稍后重试'}
@@ -38,7 +39,7 @@ const ErrorPage: React.FC = () => {
           </Link>
           <button
             onClick={() => window.history.back()}
-            className="px-4 py-2 bg-surface-100 text-surface-700 rounded-md
+            className="px-4 py-2 bg-surface-100 text-[var(--text-primary)] rounded-md
                        hover:bg-surface-200 transition-colors text-sm font-medium"
           >
             返回上一页

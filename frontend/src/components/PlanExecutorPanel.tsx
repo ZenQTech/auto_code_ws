@@ -73,7 +73,7 @@ const STEP_STATUS_COLORS: Record<PlanStep['status'], string> = {
   running: 'bg-blue-100 text-blue-700 animate-pulse',
   completed: 'bg-emerald-100 text-emerald-700',
   failed: 'bg-red-100 text-red-700',
-  skipped: 'bg-gray-100 text-gray-500',
+  skipped: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300',
   cancelled: 'bg-orange-100 text-orange-700',
 };
 
@@ -289,16 +289,16 @@ const PlanExecutorPanel: React.FC<PlanExecutorPanelProps> = ({
 
   return (
     <div
-      className="bg-white rounded-2xl border border-surface-200 p-4 shadow-sm"
+      className="bg-[var(--bg-panel)] rounded-2xl border border-surface-200 p-4 shadow-sm"
       data-testid="plan-executor-panel"
     >
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-surface-800 flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
           <span>📋</span> Plan Executor
         </h3>
         <button
           onClick={onClose}
-          className="text-xs text-surface-400 hover:text-surface-700"
+          className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
           aria-label="关闭"
         >
           ✕
@@ -312,17 +312,17 @@ const PlanExecutorPanel: React.FC<PlanExecutorPanelProps> = ({
       )}
 
       {!plan ? (
-        <div className="text-xs text-surface-500" data-testid="plan-empty">
+        <div className="text-xs text-[var(--text-secondary)]" data-testid="plan-empty">
           {planId ? '加载中...' : '当前没有 Plan'}
         </div>
       ) : (
         <>
           <div className="mb-3">
-            <div className="text-sm font-medium text-surface-800" data-testid="plan-title">
+            <div className="text-sm font-medium text-[var(--text-primary)]" data-testid="plan-title">
               {plan.title}
             </div>
-            <div className="text-xs text-surface-500 mt-1">{plan.description}</div>
-            <div className="text-xs text-surface-400 mt-1 flex items-center gap-2 flex-wrap">
+            <div className="text-xs text-[var(--text-secondary)] mt-1">{plan.description}</div>
+            <div className="text-xs text-[var(--text-secondary)] mt-1 flex items-center gap-2 flex-wrap">
               <span>
                 状态:{' '}
                 <span className="font-medium" data-testid="plan-status">
@@ -340,7 +340,7 @@ const PlanExecutorPanel: React.FC<PlanExecutorPanelProps> = ({
               <span>step 数: {plan.steps.length}</span>
             </div>
             {plan.summary && (
-              <div className="text-xs text-surface-400 mt-1" data-testid="plan-summary">
+              <div className="text-xs text-[var(--text-secondary)] mt-1" data-testid="plan-summary">
                 {Object.entries(plan.summary)
                   .filter(([, n]) => n > 0)
                   .map(([k, n]) => `${k}=${n}`)
