@@ -26,7 +26,10 @@ export interface RemoteWorktreePanelProps {
 
 type TabKey = 'backends' | 'worktrees' | 'migrations';
 
-export const RemoteWorktreePanel: React.FC<RemoteWorktreePanelProps> = ({ adapter: adapterProp, isOpen: _isOpen, onClose }) => {
+export const RemoteWorktreePanel: React.FC<RemoteWorktreePanelProps> = ({ adapter: adapterProp, isOpen, onClose }) => {
+
+  // G60-FIX-13: 面板关闭时早返回，避免在 DOM 中堆积所有面板
+  if (isOpen === false) return null;
   const adapter = useMemo(() => adapterProp || getDefaultRemoteWorktreeAdapter(), [adapterProp]);
   const [tab, setTab] = useState<TabKey>('backends');
   const [refreshKey, setRefreshKey] = useState(0);

@@ -27,7 +27,10 @@ export interface WorktreeSyncPanelProps {
 
 type TabKey = 'sync' | 'devices' | 'conflicts';
 
-export const WorktreeSyncPanel: React.FC<WorktreeSyncPanelProps> = ({ engine: engineProp, isOpen: _isOpen, onClose }) => {
+export const WorktreeSyncPanel: React.FC<WorktreeSyncPanelProps> = ({ engine: engineProp, isOpen, onClose }) => {
+
+  // G60-FIX-13: 面板关闭时早返回，避免在 DOM 中堆积所有面板
+  if (isOpen === false) return null;
   const engine = useMemo(() => engineProp || getDefaultWorktreeSyncEngine(), [engineProp]);
   const [tab, setTab] = useState<TabKey>('sync');
   const [refreshKey, setRefreshKey] = useState(0);

@@ -33,9 +33,12 @@ type TabKey = 'threads' | 'checkpoints' | 'branches' | 'stats';
 
 export const TaskCheckpointPanel: React.FC<TaskCheckpointPanelProps> = ({
   engine: engineProp,
-  isOpen: _isOpen,
+  isOpen,
   onClose,
 }) => {
+
+  // G60-FIX-13: 面板关闭时早返回，避免在 DOM 中堆积所有面板
+  if (isOpen === false) return null;
   const engine = useMemo(
     () => engineProp || getDefaultTaskCheckpointEngine(),
     [engineProp],

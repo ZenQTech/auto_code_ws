@@ -24,7 +24,10 @@ export interface SSOPanelProps {
 
 type TabKey = 'idp' | 'sessions' | 'scim' | 'discovery';
 
-export const SSOPanel: React.FC<SSOPanelProps> = ({ engine: engineProp, isOpen: _isOpen, onClose }) => {
+export const SSOPanel: React.FC<SSOPanelProps> = ({ engine: engineProp, isOpen, onClose }) => {
+
+  // G60-FIX-13: 面板关闭时早返回，避免在 DOM 中堆积所有面板
+  if (isOpen === false) return null;
   const engine = useMemo(() => engineProp || getDefaultSSOEngine(), [engineProp]);
   const [tab, setTab] = useState<TabKey>('idp');
   const [refreshKey, setRefreshKey] = useState(0);
