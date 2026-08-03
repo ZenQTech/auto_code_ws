@@ -91,7 +91,8 @@ export type PanelKey =
   | 'mcpObservability'
   | 'mcpPlatformIntegration'
   | 'mcpKubernetes'
-  | 'mcpServerless';
+  | 'mcpServerless'
+  | 'mcpStreamProcessing';
 
 /** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
@@ -143,6 +144,7 @@ const INITIAL_STATE: PanelsState = {
   mcpPlatformIntegration: DEFAULT_OPEN.mcpPlatformIntegration ?? false,
   mcpKubernetes: DEFAULT_OPEN.mcpKubernetes ?? false,
   mcpServerless: DEFAULT_OPEN.mcpServerless ?? false,
+  mcpStreamProcessing: DEFAULT_OPEN.mcpStreamProcessing ?? false,
 };
 
 /** Action 类型 */
@@ -262,6 +264,8 @@ export interface UseModalsResult {
   mcpKubernetes: PanelController;
   /** v3.17.0 (Cycle 56) 新增：MCP × Serverless/FaaS 集成面板 (Knative + KEDA + OpenFaaS + CloudEvents + 集成文档) */
   mcpServerless: PanelController;
+  /** v3.18.0 (Cycle 57) 新增：MCP × 实时数据流处理面板 (Kafka Streams + Apache Flink + 窗口聚合 + Exactly-Once + 集成文档) */
+  mcpStreamProcessing: PanelController;
   /** v3.0.0 新增：批量关闭所有 panel */
   closeAll: () => void;
   /** v3.0.0 新增：批量打开多个 panel */
@@ -333,6 +337,7 @@ export function useModals(): UseModalsResult {
       mcpPlatformIntegration: makeController('mcpPlatformIntegration'),  // v3.15.0 (Cycle 54) 新增
       mcpKubernetes: makeController('mcpKubernetes'),  // v3.16.0 (Cycle 55) 新增
       mcpServerless: makeController('mcpServerless'),  // v3.17.0 (Cycle 56) 新增
+      mcpStreamProcessing: makeController('mcpStreamProcessing'),  // v3.18.0 (Cycle 57) 新增
       closeAll: () => dispatch({ type: 'CLOSE_ALL' }),
       openMulti: (panels) => dispatch({ type: 'OPEN_MULTI', panels }),
     }),

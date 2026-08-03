@@ -203,6 +203,8 @@ export interface BrandHeaderProps {
   onOpenMcpKubernetes?: () => void;
   /** v2.36.0 (Cycle 56) 新增：打开 MCP × Serverless/FaaS 集成面板回调（可选） */
   onOpenMcpServerless?: () => void;
+  /** v2.37.0 (Cycle 57) 新增：打开 MCP × 实时数据流处理集成面板回调（可选） */
+  onOpenMcpStreamProcessing?: () => void;
   /** v6.36.0 (Cycle 16 P0-1) 新增：打开 Composer 多文件编辑面板回调（可选） */
   onOpenComposer?: () => void;
   /** v6.41.0 (Cycle 19 P0-1) 新增：打开后台任务面板回调（可选） */
@@ -1168,6 +1170,8 @@ export default function BrandHeader({
   onOpenMcpKubernetes,
   /** v2.36.0 (Cycle 56) 新增：Serverless/FaaS 集成面板 */
   onOpenMcpServerless,
+  /** v2.37.0 (Cycle 57) 新增：实时数据流处理集成面板 */
+  onOpenMcpStreamProcessing,
   /** v6.36.0 (Cycle 16 P0-1) 新增：Composer 多文件编辑 */
   onOpenComposer,
   /** v6.41.0 (Cycle 19 P0-1) 新增：后台任务 */
@@ -2273,6 +2277,23 @@ export default function BrandHeader({
                 >
                   <Icon name="cloud" className="w-4 h-4 text-blue-500" />
                   <span>☁️ MCP × Serverless</span>
+                </button>
+              )}
+
+              {/* v2.37.0 (Cycle 57) 新增：MCP × 实时数据流处理集成（菜单项）
+               *  行为：点击调 onOpenMcpStreamProcessing() 弹出 McpStreamProcessingPanel
+               *       5 Tab：Kafka Streams / Apache Flink / 窗口聚合 / Exactly-Once / 集成文档
+               *  图标：waves/wave，表达实时数据流处理语义 */}
+              {onOpenMcpStreamProcessing && (
+                <button
+                  role="menuitem"
+                  onClick={wrapMenuItem(onOpenMcpStreamProcessing)}
+                  className="w-full px-4 py-2 text-left text-sm text-surface-700
+                             hover:bg-cyan-50 flex items-center gap-2
+                             transition-colors duration-fast"
+                >
+                  <Icon name="stream" className="w-4 h-4 text-cyan-500" />
+                  <span>🌊 MCP × Stream Processing</span>
                 </button>
               )}
 
