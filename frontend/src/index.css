@@ -114,8 +114,9 @@ body {
     'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-color: #0a0a0f;
-  color: #e0ddd8;
+  /* G60-FIX-14: 主题感知的底色与文字色，由下方 [data-theme] 主题块覆盖 */
+  background-color: var(--bg-app);
+  color: var(--text-primary);
   position: relative;
   min-height: 100vh;
   overflow-x: hidden;
@@ -129,6 +130,8 @@ body {
  * 作用：在 body 之上叠加两层柔和的 Hermes 金橙径向高光与一道上下深、中间略亮的渐变，
  *       让深色背景具备「光从上洒下」的大气感。
  * 性能：仅使用 background（不触发 layout），fixed 定位跟随视口不重排。
+ * 主题：渐变颜色使用 --bg-app / --bg-elevated 变量，
+ *       dark 模式自动用深色，light/high-contrast 自动用对应色。
  */
 body::before {
   content: '';
@@ -139,7 +142,7 @@ body::before {
   background:
     radial-gradient(ellipse 1200px 600px at 50% -10%, rgba(240, 160, 48, 0.18), transparent 60%),
     radial-gradient(ellipse 800px 400px at 90% 10%, rgba(240, 160, 48, 0.08), transparent 50%),
-    linear-gradient(180deg, #0a0a0f 0%, #0d0d14 50%, #0a0a0f 100%);
+    linear-gradient(180deg, var(--bg-app) 0%, var(--bg-elevated) 50%, var(--bg-app) 100%);
 }
 
 /* body::after - SVG 噪点纹理层
@@ -653,6 +656,8 @@ body::after {
  * 性能：CSS 变量切换 O(1)，无需重渲染 React 组件。
  * 修改记录：
  *   - 2026-08-03 | v1.0.0 | Cycle 60 G60-1.1 初次创建
+ *   - 2026-08-03 | v2.0.0 | G60-FIX-11 扩展 surface/text-surface 主题变量
+ *                              让 Tailwind bg-surface-* / text-surface-* 类自动响应主题
  * ============================================================ */
 
 [data-theme="dark"] {
@@ -671,6 +676,24 @@ body::after {
   --code-bg: #1a1a24;
   --scrollbar-thumb: rgba(255, 255, 255, 0.15);
   --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+  /* G60-FIX-15: surface RGB 通道（让 bg-surface-N/X 透明度语法工作） */
+  --surface-50-rgb:  10 10 15;
+  --surface-100-rgb: 18 18 26;
+  --surface-200-rgb: 26 26 36;
+  --surface-300-rgb: 34 34 46;
+  --surface-400-rgb: 42 37 32;
+  --surface-500-rgb: 58 53 48;
+  --surface-600-rgb: 74 69 64;
+  --surface-700-rgb: 90 85 80;
+  --surface-800-rgb: 106 101 96;
+  --surface-900-rgb: 122 117 112;
+  --surface-950-rgb: 138 133 128;
+  /* G60-FIX-15: 文字 surface RGB 通道 */
+  --text-surface-50-rgb:  255 255 255;
+  --text-surface-100-rgb: 240 240 244;
+  --text-surface-500-rgb: 163 163 176;
+  --text-surface-700-rgb: 90 85 80;
+  --text-surface-900-rgb: 255 255 255;
 }
 
 [data-theme="light"] {
@@ -689,6 +712,24 @@ body::after {
   --code-bg: #f8f8fa;
   --scrollbar-thumb: rgba(0, 0, 0, 0.2);
   --scrollbar-thumb-hover: rgba(0, 0, 0, 0.4);
+  /* G60-FIX-15: surface RGB 通道 - 浅色主题反转 */
+  --surface-50-rgb:  255 255 255;
+  --surface-100-rgb: 248 248 250;
+  --surface-200-rgb: 240 240 244;
+  --surface-300-rgb: 229 229 234;
+  --surface-400-rgb: 212 212 220;
+  --surface-500-rgb: 163 163 176;
+  --surface-600-rgb: 115 115 128;
+  --surface-700-rgb: 82 82 96;
+  --surface-800-rgb: 58 58 69;
+  --surface-900-rgb: 34 34 48;
+  --surface-950-rgb: 10 10 20;
+  /* G60-FIX-15: 文字 surface RGB 通道 - 浅色主题使用深色 */
+  --text-surface-50-rgb:  10 10 10;
+  --text-surface-100-rgb: 34 34 48;
+  --text-surface-500-rgb: 82 82 96;
+  --text-surface-700-rgb: 115 115 128;
+  --text-surface-900-rgb: 10 10 10;
 }
 
 [data-theme="high-contrast"] {
@@ -707,6 +748,24 @@ body::after {
   --code-bg: #141414;
   --scrollbar-thumb: rgba(255, 180, 77, 0.5);
   --scrollbar-thumb-hover: rgba(255, 180, 77, 0.8);
+  /* G60-FIX-15: surface RGB 通道 - 高对比度纯黑阶 */
+  --surface-50-rgb:  0 0 0;
+  --surface-100-rgb: 10 10 10;
+  --surface-200-rgb: 20 20 20;
+  --surface-300-rgb: 30 30 30;
+  --surface-400-rgb: 40 40 40;
+  --surface-500-rgb: 58 58 58;
+  --surface-600-rgb: 82 82 82;
+  --surface-700-rgb: 106 106 106;
+  --surface-800-rgb: 130 130 130;
+  --surface-900-rgb: 154 154 154;
+  --surface-950-rgb: 178 178 178;
+  /* G60-FIX-15: 文字 surface RGB 通道 - 高对比度用浅色 */
+  --text-surface-50-rgb:  255 255 255;
+  --text-surface-100-rgb: 240 240 240;
+  --text-surface-500-rgb: 178 178 178;
+  --text-surface-700-rgb: 130 130 130;
+  --text-surface-900-rgb: 255 255 255;
 }
 
 /* 全局 body 应用主题变量 */
