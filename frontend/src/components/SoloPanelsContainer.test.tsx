@@ -167,6 +167,26 @@ vi.mock('./HookChainViewer', () => ({
   default: () => <div data-testid="mock-hook-chain">HookChain</div>,
 }));
 
+vi.mock('./McpObservabilityPanel', () => ({
+  default: () => <div data-testid="mock-mcp-observability">McpObservability</div>,
+}));
+
+vi.mock('./PlanExecutorPanel', () => ({
+  default: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="mock-plan-executor">
+      <button onClick={onClose}>close</button>
+    </div>
+  ),
+}));
+
+vi.mock('./LoopStateMachineView', () => ({
+  default: ({ onClose }: { onClose: () => void }) => (
+    <div data-testid="mock-loop-state-machine">
+      <button onClick={onClose}>close</button>
+    </div>
+  ),
+}));
+
 // ============================================================
 // Helpers
 // ====================================
@@ -188,6 +208,8 @@ function createMockModals(overrides: Record<string, { open: boolean; onClose: ()
     'mcpMultimodalRag', 'mcpMultimodalProvider', 'mcpE2EProduction',
     'mcpDeploymentValidation', 'mcpProductionEnhancement', 'mcpPlatformIntegration',
     'mcpKubernetes', 'mcpServerless', 'mcpStreamProcessing',
+    // v1.2.0 G60-FIX-5 新增：MCP 可观测性面板
+    'mcpObservability',
     // v1.1.0 G60-FIX-3 新增：Solo 模式特有 panel
     'planExecutor', 'loopState', 'autoFollow',
   ];
@@ -382,5 +404,108 @@ describe('SoloPanelsContainer - Solo 模式统一面板容器', () => {
     const dialog = screen.getByRole('dialog');
     fireEvent.click(dialog);
     expect(onClose).toHaveBeenCalled();
+  });
+
+  // ============================================================
+  // v1.1.0 G60-FIX-4 新增测试
+  // ============================================================
+
+  test('G60-FIX-4-T15: planExecutor.open=true + currentPlanId 存在时渲染 PlanExecutorPanel', () => {
+    const onClose = vi.fn();
+    const modals = createMockModals({
+      planExecutor: { open: true, onClose },
+    });
+    render(
+      <SoloPanelsContainer
+        modals={modals}
+        currentPlanId="plan-123"
+        currentSessionId="session-456"
+      />
+    );
+
+    expect(screen.getByTestId('mock-plan-executor')).toBeInTheDocument();
+  });
+
+  test('G60-FIX-4-T16: planExecutor.open=true + currentPlanId 缺失时显示提示', () => {
+    const onClose = vi.fn();
+    const modals = createMockModals({
+      planExecutor: { open: true, onClose },
+    });
+    render(<SoloPanelsContainer modals={modals} />);
+
+    expect(screen.queryByTestId('mock-plan-executor')).not.toBeInTheDocument();
+    expect(screen.getByText(/暂无 Plan 数据/)).toBeInTheDocument();
+  });
+
+  test('G60-FIX-4-T17: loopState.open=true 时渲染 LoopStateMachineView', () => {
+    const onClose = vi.fn();
+    const modals = createMockModals({
+      loopState: { open: true, onClose },
+    });
+    render(
+      <SoloPanelsContainer
+        modals={modals}
+        loopState={'designing' as any}
+        loopHistory={[{ from: 'init', to: 'designing', at: Date.now() } as any]}
+      />
+    );
+
+    expect(screen.getByTestId('mock-loop-state-machine')).toBeInTheDocument();
+  });
+
+  test('G60-FIX-4-T18: autoFollow.open=true 时显示 Auto-Follow 联动面板', () => {
+    const onClose = vi.fn();
+    const modals = createMockModals({
+      autoFollow: { open: true, onClose },
+    });
+    render(<SoloPanelsContainer modals={modals} />);
+
+    expect(screen.getByText(/Auto-Follow 联动/)).toBeInTheDocument();
+    expect(screen.getByText(/无 UI 的智能联动控制器/)).toBeInTheDocument();
+  });
+
+  // ============================================================
+  // v1.2.0 G60-FIX-5 新增测试
+  // ============================================================
+
+  test('G60-FIX-5-T19: mcpObservability.open=true 时渲染 McpObservabilityPanel', () => {
+    const onClose = vi.fn();
+    const modals = createMockModals({
+      mcpObservability: { open: true, onClose },
+    });
+    render(<SoloPanelsContainer modals={modals} />);
+
+    expect(screen.getByTestId('mock-mcp-observability')).toBeInTheDocument();
+  });
+
+  test('G60-FIX-5-T20: 所有 41 个 ToolsMatrixPanel 都能在 Solo 模式下打开', () => {
+    const onClose = vi.fn();
+    // ToolsMatrixPanel 中定义的所有 41 个 panel key
+    const allKeys = [
+      'vibeCoding', 'planExecutor', 'loopState', 'autoFollow', 'planEditor', 'fileExplorer',
+      'dualCompaction', 'hooks', 'hookChain', 'traceRule', 'compaction', 'multiAgentTree',
+      'subagentMemory', 'mcpMultimodal', 'mcpMultimodalProvider', 'mcp', 'mcpRegistry',
+      'mcpAdvanced', 'mcpIntegrated', 'mcpRag', 'mcpRagRealLLM', 'mcpRagPerformance',
+      'mcpMultimodalRag', 'sessionRollout', 'cacheStats', 'streamList', 'settings', 'rules',
+      'usage', 'oauthConfig', 'customModels', 'mcpDeploymentValidation',
+      'mcpProductionEnhancement', 'mcpObservability', 'mcpPlatformIntegration',
+      'mcpKubernetes', 'mcpServerless', 'mcpStreamProcessing', 'slashCommand', 'skills', 'agentsMd',
+    ];
+
+    // 验证所有 key 都被 useModals 接受（不抛错）
+    for (const key of allKeys) {
+      const modals = createMockModals({ [key]: { open: true, onClose } });
+      // vibeCoding 不在 SoloPanelsContainer 中渲染，跳过
+      if (key === 'vibeCoding') {
+        // 单独验证 vibeCoding 不会引起问题
+        expect(() => render(<SoloPanelsContainer modals={modals} />)).not.toThrow();
+        continue;
+      }
+      // 其余 40 个面板必须能够渲染（包括 dialog）
+      const { unmount } = render(<SoloPanelsContainer modals={modals} />);
+      const dialogs = screen.queryAllByRole('dialog');
+      expect(dialogs.length).toBeGreaterThanOrEqual(1);
+      unmount();
+    }
   });
 });

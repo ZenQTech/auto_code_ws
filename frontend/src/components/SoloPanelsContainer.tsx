@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * SoloPanelsContainer - Solo 模式统一面板渲染容器 (v1.0.1)
+ * SoloPanelsContainer - Solo 模式统一面板渲染容器 (v1.2.0)
  * Cycle 60 G60-FIX-3 增强：让 Solo 模式支持所有 panel
  * # ============================================================
  * 核心作用：在 Solo 模式下也支持打开/关闭所有 panel
@@ -13,12 +13,17 @@
  *   - 与 App.tsx 共用相同的 modals 状态 hook
  *   - 每个 panel 独立渲染，互不影响
  *   - 仅渲染 props 兼容的 panel（部分 panel 仅在 main App 中可用）
- * 输入参数：{ modals: UseModalsResult }
+ * 输入参数：{ modals: UseModalsResult, currentSessionId?, currentPlanId?,
+ *              loopState?, loopHistory?, usageStats? }
  * 输出结果：Solo 模式下所有 panel 的渲染入口
+ * 当前覆盖：通用 15 + MCP 19 + Solo 特有 3 = 40 个 panel
+ *           (vibeCoding 面板由 /solo 路由直接渲染，无需在容器中重复)
  * ====================================
  * 修改记录：
  *   - 2026-08-03 | v1.0.0 | Cycle 60 G60-FIX-3 初次创建
  *   - 2026-08-03 | v1.0.1 | 修复 props 兼容性（McpAdvancedPanel/McpRegistryPanel 不接受 onClose）
+ *   - 2026-08-03 | v1.1.0 | G60-FIX-4 新增 planExecutor/loopState/autoFollow 3 个 Solo 特有 panel
+ *   - 2026-08-03 | v1.2.0 | G60-FIX-5 补齐 mcpObservability 面板（之前遗漏）
  * ====================================
  */
 
@@ -66,6 +71,7 @@ import McpPlatformIntegrationPanel from './McpPlatformIntegrationPanel';
 import McpKubernetesPanel from './McpKubernetesPanel';
 import McpServerlessPanel from './McpServerlessPanel';
 import McpStreamProcessingPanel from './McpStreamProcessingPanel';
+import McpObservabilityPanel from './McpObservabilityPanel';
 
 // 其他面板
 import LoopV7Runner from './LoopV7Runner';
@@ -401,6 +407,10 @@ export const SoloPanelsContainer: React.FC<SoloPanelsContainerProps> = ({
 
       <SoloModal open={modals.mcpStreamProcessing.open} onClose={modals.mcpStreamProcessing.onClose} maxWidth="max-w-5xl">
         <McpStreamProcessingPanel onClose={modals.mcpStreamProcessing.onClose} />
+      </SoloModal>
+
+      <SoloModal open={modals.mcpObservability.open} onClose={modals.mcpObservability.onClose} maxWidth="max-w-5xl">
+        <McpObservabilityPanel onClose={modals.mcpObservability.onClose} />
       </SoloModal>
 
       {/* ============================================================ */}
