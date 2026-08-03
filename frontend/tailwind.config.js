@@ -4,12 +4,17 @@
  * # ============================================================
  * # 核心作用：定义 Hermes 品牌配色方案和深色表面色阶
  * # hermes 色阶：基于金橙色 #f0a030，50-950 全色阶
- * # surface 色阶：深色表面色阶，用于卡片、面板等组件
+ * # surface 色阶：响应 [data-theme] 切换，引用 CSS 变量。
+ * #               dark 模式使用深色阶，light 模式反转为浅色阶，
+ * #               high-contrast 使用纯黑阶。
  * # ============================================================
  * # 修改记录：
  * #   v1.0.0 - 2026-06-17：初始版本，Hermes 主题色扩展
  * #   v1.1.0 - 2026-06-23：扩展 boxShadow / transitionTimingFunction / keyframes / 圆角阶梯
  * #   v1.2.0 - 2026-06-24：字体栈扩展（Inter + PingFang SC + Microsoft YaHei + Hiragino Sans GB） + message-toolbar-in 动画
+ * #   v2.0.0 - 2026-08-03：G60-FIX-11 surface 调色板改为 CSS 变量驱动，
+ * #                        使 bg-surface-* / text-surface-* / border-surface-* 等类响应主题切换。
+ * #                        不再硬编码 dark 颜色，dark/light/high-contrast 三主题自动适配。
  * # ============================================================
  */
 
@@ -40,19 +45,43 @@ export default {
           900: '#4a2f09',
           950: '#2d1c05',
         },
-        /** 深色表面色系 */
+        /**
+         * v2.0.0 G60-FIX-11 / G60-FIX-15: 主题感知的 surface 调色板
+         * 通过 RGB 通道 + CSS 变量驱动，dark/light/high-contrast 三主题自动适配。
+         * 索引映射：
+         *   50/100  -> --bg-app / --bg-panel  （页面/卡片背景）
+         *   200/300 -> --bg-elevated          （抬升层背景）
+         *   400/500 -> --border-color 相关色阶
+         *   600-950 -> --text-primary/secondary/tertiary 渐变
+         *
+         * 使用 rgb(var(--surface-N-rgb) / <alpha-value>) 格式：
+         *   - 支持 bg-surface-50/30 等 Tailwind 透明度修饰符
+         *   - CSS 变量切换主题时颜色自动更新
+         *   - SSR/单元测试时（变量未定义）回退到 fallback RGB 值
+         */
         surface: {
-          50:  '#0a0a0f',
-          100: '#12121a',
-          200: '#1a1a24',
-          300: '#22222e',
-          400: '#2a2520',
-          500: '#3a3530',
-          600: '#4a4540',
-          700: '#5a5550',
-          800: '#6a6560',
-          900: '#7a7570',
-          950: '#8a8580',
+          50:  'rgb(var(--surface-50-rgb,  10 10 15) / <alpha-value>)',
+          100: 'rgb(var(--surface-100-rgb, 18 18 26) / <alpha-value>)',
+          200: 'rgb(var(--surface-200-rgb, 26 26 36) / <alpha-value>)',
+          300: 'rgb(var(--surface-300-rgb, 34 34 46) / <alpha-value>)',
+          400: 'rgb(var(--surface-400-rgb, 42 37 32) / <alpha-value>)',
+          500: 'rgb(var(--surface-500-rgb, 58 53 48) / <alpha-value>)',
+          600: 'rgb(var(--surface-600-rgb, 74 69 64) / <alpha-value>)',
+          700: 'rgb(var(--surface-700-rgb, 90 85 80) / <alpha-value>)',
+          800: 'rgb(var(--surface-800-rgb, 106 101 96) / <alpha-value>)',
+          900: 'rgb(var(--surface-900-rgb, 122 117 112) / <alpha-value>)',
+          950: 'rgb(var(--surface-950-rgb, 138 133 128) / <alpha-value>)',
+        },
+        /**
+         * v2.0.0 G60-FIX-15: 文字 surface 调色板（与 tailwind textSurface 对齐）
+         * text-surface-50 → 标题（暗主题时为白色，亮主题时为深色）
+         */
+        textSurface: {
+          50:  'rgb(var(--text-surface-50-rgb,  255 255 255) / <alpha-value>)',
+          100: 'rgb(var(--text-surface-100-rgb, 240 240 244) / <alpha-value>)',
+          500: 'rgb(var(--text-surface-500-rgb, 163 163 176) / <alpha-value>)',
+          700: 'rgb(var(--text-surface-700-rgb, 90 85 80) / <alpha-value>)',
+          900: 'rgb(var(--text-surface-900-rgb, 10 10 10) / <alpha-value>)',
         },
       },
       /** 全局过渡动画时长 */
