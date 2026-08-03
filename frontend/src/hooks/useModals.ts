@@ -41,6 +41,7 @@
  *   - 2026-08-01 | v3.12.0 | Cycle 51 G51-INTEGRATION 新增 mcpDeploymentValidation 部署验证面板
  *   - 2026-08-01 | v3.13.0 | Cycle 52 G52-INTEGRATION 新增 mcpProductionEnhancement 生产化增强面板
  *   - 2026-08-01 | v3.14.0 | Cycle 53 G53-INTEGRATION 新增 mcpObservability 可观测性面板
+ *   - 2026-08-03 | v3.19.0 | Cycle 58 G58-01 新增 vibeCoding/planExecutor/loopState/autoFollow 4 个 panel
  * ============================================================
  */
 
@@ -92,7 +93,11 @@ export type PanelKey =
   | 'mcpPlatformIntegration'
   | 'mcpKubernetes'
   | 'mcpServerless'
-  | 'mcpStreamProcessing';
+  | 'mcpStreamProcessing'
+  | 'vibeCoding'
+  | 'planExecutor'
+  | 'loopState'
+  | 'autoFollow';
 
 /** panel 显隐状态：默认值（除 fileExplorer 外都默认关闭） */
 const DEFAULT_OPEN: Partial<Record<PanelKey, boolean>> = {
@@ -145,6 +150,10 @@ const INITIAL_STATE: PanelsState = {
   mcpKubernetes: DEFAULT_OPEN.mcpKubernetes ?? false,
   mcpServerless: DEFAULT_OPEN.mcpServerless ?? false,
   mcpStreamProcessing: DEFAULT_OPEN.mcpStreamProcessing ?? false,
+  vibeCoding: DEFAULT_OPEN.vibeCoding ?? false,
+  planExecutor: DEFAULT_OPEN.planExecutor ?? false,
+  loopState: DEFAULT_OPEN.loopState ?? false,
+  autoFollow: DEFAULT_OPEN.autoFollow ?? false,
 };
 
 /** Action 类型 */
@@ -266,6 +275,14 @@ export interface UseModalsResult {
   mcpServerless: PanelController;
   /** v3.18.0 (Cycle 57) 新增：MCP × 实时数据流处理面板 (Kafka Streams + Apache Flink + 窗口聚合 + Exactly-Once + 集成文档) */
   mcpStreamProcessing: PanelController;
+  /** v3.19.0 (Cycle 58 G58-01) 新增：Vibe Coding 主舞台面板 */
+  vibeCoding: PanelController;
+  /** v3.19.0 (Cycle 58 G58-01) 新增：Plan 执行面板 */
+  planExecutor: PanelController;
+  /** v3.19.0 (Cycle 58 G58-01) 新增：Loop 状态机持续可见面板 */
+  loopState: PanelController;
+  /** v3.19.0 (Cycle 58 G58-01) 新增：Auto-Follow 联动控制面板 */
+  autoFollow: PanelController;
   /** v3.0.0 新增：批量关闭所有 panel */
   closeAll: () => void;
   /** v3.0.0 新增：批量打开多个 panel */
@@ -338,6 +355,10 @@ export function useModals(): UseModalsResult {
       mcpKubernetes: makeController('mcpKubernetes'),  // v3.16.0 (Cycle 55) 新增
       mcpServerless: makeController('mcpServerless'),  // v3.17.0 (Cycle 56) 新增
       mcpStreamProcessing: makeController('mcpStreamProcessing'),  // v3.18.0 (Cycle 57) 新增
+      vibeCoding: makeController('vibeCoding'),  // v3.19.0 (Cycle 58 G58-01) 新增
+      planExecutor: makeController('planExecutor'),  // v3.19.0 (Cycle 58 G58-01) 新增
+      loopState: makeController('loopState'),  // v3.19.0 (Cycle 58 G58-01) 新增
+      autoFollow: makeController('autoFollow'),  // v3.19.0 (Cycle 58 G58-01) 新增
       closeAll: () => dispatch({ type: 'CLOSE_ALL' }),
       openMulti: (panels) => dispatch({ type: 'OPEN_MULTI', panels }),
     }),

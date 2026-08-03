@@ -11,11 +11,12 @@
  #   4. 默认 / 路由渲染 App 主界面（包含所有现有功能）
  # 输入参数：无
  # 输出结果：AppRouter 可消费的路由树
- # 修改记录：
- #   - 2026-07-27 | v1.0.0 | Cycle 7 P1-2 新建 - SPA 路由配置
- #   - 2026-07-27 | v1.1.0 | 集成 App.tsx 主界面作为默认路由
- #   - 2026-07-27 | v1.2.0 | 清理未使用的页面 import（App.tsx 统一渲染）
- # 兼容：react-router-dom@^6.3.0 (JSX 路由模式)
+* # 修改记录：
+ * #   - 2026-07-27 | v1.0.0 | Cycle 7 P1-2 新建 - SPA 路由配置
+ * #   - 2026-07-27 | v1.1.0 | 集成 App.tsx 主界面作为默认路由
+ * #   - 2026-07-27 | v1.2.0 | 清理未使用的页面 import（App.tsx 统一渲染）
+ * #   - 2026-08-03 | v1.3.0 | Cycle 58 G58-01 新增 /vibe-coding 路由
+ * # 兼容：react-router-dom@^6.3.0 (JSX 路由模式)
  # ============================================================
  */
 
@@ -62,6 +63,9 @@ const GoalAutomationPage = lazy(() => import('../pages/GoalAutomationPage'));
 
 // v1.0.0 (Cycle 14 P1-5) 新增：Goal Templates 模板库独立访问页面
 const GoalTemplatesPage = lazy(() => import('../pages/GoalTemplatesPage'));
+
+// v1.0.0 (Cycle 58 G58-01) 新增：Vibe Coding 模式主页面
+const VibeCodingPage = lazy(() => import('../pages/VibeCodingPage'));
 
 // ============================================================
 // Suspense 包装器: 懒加载页面统一显示 loading
@@ -127,6 +131,9 @@ export const AppRouter: React.FC = () => {
           <Route path="goal-automation" element={lazyPage(GoalAutomationPage)} />
           {/* v1.0.0 (Cycle 14 P1-5) 新增：Goal Templates 模板库独立访问路由 */}
           <Route path="goal-templates" element={lazyPage(GoalTemplatesPage)} />
+
+          {/* v1.0.0 (Cycle 58 G58-01) 新增：Vibe Coding 模式独立访问路由 */}
+          <Route path="vibe-coding" element={lazyPage(VibeCodingPage)} />
 
           {/* 模式选择 - 保留独立路由 */}
           <Route path="select-mode" element={lazyPage(ModeSelectorPage)} />

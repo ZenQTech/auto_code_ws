@@ -24,11 +24,12 @@ describe('useMode - 基础状态管理', () => {
     expect(result.current.mode).toBe('chat');
   });
 
-  it('暴露 shortcutHints 包含三种模式', () => {
+  it('暴露 shortcutHints 包含四种模式', () => {
     const { result } = renderHook(() => useMode());
     expect(result.current.shortcutHints.chat).toBe('⌘L');
     expect(result.current.shortcutHints.composer).toBe('⌘I');
     expect(result.current.shortcutHints.agent).toBe('⌘⇧A');
+    expect(result.current.shortcutHints['vibe-coding']).toBe('⌘⇧V');
   });
 
   it('从 localStorage 读取初始值', () => {
@@ -51,7 +52,7 @@ describe('useMode - setMode / cycle', () => {
     expect(result.current.mode).toBe('composer');
   });
 
-  it('cycle 切换：chat → composer → agent → chat', () => {
+  it('cycle 切换：chat → composer → agent → vibe-coding → chat', () => {
     const { result } = renderHook(() => useMode());
     expect(result.current.mode).toBe('chat');
 
@@ -68,12 +69,17 @@ describe('useMode - setMode / cycle', () => {
     act(() => {
       result.current.cycle();
     });
+    expect(result.current.mode).toBe('vibe-coding');
+
+    act(() => {
+      result.current.cycle();
+    });
     expect(result.current.mode).toBe('chat');
   });
 
-  it('setMode 接受所有三种模式', () => {
+  it('setMode 接受所有四种模式', () => {
     const { result } = renderHook(() => useMode());
-    const modes: HermesMode[] = ['chat', 'composer', 'agent'];
+    const modes: HermesMode[] = ['chat', 'composer', 'agent', 'vibe-coding'];
     modes.forEach((m) => {
       act(() => {
         result.current.setMode(m);
@@ -163,6 +169,22 @@ describe('useMode - 快捷键', () => {
     });
 
     expect(result.current.mode).toBe('agent');
+  });
+
+  it('Cmd+Shift+V 切换到 vibe-coding', () => {
+    const { result } = renderHook(() => useMode());
+
+    act(() => {
+      const event = new KeyboardEvent('keydown', {
+        key: 'V',
+        metaKey: true,
+        shiftKey: true,
+        bubbles: true,
+      });
+      window.dispatchEvent(event);
+    });
+
+    expect(result.current.mode).toBe('vibe-coding');
   });
 
   it('输入框中除 Cmd+I 外其他快捷键不触发', () => {

@@ -1,13 +1,13 @@
 /**
  * # ============================================================
- * useMode Hook (v6.37.0 Cycle 17 P0-2)
+ * useMode Hook (v6.38.0 Cycle 58 G58-01)
  * # ============================================================
- * 核心作用：管理 Hermes 应用模式（chat / composer / agent）
+ * 核心作用：管理 Hermes 应用模式（chat / composer / agent / vibe-coding）
  * 运行流程：
  *   1. 初始从 localStorage 读取模式（hermes.mode），默认 'chat'
  *   2. 模式变化时持久化到 localStorage
- *   3. 监听全局快捷键：Cmd+L (chat) / Cmd+I (composer) / Cmd+Shift+A (agent)
- *   4. 提供 cycle() 方法在三模式间循环
+ *   3. 监听全局快捷键：Cmd+L (chat) / Cmd+I (composer) / Cmd+Shift+A (agent) / Cmd+Shift+V (vibe-coding)
+ *   4. 提供 cycle() 方法在四模式间循环
  * 设计要点：
  *   - 单例模式（localStorage 全局共享）
  *   - 输入框中不触发（避免误触）
@@ -17,12 +17,13 @@
  * ============================================================
  * # 修改记录：
  * #   - 2026-07-29 | v1.0.0 | Cycle 17 P0-2 初次创建
+ * #   - 2026-08-03 | v6.38.0 | Cycle 58 G58-01 新增 vibe-coding 模式
  * ============================================================
  */
 
 import { useCallback, useEffect, useState } from 'react';
 
-export type HermesMode = 'chat' | 'composer' | 'agent';
+export type HermesMode = 'chat' | 'composer' | 'agent' | 'vibe-coding';
 
 const STORAGE_KEY = 'hermes.mode';
 const DEFAULT_MODE: HermesMode = 'chat';
@@ -32,6 +33,7 @@ const SHORTCUT_HINTS: Record<HermesMode, string> = {
   chat: '⌘L',
   composer: '⌘I',
   agent: '⌘⇧A',
+  'vibe-coding': '⌘⇧V',
 };
 
 /** SSR / 测试安全：检查 window */
@@ -42,7 +44,12 @@ function readStoredMode(): HermesMode {
   if (!isBrowser) return DEFAULT_MODE;
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    if (stored === 'chat' || stored === 'composer' || stored === 'agent') {
+    if (
+      stored === 'chat' ||
+      stored === 'composer' ||
+      stored === 'agent' ||
+      stored === 'vibe-coding'
+    ) {
       return stored;
     }
   } catch (err) {
@@ -72,7 +79,7 @@ export interface UseModeResult {
   shortcutHints: Record<HermesMode, string>;
 }
 
-const MODE_CYCLE: HermesMode[] = ['chat', 'composer', 'agent'];
+const MODE_CYCLE: HermesMode[] = ['chat', 'composer', 'agent', 'vibe-coding'];
 
 /**
  * useMode Hook
@@ -129,6 +136,13 @@ export function useMode(): UseModeResult {
       if (e.key === 'A' && e.shiftKey && !e.altKey) {
         e.preventDefault();
         setModeState('agent');
+        return;
+      }
+
+      // Cmd+Shift+V → vibe-coding (Cycle 58 G58-01 新增)
+      if (e.key === 'V' && e.shiftKey && !e.altKey) {
+        e.preventDefault();
+        setModeState('vibe-coding');
         return;
       }
     };

@@ -10,13 +10,13 @@
  * #   4. 测试多个 panel 独立操作互不影响
  * # ====================================
  * # 修改记录：
- * #   - 2026-07-29 | v1.0.0 | Cycle 15 P0-3 初次创建
- * #   - 2026-08-01 | v1.1.0 | Cycle 48 G48-主应用集成：同步更新到 32 panel
- * #     (新增 mcpRag/mcpRagRealLLM/mcpRagPerformance/mcpMultimodalRag)
- * #   - 2026-08-01 | v1.2.0 | Cycle 49 G49-主应用集成：同步更新到 33 panel
- * #     (新增 mcpMultimodalProvider)
- * #   - 2026-08-01 | v1.3.0 | Cycle 50 G50-主应用集成：同步更新到 34 panel
- * #     (新增 mcpE2EProduction)
+ *   - 2026-07-29 | v1.0.0 | Cycle 15 P0-3 初次创建
+ *   - 2026-08-01 | v1.1.0 | Cycle 48 G48-主应用集成：同步更新到 32 panel
+ *     (新增 mcpRag/mcpRagRealLLM/mcpRagPerformance/mcpMultimodalRag)
+ *   - 2026-08-01 | v1.2.0 | Cycle 49 G49-主应用集成：同步更新到 33 panel
+ *     (新增 mcpMultimodalProvider)
+ *   - 2026-08-01 | v1.3.0 | Cycle 50 G50-主应用集成：同步更新到 34 panel
+ *     (新增 mcpE2EProduction)
  *   - 2026-08-01 | v1.4.0 | Cycle 51 G51-主应用集成：同步更新到 35 panel
  *     (新增 mcpDeploymentValidation)
  *   - 2026-08-01 | v1.5.0 | Cycle 52 G52-主应用集成：同步更新到 36 panel
@@ -29,6 +29,8 @@
  *     (新增 mcpKubernetes)
  *   - 2026-08-01 | v1.9.0 | Cycle 56 G56-主应用集成：同步更新到 39 panel
  *     (新增 mcpServerless)
+ *   - 2026-08-03 | v2.0.0 | Cycle 58 G58-01 同步更新到 43 panel
+ *     (新增 vibeCoding/planExecutor/loopState/autoFollow)
  * ====================================
  */
 
@@ -38,10 +40,10 @@ import { useModals } from './useModals';
 
 describe('useModals', () => {
   describe('初始状态', () => {
-    it('应该返回 41 个 panel controller + 2 个工具方法', () => {
+    it('应该返回 45 个 panel controller + 2 个工具方法', () => {
       const { result } = renderHook(() => useModals());
       const controllers = Object.keys(result.current);
-      // 41 panel + closeAll + openMulti = 43
+      // 45 panel + closeAll + openMulti = 47
       // (v3.1.0 G39-03 新增 mcpRegistry,
       //  v3.2.0 Cycle 41 新增 mcpAdvanced,
       //  v3.3.0 Cycle 42 G42-04 新增 mcpIntegrated,
@@ -59,8 +61,17 @@ describe('useModals', () => {
       //  v3.15.0 Cycle 54 新增 mcpPlatformIntegration,
       //  v3.16.0 Cycle 55 新增 mcpKubernetes,
       //  v3.17.0 Cycle 56 新增 mcpServerless,
-      //  v3.18.0 Cycle 57 新增 mcpStreamProcessing)
-      expect(controllers).toHaveLength(43);
+      //  v3.18.0 Cycle 57 新增 mcpStreamProcessing,
+      //  v3.19.0 Cycle 58 G58-01 新增 vibeCoding/planExecutor/loopState/autoFollow)
+      expect(controllers).toHaveLength(47);
+    });
+
+    it('vibeCoding 系列 panel 默认应关闭', () => {
+      const { result } = renderHook(() => useModals());
+      expect(result.current.vibeCoding.open).toBe(false);
+      expect(result.current.planExecutor.open).toBe(false);
+      expect(result.current.loopState.open).toBe(false);
+      expect(result.current.autoFollow.open).toBe(false);
     });
 
     it('fileExplorer 默认应打开', () => {

@@ -2,16 +2,17 @@
  * # ============================================================
  * ModeToggle 组件 (v6.37.0 Cycle 17 P0-2)
  * # ============================================================
- * 核心作用：Chat / Composer / Agent 三模式切换 Tab
+ * 核心作用：Chat / Composer / Agent / Vibe Coding 四模式切换 Tab
  * 使用场景：BrandHeader 或 AppLayout 顶部
  * 设计要点：
  *   - 类似 Cursor 的模式切换 UI
  *   - 显示快捷键提示
  *   - 当前模式高亮
- * ============================================================
+ * ====================================
  * # 修改记录：
  * #   - 2026-07-29 | v1.0.0 | Cycle 17 P0-2 初次创建
- * ============================================================
+ * #   - 2026-08-03 | v1.1.0 | Cycle 58 G58-01 新增 vibe-coding 模式
+ * ====================================
  */
 
 import React from 'react';
@@ -38,12 +39,14 @@ const MODE_OPTIONS: ModeOption[] = [
   { value: 'chat', label: 'Chat', icon: '💬' },
   { value: 'composer', label: 'Composer', icon: '⚡' },
   { value: 'agent', label: 'Agent', icon: '🤖' },
+  { value: 'vibe-coding', label: 'Vibe', icon: '🌊' },
 ];
 
 const DEFAULT_SHORTCUTS: Record<HermesMode, string> = {
   chat: '⌘L',
   composer: '⌘I',
   agent: '⌘⇧A',
+  'vibe-coding': '⌘⇧V',
 };
 
 /**

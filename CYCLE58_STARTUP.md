@@ -2,6 +2,7 @@
 
 **日期**: 2026-08-03
 **前序周期**: Cycle 57 - 实时数据流处理 ✅
+**核心任务**: 调研 codex + trae solo 模式 → 实施 Vibe Coding + Loop Engineering 5 大 P0 任务
 
 ---
 
@@ -18,124 +19,144 @@
 | TypeScript 错误 | 0 |
 | Vite 构建 | 25.29s 成功 |
 | Git 提交 | 6 个原子提交 |
-| 状态 | ✅ 100% 完成 |
+| 当前状态 | 84 commits 领先 origin/loop/plan-1785219053 |
 
 ---
 
-## 🎯 Cycle 58 候选方向
+## 🎯 Cycle 58 核心目标
 
-### 方向 A: 真实数据源接入 (推荐 ⭐⭐⭐⭐⭐)
-**核心价值**: 验证流处理引擎与真实数据源的端到端能力
-- Apache Kafka Connect (Source/Sink)
-- Confluent Schema Registry (Avro/Protobuf/JSON Schema)
-- Debezium CDC (MySQL/PostgreSQL/MongoDB)
-- MQTT/Kinesis/Pub-Sub 适配器
-- 端到端 E2E 验证 + 真实数据集测试
+### 方向: Vibe Coding + Loop Engineering 完整对齐
+**目标**: 完全整合 codex + trae solo 模式核心功能，让 Hermes 从"AI Agent 调度底座"升级为"对标 Codex/TRAE 的 Vibe Coding 平台"。
 
-**任务清单** (推荐 5 P0):
-- G58-01: Kafka Connect Source/Sink 生成器
-- G58-02: Confluent Schema Registry 集成
-- G58-03: Debezium CDC 适配器
-- G58-04: 真实数据 E2E 验证套件
-- G58-INTEGRATION: McpDataSourcePanel 5-Tab UI
-
-**预计产出**: ~5000 行代码, 120+ 测试
-
-### 方向 B: 流处理 SQL 引擎
-**核心价值**: 降低流处理开发门槛
-- Apache Flink SQL / Kafka KSQL
-- 流表对偶 (Stream-Table Duality)
-- 物化视图 (Materialized View)
-- 持续查询 (Continuous Query)
-- 自定义 UDF/UDTF/UDAF
-
-### 方向 C: 流处理可观测性深度集成
-**核心价值**: 实时洞察流处理健康
-- 流拓扑可视化 (DAG + Metrics 热力图)
-- 滞后监控 (Lag / Backpressure / Skew)
-- 数据血缘 (Data Lineage)
-- 异常检测 (Anomaly Detection in Streams)
-- OpenTelemetry 流处理 span 传播
-
-### 方向 D: 状态管理与持久化
-**核心价值**: 跨重启/扩缩容的状态一致性
-- RocksDB 状态后端深度优化
-- 增量检查点 (Incremental Checkpointing)
-- 状态分片 (State Sharding) 与再平衡
-- 状态查询 API (Queryable State)
-- Savepoint 生命周期管理
-
-### 方向 E: 流处理测试与基准
-**核心价值**: 性能可预测性 + 回归保证
-- 性能基准套件 (NEXMark / TPC-H Streaming)
-- 混沌工程在流处理场景 (网络分区/算子崩溃)
-- A/B 测试框架 (新旧版本对比)
-- 性能回归检测
-- SLA 验证套件
+### 用户授权
+- ✅ 允许真实 `claude` CLI 进程调用
+- ✅ 允许浏览器工具（TRAE-browseruse）端到端测试
+- ✅ 新建示范项目仓库（/home/qizheng/auto_code_data/hermes-vibe-coding-demo/）
+- ✅ C58 完整执行到底（含 5 P0 任务 + 完整测试 + UI/UX + 推 main）
+- ✅ 每轮任务真实提交 git
 
 ---
 
-## 🏗️ Cycle 57 交付物回顾
+## 📋 Cycle 58 五阶段路线图
 
-### 4 大核心引擎
-1. **Kafka Streams**: 拓扑 + DSL 算子 + 状态存储
-2. **Apache Flink**: JobGraph + 检查点 + 水位线
-3. **窗口聚合**: Tumbling/Sliding/Session + 迟到事件
-4. **Exactly-Once**: 事务性生产者 + 幂等消费者
+### 阶段 1: 互联网调研（基于 MCP 真实抓取 + 已有 CYCLE32 调研基础）
+| 主题 | 文件 | 状态 |
+|------|------|------|
+| a) vibe coding 完整流程 | CYCLE58_TOPIC_RESEARCH_a_vibe_coding_flow.md | ⏳ |
+| b) 循环工作流 | CYCLE58_TOPIC_RESEARCH_b_loop_workflow.md | ⏳ |
+| c) 思考过程实时可视化 | CYCLE58_TOPIC_RESEARCH_c_thinking_visualization.md | ⏳ |
+| d) 渐进式呈现 | CYCLE58_TOPIC_RESEARCH_d_streaming_render.md | ⏳ |
+| e) 代码实时编写渲染 | CYCLE58_TOPIC_RESEARCH_e_live_code_render.md | ⏳ |
+| f) 代码修改追踪/比对 | CYCLE58_TOPIC_RESEARCH_f_diff_tracking.md | ⏳ |
+| g) 代码回退功能 | CYCLE58_TOPIC_RESEARCH_g_code_rollback.md | ⏳ |
 
-### 主应用集成
-- **McpStreamProcessingPanel** 5-Tab UI
-- **useModals**: 41 panel + 2 util = 43 keys
-- **App.tsx**: v6.150.0 集成
-- **BrandHeader**: 🌊 MCP × Stream Processing 菜单
+汇总: CYCLE58_RESEARCH_REPORT.md
 
----
+### 阶段 2: 功能差距分析与 Spec 创建
+- CYCLE58_GAP_ANALYSIS.md
+- CYCLE58_SPEC.md / CYCLE58_task.md / CYCLE58_checklist.md
 
-## ❓ 待确认事项
+### 阶段 3: 实施 5 大 P0 任务
+| ID | 任务 | 风险 | 依赖 |
+|----|------|------|------|
+| G58-01 | VibeCoding 模式入口 | 🟢 | — |
+| G58-02 | ClaudeCodeShell 进程化 | 🟠 高 | G58-01 |
+| G58-03 | LoopStateMachine 持续可见 UI | 🟢 | G58-01 |
+| G58-04 | Auto-Follow 联动 | 🟢 | G58-01, G58-03 |
+| G58-05 | ComposerPlan 真正可执行 | 🟡 中 | G58-01, G58-02 |
+| G58-INTEGRATION | 主面板集成 + 端到端验证 | 🟡 中 | G58-01~05 |
 
-请回答以下问题以确定 Cycle 58 方向:
+### 阶段 4: 测试 + UI/UX 优化
+- 单元测试覆盖率 ≥ 90%
+- 端到端测试 100% 通过
+- UI/UX 对标 codex/trae 视觉风格
 
-1. **调研方向**:
-   - A. 真实数据源接入 (推荐)
-   - B. 流处理 SQL 引擎
-   - C. 流处理可观测性深度集成
-   - D. 状态管理与持久化
-   - E. 流处理测试与基准
+### 阶段 5: 验收 + 推 main
+- CYCLE58_ACCEPTANCE_REPORT.md
+- CYCLE58_CODE_MODIFICATION_LOG.md
+- 推 main 分支
 
-2. **任务节奏** (P0 任务数):
-   - A. 3 大 P0 (核心即可)
-   - B. 4 大 P0 (推荐)
-   - C. 5 大 P0 (完整覆盖)
-
-3. **集成策略**:
-   - A. Mock 集成 (快速验证)
-   - B. 真实集成 (生产级)
-   - C. 混合 (核心真实 + 周边 Mock)
-
----
-
-## 💡 候选方向优势对比
-
-| 方向 | 价值 | 复杂度 | 推荐指数 |
-|------|------|--------|----------|
-| A. 真实数据源 | ⭐⭐⭐⭐⭐ | 中 | ⭐⭐⭐⭐⭐ |
-| B. 流处理 SQL | ⭐⭐⭐⭐ | 高 | ⭐⭐⭐ |
-| C. 可观测性深度 | ⭐⭐⭐⭐ | 中 | ⭐⭐⭐⭐ |
-| D. 状态管理 | ⭐⭐⭐ | 高 | ⭐⭐⭐ |
-| E. 测试基准 | ⭐⭐⭐ | 中 | ⭐⭐⭐ |
+### 阶段 6: 接续 C59
+- CYCLE59_STARTUP.md
 
 ---
 
-## 📝 Cycle 58 启动清单
+## 🏗️ 关键文件规划
 
-无论选择哪个方向，Cycle 58 启动前应完成:
+### 后端新建
+- `cli_integration/claude_code_shell.py`
+- `backend/app/services/vibe_coding_orchestrator.py`
+- `backend/app/services/loop_state_machine.py`
+- `backend/app/api/vibe_coding.py`
+- `backend/app/api/auto_follow.py`
+- `backend/app/api/loop_state.py`
 
-1. **代码清理**: 移除 Cycle 57 调试/临时文件
-2. **依赖检查**: 确认新方向所需包已安装
-3. **架构设计**: 编写架构文档 + 接口设计
-4. **任务分解**: 按 P0/P1/P2 拆分 4-6 个 P0 任务
-5. **测试策略**: 单元 + 集成 + E2E 三维度
+### 前端新建
+- `frontend/src/pages/VibeCodingPage.tsx`
+- `frontend/src/components/LoopStatusBar.tsx`
+- `frontend/src/components/AutoFollowController.tsx`
+- `frontend/src/components/VibeCodingStage.tsx`
+- `frontend/src/components/PlanExecutorPanel.tsx`
+- `frontend/src/components/LoopStateMachineView.tsx`
+- `frontend/src/hooks/useVibeCoding.ts`
+- `frontend/src/hooks/useClaudeCodeShell.ts`
+- `frontend/src/hooks/useAutoFollow.ts`
+- `frontend/src/hooks/useLoopState.ts`
+
+### 示范项目仓库
+- `/home/qizheng/auto_code_data/hermes-vibe-coding-demo/`
 
 ---
 
-**等待用户确认**: 调研方向 / 任务节奏 / 集成策略 三个选项。
+## 🎯 验收标准（量化）
+
+| 指标 | 目标值 |
+|------|--------|
+| 单元测试覆盖率 | ≥ 90% |
+| 端到端测试通过率 | 100% |
+| TypeScript 编译错误 | 0 |
+| Vite 构建 | 成功 < 30s |
+| 原子 Git 提交数 | ≥ 6 |
+| 新增代码行 | ~4500+ |
+| 新增测试用例 | ~120+ |
+| 5 大 P0 任务 | 100% 通过 |
+| 功能对标 codex+trae | 100% 匹配 |
+
+---
+
+## 🔍 调研资料来源
+
+### Codex (openai/codex)
+- https://github.com/openai/codex
+- https://developers.openai.com/codex/changelog/
+- https://openai.com/index
+
+### TRAE
+- https://www.trae.ai/
+- https://docs.trae.ai/ide/solo-mode
+- https://docs.trae.ai/ide/tool-panels
+- https://docs.trae.ai/ide/what-is-trae
+- https://trae.ai/solo-web
+
+### 学术/参考
+- https://vibe-coding.academy/blog/...
+- https://blakecrosley.com/es/guides/codex
+
+### 已有内部资料
+- /home/qizheng/auto_code_ws/docs/Cycle/CODEX_TRAE_RESEARCH.md
+- /home/qizheng/auto_code_ws/docs/Cycle/CYCLE32_CODEX_TRAE_RESEARCH.md
+
+---
+
+## ⚠️ 风险与缓解
+
+| 风险 | 缓解 |
+|------|------|
+| `claude` CLI 不在 PATH | 自动探测后降级为 LLM HTTP 模式 |
+| 网络受限 | 已有 CYCLE32 调研作为基础 |
+| 浏览器工具失败 | 降级为 Playwright 脚本 |
+| 高风险模块失败 | 双层审核 + 沙箱 + 3 轮打回上限 |
+
+---
+
+**开始执行**: Phase 1 互联网调研
