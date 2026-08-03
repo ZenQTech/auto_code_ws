@@ -40,8 +40,6 @@ import { useShortcut } from '../hooks/useShortcut';
 
 import LoopStatusBar from '../components/LoopStatusBar';
 import VibeCodingStage from '../components/VibeCodingStage';
-import PlanExecutorPanel from '../components/PlanExecutorPanel';
-import LoopStateMachineView from '../components/LoopStateMachineView';
 import AutoFollowController from '../components/AutoFollowController';
 import ThreePanelLayout from '../components/ThreePanelLayout';
 import SessionHistorySidebar from '../components/SessionHistorySidebar';
@@ -174,33 +172,8 @@ export const VibeSoloShell: React.FC = () => {
           storageKey="hermes.solo.layout"
         />
 
-        {/* Plan Executor 浮层（在中央上方叠加，不占主舞台空间） */}
-        {modals.planExecutor.open && vibeCoding.session?.planId && (
-          <div
-            className="absolute top-2 left-1/2 -translate-x-1/2 z-20 w-[640px] max-w-[90vw] glass-themed rounded-xl shadow-[var(--shadow-md)] animate-lift-in"
-            data-testid="plan-executor-overlay"
-          >
-            <PlanExecutorPanel
-              planId={vibeCoding.session.planId}
-              sessionId={vibeCoding.session.id}
-              onClose={modals.planExecutor.onClose}
-            />
-          </div>
-        )}
-
-        {/* Loop 状态机浮层 */}
-        {modals.loopState.open && (
-          <div
-            className="absolute top-2 right-2 z-20 w-[420px] max-w-[90vw] glass-themed rounded-xl shadow-[var(--shadow-md)] animate-lift-in"
-            data-testid="loop-state-overlay"
-          >
-            <LoopStateMachineView
-              state={loopState.state}
-              history={loopState.history}
-              onClose={modals.loopState.onClose}
-            />
-          </div>
-        )}
+        {/* Plan Executor / Loop 状态机由 SoloPanelsContainer 统一渲染，
+            避免在 VibeSoloShell 中重复渲染导致关闭按钮事件冲突。 */}
       </div>
 
       {/* 3. Auto-Follow 联动（无 UI 纯逻辑） */}
@@ -276,8 +249,15 @@ export const VibeSoloShell: React.FC = () => {
       />
 
       {/* 8. SoloPanelsContainer 统一面板容器（v1.0.0 G60-FIX-3 新增）
-          让 Solo 模式支持打开所有 40+ 个 panel（之前只能 toggle 状态但内容不可见） */}
-      <SoloPanelsContainer modals={modals} currentSessionId={vibeCoding.session?.id ?? null} />
+          让 Solo 模式支持打开所有 40+ 个 panel（之前只能 toggle 状态但内容不可见）
+          v1.1.0 G60-FIX-3 增强：传入 planId/loopState/loopHistory 让 planExecutor/loopState panel 可显示 */}
+      <SoloPanelsContainer
+        modals={modals}
+        currentSessionId={vibeCoding.session?.id ?? null}
+        currentPlanId={vibeCoding.session?.planId ?? null}
+        loopState={loopState.state}
+        loopHistory={loopState.history}
+      />
     </div>
   );
 };

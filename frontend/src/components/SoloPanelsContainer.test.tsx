@@ -188,6 +188,8 @@ function createMockModals(overrides: Record<string, { open: boolean; onClose: ()
     'mcpMultimodalRag', 'mcpMultimodalProvider', 'mcpE2EProduction',
     'mcpDeploymentValidation', 'mcpProductionEnhancement', 'mcpPlatformIntegration',
     'mcpKubernetes', 'mcpServerless', 'mcpStreamProcessing',
+    // v1.1.0 G60-FIX-3 新增：Solo 模式特有 panel
+    'planExecutor', 'loopState', 'autoFollow',
   ];
 
   const result: any = {};

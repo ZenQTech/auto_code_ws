@@ -73,14 +73,28 @@ import CompactionIndicator from './CompactionIndicator';
 import SubAgentMemoryViewer from './SubAgentMemoryViewer';
 import HookChainViewer from './HookChainViewer';
 
+// Solo 模式特有 panel（v1.1.0 G60-FIX-3 增强：让所有 panel 都能在 Solo 模式下打开）
+// 注意：AutoFollowController 是无 UI 纯逻辑组件，由 VibeSoloShell 直接挂载，
+//       不在此处重复渲染。
+import PlanExecutorPanel from './PlanExecutorPanel';
+import LoopStateMachineView from './LoopStateMachineView';
+
 // ============================================================
 // 类型
 // ============================================================
+
+import { type LoopState, type LoopTransition } from '../hooks/useLoopState';
 
 export interface SoloPanelsContainerProps {
   modals: UseModalsResult;
   /** 当前 session id（用于 compaction 等需要 session 的 panel） */
   currentSessionId?: string | null;
+  /** 当前 plan id（用于 planExecutor panel） */
+  currentPlanId?: string | null;
+  /** Loop 状态机当前 state（用于 loopState panel） */
+  loopState?: LoopState | null;
+  /** Loop 状态机历史（用于 loopState panel） */
+  loopHistory?: LoopTransition[];
   /** Usage 统计（用于 usage panel） */
   usageStats?: UsageStats | null;
 }
@@ -152,6 +166,9 @@ const SoloSimpleModal: React.FC<{
 export const SoloPanelsContainer: React.FC<SoloPanelsContainerProps> = ({
   modals,
   currentSessionId,
+  currentPlanId,
+  loopState,
+  loopHistory,
   usageStats,
 }) => {
   return (
@@ -384,6 +401,77 @@ export const SoloPanelsContainer: React.FC<SoloPanelsContainerProps> = ({
 
       <SoloModal open={modals.mcpStreamProcessing.open} onClose={modals.mcpStreamProcessing.onClose} maxWidth="max-w-5xl">
         <McpStreamProcessingPanel onClose={modals.mcpStreamProcessing.onClose} />
+      </SoloModal>
+
+      {/* ============================================================ */}
+      {/* Solo 模式特有 panel（v1.1.0 G60-FIX-3 新增） */}
+      {/* ============================================================ */}
+
+      {/* Plan Executor Panel（当 planId 存在时显示，否则提示信息） */}
+      <SoloModal open={modals.planExecutor.open} onClose={modals.planExecutor.onClose} maxWidth="max-w-5xl">
+        {currentPlanId ? (
+          <PlanExecutorPanel
+            planId={currentPlanId}
+            sessionId={currentSessionId ?? undefined}
+            onClose={modals.planExecutor.onClose}
+          />
+        ) : (
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <span>📋</span>
+                <span>Plan 执行</span>
+              </h2>
+              <button
+                onClick={modals.planExecutor.onClose}
+                className="w-8 h-8 rounded-full hover:bg-surface-100 flex items-center justify-center"
+                aria-label="关闭"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="text-sm text-surface-500">
+              暂无 Plan 数据。请先在 Vibe Coding 中启动一个会话来生成 Plan。
+            </div>
+          </div>
+        )}
+      </SoloModal>
+
+      {/* Loop State Machine Panel（始终可显示，提供 state 和 history） */}
+      <SoloModal open={modals.loopState.open} onClose={modals.loopState.onClose} maxWidth="max-w-4xl">
+        <LoopStateMachineView
+          state={loopState ?? null}
+          history={loopHistory ?? []}
+          onClose={modals.loopState.onClose}
+        />
+      </SoloModal>
+
+      {/* Auto-Follow Controller Panel（v1.1.0 G60-FIX-3 新增）
+          提供 Auto-Follow 联动面板的设置与控制界面 */}
+      <SoloModal open={modals.autoFollow.open} onClose={modals.autoFollow.onClose} maxWidth="max-w-2xl">
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <span>🎯</span>
+              <span>Auto-Follow 联动</span>
+            </h2>
+            <button
+              onClick={modals.autoFollow.onClose}
+              className="w-8 h-8 rounded-full hover:bg-surface-100 flex items-center justify-center"
+              aria-label="关闭"
+            >
+              ✕
+            </button>
+          </div>
+          <div className="text-sm text-surface-600 space-y-3">
+            <p>
+              Auto-Follow 是一个无 UI 的智能联动控制器，会自动响应 Vibe Coding 阶段变化。
+            </p>
+            <p className="text-xs text-surface-400">
+              通过顶部 "Auto-Follow: ON/OFF" 按钮控制启用状态。当前阶段变化时会自动打开对应的工具面板。
+            </p>
+          </div>
+        </div>
       </SoloModal>
     </>
   );
