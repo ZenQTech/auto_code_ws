@@ -2,7 +2,9 @@
 
 **日期**: 2026-08-03
 **前序周期**: Cycle 58 - Vibe Coding + 循环工作流对标 ✅
-**调研方向**: 待用户确认
+**调研方向**: B. TRAE-browseruse 端到端测试（用户已确认）
+**任务节奏**: 5 P0 任务（高深度）
+**Push 策略**: 先做 E2E 再推 main
 
 ---
 
@@ -16,101 +18,77 @@
 
 ---
 
-## 🎯 Cycle 59 候选调研方向
+## 🎯 Cycle 59 目标
 
-### 选项 A: UI/UX 增强 + LoopStatusBar 完整集成（推荐）
-**目标**: 把 Cycle 58 的后端能力在前端完整展现
-- LoopStatusBar 真实显示 Loop 状态
-- Auto-Follow 开关按钮
-- 完整 Vibe Coding 流程（clarifying→planning→executing→reviewing→done）
-- 思考过程时间轴可视化
-- 代码编辑器 Monaco 集成
-
-**价值**: 让用户能真正看到 Cycle 58 工作的成果
-**工作量**: 5-6 P0 任务，~3500 行代码
-
-### 选项 B: TRAE-browseruse 端到端测试
-**目标**: 全链路 E2E 自动化测试
-- Vibe Coding 完整流程 E2E
-- Composer Plan 真实执行 E2E
-- LoopStateMachine 迁移 E2E
-- Auto-Follow 联动 E2E
-- UI 交互测试（点击/输入/滚动）
-
-**价值**: 验证 Cycle 58 的功能完整性
-**工作量**: 4-5 P0 任务，~2000 行代码
-
-### 选项 C: 思考过程时间轴可视化
-**目标**: 可视化大模型思考过程
-- LLM token 实时流
-- 思考步骤分解
-- 工具调用 timeline
-- 文件操作历史
-- 性能监控面板
-
-**价值**: 对标 TRAE Solo 的可解释性
-**工作量**: 4-5 P0 任务，~3000 行代码
-
-### 选项 D: 智能体调度平台增强
-**目标**: 强化多智能体协同
-- 总架构师/QA/批判反思智能体真实协同
-- Hook 系统完善
-- 任务调度可视化
-- 智能体消息总线
-
-**价值**: 完善 loop engineering workflow
-**工作量**: 5-6 P0 任务，~4000 行代码
-
-### 选项 E: 知识图谱 + RAG 增强
-**目标**: 代码库语义理解
-- 代码 AST 分析
-- 依赖图谱
-- 智能文档检索
-- 项目记忆
-
-**价值**: 提升 vibe coding 质量
-**工作量**: 5-6 P0 任务，~3500 行代码
+**核心目标**: 对 Cycle 58 交付的 5 大 P0 能力进行端到端验证
+- 用 TRAE-browseruse 真实打开前端
+- 完整跑通用户场景
+- 验证 UI 渲染 / 交互 / 数据流 / 状态迁移
+- 输出 E2E 测试报告
 
 ---
 
-## ❓ 待用户确认
+## 📋 Cycle 59 P0 任务（候选）
 
-1. **调研方向**: A / B / C / D / E / 其他？
-2. **任务节奏**: 3 / 4 / 5 个 P0 任务？
-3. **集成策略**: Mock / 真实 / 混合？
+### G59-01: VibeCoding 流程 E2E
+- 用户进入 Vibe Coding 模式
+- 提交需求 → 触发 SSE
+- 状态机从 idle → clarifying → planning → executing → done 全链路
+- 截图验证各阶段 UI 变化
+
+### G59-02: ComposerPlan 执行 E2E
+- 创建 Plan（前端 UI）
+- 启动 → 暂停 → 恢复 → 取消
+- 步骤依赖图真实展示
+- 重试/跳过功能
+
+### G59-03: LoopStateMachine 状态迁移 E2E
+- LoopStatusBar 真实显示
+- 阶段切换面板自动切换（Auto-Follow）
+- 状态历史回放
+
+### G59-04: ClaudeCodeShell 真实调用 E2E
+- 用户在前端输入命令
+- 后端真实启动 subprocess
+- 流式输出到前端
+- 超时熔断验证
+
+### G59-05: Auto-Follow 联动 E2E
+- 配置开关
+- 自定义映射
+- 9 种事件类型真实触发
+- 黑/白名单
 
 ---
 
 ## 🛠️ 技术栈
 
-- 后端: Python 3.10 + FastAPI + SQLAlchemy 异步
-- 前端: TypeScript + React + Vite
-- 测试: pytest (后端) + vitest (前端)
-- 覆盖率要求: ≥90%
-- 提交规范: 原子提交 + 严格 Hook 通知
+- **E2E 工具**: TRAE-browseruse (browser automation)
+- **覆盖维度**: UI 渲染 / 用户交互 / 数据流 / 状态机 / SSE
+- **测试场景**: 真实用户流程 + 边界条件 + 错误恢复
 
 ---
 
 ## 📋 Cycle 58 已有资产
 
 ### 后端服务（92% 覆盖率）
-- `loop_state_machine.py` - 状态机
-- `auto_follow.py` - 联动服务
-- `composer_plan.py` - 计划编排
-- `claude_code_shell.py` - CLI 进程化
-- `loop_engineering_v7.py` - 主工作流
+- [loop_state_machine.py](file:///home/qizheng/auto_code_ws/backend/app/services/loop_state_machine.py) - 状态机
+- [auto_follow.py](file:///home/qizheng/auto_code_ws/backend/app/services/auto_follow.py) - 联动服务
+- [composer_plan.py](file:///home/qizheng/auto_code_ws/backend/app/services/composer_plan.py) - 计划编排
+- [claude_code_shell.py](file:///home/qizheng/auto_code_ws/backend/cli_integration/claude_code_shell.py) - CLI 进程化
+- [loop_engineering_v7.py](file:///home/qizheng/auto_code_ws/backend/app/services/loop_engineering_v7.py) - 主工作流
 
 ### 前端 Hook（已 100% 覆盖）
-- `useVibeCoding` - Vibe Session 管理
-- `useLoopState` - 状态机客户端
-- `useAutoFollow` - 联动客户端
-- `useClaudeCodeShell` - CLI 客户端
+- [useVibeCoding.ts](file:///home/qizheng/auto_code_ws/frontend/src/hooks/useVibeCoding.ts) - Vibe Session 管理
+- [useLoopState.ts](file:///home/qizheng/auto_code_ws/frontend/src/hooks/useLoopState.ts) - 状态机客户端
+- [useAutoFollow.ts](file:///home/qizheng/auto_code_ws/frontend/src/hooks/useAutoFollow.ts) - 联动客户端
+- [useClaudeCodeShell.ts](file:///home/qizheng/auto_code_ws/frontend/src/hooks/useClaudeCodeShell.ts) - CLI 客户端
 
 ### 前端组件（已 100% 覆盖）
-- `VibeCodingPage` - Vibe Coding 主舞台
-- `PlanExecutorPanel` - Plan 执行 UI
-- `AutoFollowController` - 联动控制器
-- `LoopStatusBar` - 状态条（待集成）
+- [VibeCodingPage](file:///home/qizheng/auto_code_ws/frontend/src/pages/VibeCodingPage.tsx) - Vibe Coding 主舞台
+- [PlanExecutorPanel](file:///home/qizheng/auto_code_ws/frontend/src/components/PlanExecutorPanel.tsx) - Plan 执行 UI
+- [AutoFollowController](file:///home/qizheng/auto_code_ws/frontend/src/components/AutoFollowController.tsx) - 联动控制器
+- LoopStatusBar - 状态条
 
 ### 文档
 - 7 主题调研报告
@@ -120,4 +98,15 @@
 
 ---
 
-**等待用户输入调研方向确认**
+## 🚀 Cycle 59 启动流程
+
+1. **Phase 1**: 互联网调研 E2E 测试方法论（TRAE-browseruse 最佳实践）
+2. **Phase 2**: 5 个 P0 任务 Spec 编写
+3. **Phase 3**: 实现 E2E 测试套件
+4. **Phase 4**: 运行 TRAE-browseruse 真实执行
+5. **Phase 5**: 修复发现的问题 + 重测
+6. **Phase 6**: 验收报告 + 推送 main 分支
+
+---
+
+**Cycle 59 启动准备就绪**
