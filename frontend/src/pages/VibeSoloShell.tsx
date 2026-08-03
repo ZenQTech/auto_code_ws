@@ -48,6 +48,7 @@ import SessionHistorySidebar from '../components/SessionHistorySidebar';
 import ToolsMatrixPanel from '../components/ToolsMatrixPanel';
 import MobileSoloSheet from '../components/MobileSoloSheet';
 import CommandPalette from '../components/CommandPalette';
+import SoloPanelsContainer from '../components/SoloPanelsContainer';
 
 // ============================================================
 // 组件
@@ -273,6 +274,10 @@ export const VibeSoloShell: React.FC = () => {
         onToggleAutoFollow={() => autoFollow.setEnabled(!autoFollow.enabled)}
         autoFollowEnabled={autoFollow.enabled}
       />
+
+      {/* 8. SoloPanelsContainer 统一面板容器（v1.0.0 G60-FIX-3 新增）
+          让 Solo 模式支持打开所有 40+ 个 panel（之前只能 toggle 状态但内容不可见） */}
+      <SoloPanelsContainer modals={modals} currentSessionId={vibeCoding.session?.id ?? null} />
     </div>
   );
 };
