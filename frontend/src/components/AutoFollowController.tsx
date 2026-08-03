@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * AutoFollowController - Auto-Follow 联动控制器 (v1.0.0)
+ * AutoFollowController - Auto-Follow 联动控制器 (v1.0.1)
  * Cycle 58 G58-04
  * # ============================================================
  * 核心作用：监听 VibeCoding 事件，自动调用 autoFollow.follow
@@ -15,10 +15,11 @@
  *   - 自动调用 autoFollow.follow
  * 输入参数：{ autoFollow, vibeCoding }
  * 输出结果：副作用（无 UI）
- * ============================================================
+ * ====================================
  * # 修改记录：
  * #   - 2026-08-03 | v1.0.0 | Cycle 58 G58-04 初次创建
- * ============================================================
+ * #   - 2026-08-03 | v1.0.1 | G60-FIX 修复 session.steps 未定义时崩溃（防御性 fallback）
+ * ====================================
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -84,7 +85,7 @@ const AutoFollowController: React.FC<AutoFollowControllerProps> = ({
 
   // 监听 steps 变化
   useEffect(() => {
-    if (!vibeCoding.session) return;
+    if (!vibeCoding.session || !vibeCoding.session.steps) return;
     const signature = vibeCoding.session.steps
       .map((s) => `${s.id}:${s.status}`)
       .join(',');

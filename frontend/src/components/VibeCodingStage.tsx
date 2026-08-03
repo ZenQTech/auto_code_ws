@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * VibeCodingStage - Vibe Coding 主舞台 (v1.0.0)
+ * VibeCodingStage - Vibe Coding 主舞台 (v1.0.1)
  * Cycle 58 G58-01
  * # ============================================================
  * 核心作用：Vibe Coding 的核心输入与进度展示舞台
@@ -15,10 +15,11 @@
  *   - 步骤列表可滚动
  * 输入参数：{ prompt, setPrompt, model, setModel, vibeCoding, onStart }
  * 输出结果：完整 Vibe Coding 输入与进度
- * ============================================================
+ * ====================================
  * # 修改记录：
  * #   - 2026-08-03 | v1.0.0 | Cycle 58 G58-01 初次创建
- * ============================================================
+ * #   - 2026-08-03 | v1.0.1 | G60-FIX 修复 metrics 字段未定义崩溃（防御性 fallback）
+ * ====================================
  */
 
 import React from 'react';
@@ -50,6 +51,9 @@ const VIBE_STATE_BADGES: Record<VibeState, { label: string; color: string; emoji
   error: { label: '错误', color: 'bg-red-100 text-red-700', emoji: '❌' },
 };
 
+/** v1.0.1 G60-FIX 新增：fallback badge（防御性） */
+const DEFAULT_BADGE = { label: '未知', color: 'bg-slate-100 text-slate-700', emoji: '❓' };
+
 const STEP_STATUS_LABELS: Record<VibeStep['status'], string> = {
   pending: '待执行',
   running: '执行中',
@@ -79,7 +83,8 @@ const VibeCodingStage: React.FC<VibeCodingStageProps> = ({
   onStart,
 }) => {
   const { session, state, isLoading, pause, resume, cancel, retryStep } = vibeCoding;
-  const badge = VIBE_STATE_BADGES[state];
+  // v1.0.1 G60-FIX 修复：防御性 fallback，避免 undefined.color 崩溃
+  const badge = VIBE_STATE_BADGES[state] ?? DEFAULT_BADGE;
   const isActive = state === 'clarifying' || state === 'planning' || state === 'executing' || state === 'reviewing';
 
   return (
@@ -98,9 +103,9 @@ const VibeCodingStage: React.FC<VibeCodingStageProps> = ({
         {session ? (
           <div className="text-sm text-surface-600 space-y-1">
             <div>Session ID: <span className="font-mono text-xs">{session.id}</span></div>
-            <div>Model: {session.model}</div>
-            <div>Created: {new Date(session.createdAt).toLocaleString()}</div>
-            <div>Metrics: tokens={session.metrics.tokens}, files={session.metrics.filesChanged}</div>
+            <div>Model: {session.model || 'claude-sonnet-4-20250514'}</div>
+            <div>Created: {session.createdAt ? new Date(session.createdAt).toLocaleString() : '刚刚'}</div>
+            <div>Metrics: tokens={session.metrics?.tokens ?? 0}, files={session.metrics?.filesChanged ?? 0}</div>
           </div>
         ) : (
           <div className="text-sm text-surface-500">未启动 session</div>
@@ -184,7 +189,7 @@ const VibeCodingStage: React.FC<VibeCodingStageProps> = ({
       )}
 
       {/* Steps 列表 */}
-      {session && session.steps.length > 0 && (
+      {session && session.steps && session.steps.length > 0 && (
         <div className="bg-white rounded-2xl border border-surface-200 p-6 shadow-sm">
           <h2 className="text-lg font-semibold text-surface-800 mb-3">执行步骤</h2>
           <div className="space-y-2" data-testid="steps-list">
