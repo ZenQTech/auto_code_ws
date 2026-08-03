@@ -9,16 +9,38 @@
  * # ============================================================
  * # 修改记录：
  * #   - 2026-07-31 | v1.0.0 | Cycle 43 G43-02 初次创建
- * # ============================================================
+ * #   - 2026-08-03 | v1.0.1 | Cycle 59 G59-FIX: 动态导入 node:child_process
+ * #                                 修复浏览器端 child_process 报错导致页面崩溃
+ * # ====================================
  */
 
-import { spawn, type ChildProcess } from 'node:child_process';
 import { McpClient } from './mcpClient';
 import { McpToolBridge } from './mcpToolBridge';
 import { McpResourceBridge } from './mcpResourceBridge';
 import { McpPromptBridge } from './mcpPromptBridge';
 import { StdioMcpTransport } from './mcpTransportStdio';
 import type { TransportOptions } from './mcpTypes';
+
+/**
+ * 动态导入 node:child_process（避免浏览器端静态导入报错）
+ */
+async function dynamicSpawn(
+  command: string,
+  args: string[],
+  options: { stdio: [string, string, string]; env: Record<string, string | undefined> }
+): Promise<{ on: (event: string, cb: (err: Error) => void) => void } | null> {
+  if (typeof window !== 'undefined') {
+    console.warn('[mcpGitServer] spawn() 在浏览器环境中不可用');
+    return null;
+  }
+  try {
+    const cp = await import('node:child_process');
+    return cp.spawn(command, args, options) as any;
+  } catch (err) {
+    console.error('[mcpGitServer] dynamicSpawn failed:', err);
+    return null;
+  }
+}
 
 // ============ 类型定义 ============
 
@@ -111,9 +133,9 @@ async function createRealGitServer(
   const packageName = options.packageName ?? '@modelcontextprotocol/server-git';
   const args = ['-y', packageName, '--repository', options.repositoryPath];
 
-  const childProcess = spawn(npxCommand, args, {
+  const childProcess = await dynamicSpawn(npxCommand, args, {
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env },
+    env: { ...process.env } as Record<string, string | undefined>,
   });
 
   const transport = new StdioMcpTransport({

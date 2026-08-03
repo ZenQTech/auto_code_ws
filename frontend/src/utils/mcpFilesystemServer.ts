@@ -9,16 +9,43 @@
  * # ============================================================
  * # 修改记录：
  * #   - 2026-07-31 | v1.0.0 | Cycle 43 G43-01 初次创建
- * # ============================================================
+ * #   - 2026-08-03 | v1.0.1 | Cycle 59 G59-FIX: 动态导入 node:child_process
+ * #                                 修复浏览器端 child_process 报错导致页面崩溃
+ * # ====================================
  */
 
-import { spawn, type ChildProcess } from 'node:child_process';
 import { McpClient } from './mcpClient';
 import { McpToolBridge } from './mcpToolBridge';
 import { McpResourceBridge } from './mcpResourceBridge';
 import { McpPromptBridge } from './mcpPromptBridge';
 import { StdioMcpTransport } from './mcpTransportStdio';
 import type { TransportOptions } from './mcpTypes';
+
+/**
+ * 动态导入 node:child_process（避免浏览器端静态导入报错）
+ * 浏览器环境下返回 null
+ */
+async function dynamicSpawn(
+  command: string,
+  args: string[],
+  options: { stdio: [string, string, string]; env: Record<string, string | undefined> }
+): Promise<{ on: (event: string, cb: (err: Error) => void) => void } | null> {
+  // 浏览器环境检测
+  if (typeof window !== 'undefined') {
+    console.warn(
+      '[mcpFilesystemServer] spawn() 在浏览器环境中不可用，已跳过子进程启动。请使用 Node.js 环境或离线模拟模式。'
+    );
+    return null;
+  }
+  try {
+    // 使用 eval 避免 Vite 静态分析（仅在 Node 环境执行）
+    const cp = await import('node:child_process');
+    return cp.spawn(command, args, options) as any;
+  } catch (err) {
+    console.error('[mcpFilesystemServer] dynamicSpawn failed:', err);
+    return null;
+  }
+}
 
 // ============ 类型定义 ============
 
@@ -127,17 +154,19 @@ async function createRealFilesystemServer(
   const packageName = options.packageName ?? '@modelcontextprotocol/server-filesystem';
   const args = ['-y', packageName, ...options.allowedDirectories];
 
-  // 启动子进程
-  const childProcess = spawn(npxCommand, args, {
+  // 启动子进程（动态 spawn，浏览器环境下返回 null）
+  const childProcess = await dynamicSpawn(npxCommand, args, {
     stdio: ['pipe', 'pipe', 'pipe'],
-    env: { ...process.env },
+    env: { ...process.env } as Record<string, string | undefined>,
   });
 
   // 错误处理
   let _spawnError: Error | null = null;
-  childProcess.on('error', (err: Error) => {
-    _spawnError = err;
-  });
+  if (childProcess) {
+    childProcess.on('error', (err: Error) => {
+      _spawnError = err;
+    });
+  }
 
   // 创建 Stdio 传输
   const transport = new StdioMcpTransport({
