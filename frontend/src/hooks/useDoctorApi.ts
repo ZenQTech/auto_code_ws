@@ -8,7 +8,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 
-const DOCTOR_BASE = '/doctor';
+// 2026-08-03 | v1.0.1 | Cycle 60 G60-FIX-3 修复：补全 /api 前缀
+//   之前 base 写为 /doctor，但后端 API 路由以 /api/doctor 暴露，
+//   导致请求走 Vite dev server (返回 index.html) 而非 FastAPI。
+const DOCTOR_BASE = '/api/doctor';
 
 async function apiFetch(path: string, options: RequestInit = {}): Promise<any> {
     const url = `${DOCTOR_BASE}${path}`;
