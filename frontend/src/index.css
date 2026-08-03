@@ -644,3 +644,177 @@ body::after {
     outline: none;
   }
 }
+
+/* ============================================================
+ * Cycle 60 G60-1.1: 3 主题 CSS 变量（dark/light/high-contrast）
+ * 核心作用：为 useDesignTokens 提供 CSS 变量级支持，
+ *           配合 data-theme 属性实现即时主题切换。
+ * 设计原则：dark 为基线主题；light/high-contrast 仅覆盖差异 token。
+ * 性能：CSS 变量切换 O(1)，无需重渲染 React 组件。
+ * 修改记录：
+ *   - 2026-08-03 | v1.0.0 | Cycle 60 G60-1.1 初次创建
+ * ============================================================ */
+
+[data-theme="dark"] {
+  --bg-app: #0a0a0f;
+  --bg-panel: #12121a;
+  --bg-elevated: #1a1a24;
+  --text-primary: #ffffff;
+  --text-secondary: #a3a3b0;
+  --text-tertiary: #737380;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(240, 160, 48, 0.6);
+  --accent: #f0a030;
+  --accent-hover: #fbbf66;
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.25);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.30);
+  --code-bg: #1a1a24;
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.3);
+}
+
+[data-theme="light"] {
+  --bg-app: #ffffff;
+  --bg-panel: #f8f8fa;
+  --bg-elevated: #ffffff;
+  --text-primary: #0a0a0a;
+  --text-secondary: #525260;
+  --text-tertiary: #737380;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-hover: rgba(240, 160, 48, 0.6);
+  --accent: #f0a030;
+  --accent-hover: #d4891a;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.07);
+  --code-bg: #f8f8fa;
+  --scrollbar-thumb: rgba(0, 0, 0, 0.2);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="high-contrast"] {
+  --bg-app: #000000;
+  --bg-panel: #0a0a0a;
+  --bg-elevated: #141414;
+  --text-primary: #ffffff;
+  --text-secondary: #b2b2b2;
+  --text-tertiary: #828282;
+  --border-color: rgba(255, 255, 180, 0.3);
+  --border-hover: #ffb84d;
+  --accent: #ffb84d;
+  --accent-hover: #ff9a1a;
+  --shadow-sm: 0 0 0 1px rgba(255, 180, 77, 0.3);
+  --shadow-md: 0 0 0 2px rgba(255, 180, 77, 0.5);
+  --code-bg: #141414;
+  --scrollbar-thumb: rgba(255, 180, 77, 0.5);
+  --scrollbar-thumb-hover: rgba(255, 180, 77, 0.8);
+}
+
+/* 全局 body 应用主题变量 */
+body {
+  background-color: var(--bg-app);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* 主题感知的滚动条 */
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+* {
+  scrollbar-color: var(--scrollbar-thumb) var(--bg-panel);
+}
+
+/* 主题感知选中文本 */
+::selection {
+  background-color: var(--accent);
+  color: var(--bg-app);
+}
+
+/* ============================================================
+ * Cycle 60 G60-1.1: 微交互工具类（ripple / shake / check / lift）
+ * 核心作用：补齐 Codex/Trae Solo 同款微交互细节。
+ * 性能：transform / opacity / box-shadow 全部 GPU 合成。
+ * 修改记录：
+ *   - 2026-08-03 | v1.0.0 | Cycle 60 G60-1.1 初次创建
+ * ============================================================ */
+
+/* ripple 点击波纹 */
+.ripple {
+  position: relative;
+  overflow: hidden;
+}
+.ripple::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle, var(--accent) 0%, transparent 70%);
+  opacity: 0;
+  transform: scale(0);
+  transition: transform 0.5s, opacity 0.5s;
+  pointer-events: none;
+}
+.ripple:active::after {
+  opacity: 0.3;
+  transform: scale(2);
+  transition: 0s;
+}
+
+/* shake 错误抖动 */
+.shake {
+  animation: shake 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+@keyframes shake {
+  10%, 90% { transform: translateX(-1px); }
+  20%, 80% { transform: translateX(2px); }
+  30%, 50%, 70% { transform: translateX(-4px); }
+  40%, 60% { transform: translateX(4px); }
+}
+
+/* check-pulse 完成脉冲 */
+.check-pulse {
+  animation: check-pulse 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+@keyframes check-pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+  100% { transform: scale(1); }
+}
+
+/* lift 抬升入场 */
+@keyframes lift-in {
+  0%   { opacity: 0; transform: translateY(12px) scale(0.96); }
+  100% { opacity: 1; transform: translateY(0)    scale(1); }
+}
+.animate-lift-in {
+  animation: lift-in 0.3s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* pulse-pulse 心跳提示 */
+.pulse-pulse {
+  animation: pulse-pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%      { opacity: 0.6; transform: scale(1.05); }
+}
+
+/* 主题感知的玻璃拟态 */
+.glass-themed {
+  background-color: color-mix(in srgb, var(--bg-panel) 65%, transparent);
+  -webkit-backdrop-filter: blur(12px) saturate(140%);
+  backdrop-filter: blur(12px) saturate(140%);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+}
+
+/* 主题感知错误卡片 */
+.error-card-themed {
+  border-left: 4px solid #ef4444;
+  background: color-mix(in srgb, #ef4444 8%, var(--bg-elevated));
+  color: #ef4444;
+  border-radius: var(--radius-lg);
+  padding: 1rem;
+}
