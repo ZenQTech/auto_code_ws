@@ -34,6 +34,7 @@
  */
 
 import React, { useState } from 'react';
+import { ContextSelector } from './ContextSelector';
 
 // ============================================================
 // 类型
@@ -47,7 +48,8 @@ export type EmbeddedTool =
   | 'diff'
   | 'memory'
   | 'files'
-  | 'metrics';
+  | 'metrics'
+  | 'context';
 
 export interface EmbeddedToolsProps {
   sessionId?: string | null;
@@ -69,6 +71,7 @@ const TOOL_META: Record<EmbeddedTool, { label: string; emoji: string; descriptio
   memory: { label: '记忆', emoji: '🧠', description: 'Memory System' },
   files: { label: '文件', emoji: '📁', description: '文件浏览器' },
   metrics: { label: '指标', emoji: '📈', description: 'Token/耗时/费用指标' },
+  context: { label: '上下文', emoji: '📎', description: '多源上下文选择器（文件/代码/终端/Git/文档/网页）' },
 };
 
 const STORAGE_KEY = 'hermes.solo.embeddedTool';
@@ -225,6 +228,15 @@ const MetricsView: React.FC = () => (
   </div>
 );
 
+const ContextView: React.FC<{ sessionId?: string | null }> = ({ sessionId }) => (
+  <div className="h-full" data-testid="embedded-tool-context">
+    <ContextSelector
+      testId="embedded-context-selector"
+      initialBundleId={sessionId || undefined}
+    />
+  </div>
+);
+
 // ============================================================
 // 主组件
 // ====================================
@@ -264,6 +276,8 @@ export const EmbeddedTools: React.FC<EmbeddedToolsProps> = ({
         return <FilesView />;
       case 'metrics':
         return <MetricsView />;
+      case 'context':
+        return <ContextView sessionId={sessionId} />;
       default:
         return <OverviewView sessionId={sessionId} />;
     }

@@ -124,6 +124,24 @@ export function useIsDesktop(): boolean {
 }
 
 /**
+ * 综合响应式状态 hook（v6.36.1 新增 - Cycle 62 修复）
+ * 返回 isMobile / isTablet / isDesktop 三个标志位
+ * 用于 SplitView 等需要根据视口类型选择布局的场景
+ */
+export function useResponsive(): {
+  isMobile: boolean;
+  isTablet: boolean;
+  isDesktop: boolean;
+  breakpoint: Breakpoint;
+} {
+  const breakpoint = useBreakpoint();
+  const isMobile = breakpoint === 'mobile';
+  const isTablet = breakpoint === 'tablet';
+  const isDesktop = breakpoint === 'desktop' || breakpoint === 'wide';
+  return { isMobile, isTablet, isDesktop, breakpoint };
+}
+
+/**
  * 视口尺寸 hook（用于需要精确宽度的场景，如布局计算）
  * @returns { width, height } 当前视口尺寸
  */
