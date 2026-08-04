@@ -905,6 +905,10 @@ app.include_router(doctor_router, prefix="/api/doctor", tags=["doctor"])
 from .api.e2e import router as e2e_router
 app.include_router(e2e_router, prefix="/api/e2e", tags=["e2e"])
 
+# v6.32.0 Cycle 61 G61-01-T2：Claude CLI 进程编排 API（沙箱 + 资源限制 + SSE）
+from .api.claude_cli import router as claude_cli_router
+app.include_router(claude_cli_router, prefix="/api", tags=["claude-cli"])
+
 # v6.26.0 Cycle 14 P0-1：Hermes Agent v2 自进化智能体
 # 实现 Proactive Memory + Thread Automations + Self-Directing 三大核心能力
 # 基于 OpenAI Codex 26.415 / rust-v0.145.0+ 设计
