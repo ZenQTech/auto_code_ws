@@ -766,6 +766,10 @@ app.include_router(rollback_router, prefix="/api", tags=["rollback"])
 from .api.conversation_folding import router as conversation_fold_router
 app.include_router(conversation_fold_router, prefix="/api", tags=["conversation-fold"])
 
+# v6.33.0 Cycle 62 G62-04：注册 AGENTS.md / CLAUDE.md 指令加载 API
+from .api.agents_loader import router as agents_loader_router
+app.include_router(agents_loader_router, prefix="/api", tags=["agents-loader"])
+
 # v6.11.0 (P0 Cycle 2) 新增：注册 MCP (Model Context Protocol) API 路由
 from .api.mcp import router as mcp_router
 app.include_router(mcp_router, prefix="/api/mcp", tags=["mcp"])
