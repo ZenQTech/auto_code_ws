@@ -1,9 +1,10 @@
 """
 # ============================================================
-# Agent Roles REST API (v2.0.0)
+# Agent Roles REST API (v3.0.0)
 # Cycle 63 G63-02 → Cycle 64 G64-01 升级（AgentRunner 集成）
+#                  → Cycle 65 G65-02 升级（CSV 批处理）
 # ====================================
-# 核心作用：暴露 AgentRoleManager + AgentRunner 为 REST API
+# 核心作用：暴露 AgentRoleManager + AgentRunner + BatchSpawner 为 REST API
 # 运行流程：
 #   1. GET    /api/agent-roles                            列出所有角色
 #   2. GET    /api/agent-roles/{name}                     获取角色详情
@@ -20,14 +21,12 @@
 #  13. GET    /api/agent-roles/_stats                     统计
 #  14. POST   /api/agent-roles/load-toml                  从 TOML 加载
 #  15. GET    /api/agent-roles/runner/stats               AgentRunner 统计
-# 输入参数：HTTP 请求
-# 输出结果：JSON 响应
-# 注意：/instances 必须放在 /{name} 之前避免路径冲突
-# 设计要点：
-#   - spawn 后立即异步执行任务
-#   - 通过 HookEventBus 跟踪进度
-#   - 支持实时事件流查询
-#   - 取消/暂停/恢复操作幂等
+#  === Cycle 65 G65-02 新增（CSV 批处理） ===
+#  16. POST   /api/agent-roles/batch/spawn                提交批量任务（CSV）
+#  17. GET    /api/agent-roles/batch/list                 列出批量任务
+#  18. GET    /api/agent-roles/batch/{id}                 查询批量状态
+#  19. POST   /api/agent-roles/batch/{id}/cancel          取消批量任务
+#  20. GET    /api/agent-roles/batch/{id}/export          导出结果
 # ====================================
 # 修改记录：
 #   - 2026-08-04 | v1.0.0 | Cycle 63 G63-02 初次创建
@@ -36,6 +35,12 @@
 #                                - /pause /resume 端点
 #                                - /events 端点查询 Hook 事件历史
 #                                - /runner/stats 端点
+#   - 2026-08-04 | v3.0.0 | Cycle 65 G65-02 增加：
+#                                - /batch/spawn 端点（CSV 批量提交）
+#                                - /batch/{id} 端点（进度查询）
+#                                - /batch/{id}/cancel 端点
+#                                - /batch/{id}/export 端点
+#                                - /batch/list 端点
 # ====================================
 """
 
@@ -504,4 +509,143 @@ async def reset_test_state() -> Dict[str, Any]:
     return {
         "success": True,
         "message": "test state reset",
+    }
+
+
+# ============================================================
+# Cycle 65 G65-02: CSV 批处理 API
+# ============================================================
+
+
+from ..services.batch_spawner import (
+    BatchJob,
+    BatchSpawner,
+    DEFAULT_CONCURRENCY,
+    MAX_CONCURRENCY,
+    get_batch_spawner,
+    reset_batch_spawner,
+)
+
+
+class BatchSpawnRequest(BaseModel):
+    """批量 spawn 请求"""
+
+    csv_content: str = Field(..., min_length=1, max_length=1024 * 1024)
+    role: Optional[str] = Field(default=None, max_length=64)
+    max_concurrency: int = Field(default=DEFAULT_CONCURRENCY, ge=1, le=MAX_CONCURRENCY)
+    default_model: Optional[str] = Field(default=None, max_length=128)
+
+
+@router.post("/batch/spawn")
+async def spawn_batch(req: BatchSpawnRequest) -> Dict[str, Any]:
+    """
+    提交批量 spawn 任务
+    - 输入: CSV 文本
+    - 输出: batch_id + 解析结果（accepted/rejected）
+    - 后台异步执行
+    """
+    spawner = get_batch_spawner()
+    try:
+        job = await spawner.spawn_batch(
+            csv_content=req.csv_content,
+            default_role=req.role,
+            default_model=req.default_model,
+            max_concurrency=req.max_concurrency,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return {
+        "success": True,
+        "batch_id": job.batch_id,
+        "total": job.total,
+        "accepted": job.accepted,
+        "rejected": job.rejected,
+        "status": job.status,
+        "errors": [e.to_dict() for e in job.errors[:50]],  # 最多返回 50 条
+    }
+
+
+@router.get("/batch/list")
+async def list_batches() -> Dict[str, Any]:
+    """列出所有批量任务"""
+    spawner = get_batch_spawner()
+    jobs = spawner.list_jobs()
+    return {
+        "success": True,
+        "total": len(jobs),
+        "batches": [
+            {
+                "batch_id": j.batch_id,
+                "total": j.total,
+                "accepted": j.accepted,
+                "rejected": j.rejected,
+                "completed": j.completed,
+                "failed": j.failed,
+                "in_progress": j.in_progress,
+                "progress": j.progress,
+                "status": j.status,
+                "started_at": j.started_at,
+                "finished_at": j.finished_at,
+            }
+            for j in jobs
+        ],
+    }
+
+
+@router.get("/batch/{batch_id}")
+async def get_batch(batch_id: str) -> Dict[str, Any]:
+    """获取批量任务详情"""
+    spawner = get_batch_spawner()
+    job = spawner.get_job(batch_id)
+    if job is None:
+        raise HTTPException(status_code=404, detail=f"Batch not found: {batch_id}")
+    return {
+        "success": True,
+        **job.to_dict(),
+    }
+
+
+@router.post("/batch/{batch_id}/cancel")
+async def cancel_batch(batch_id: str) -> Dict[str, Any]:
+    """取消批量任务"""
+    spawner = get_batch_spawner()
+    success, cancelled_count = await spawner.cancel_batch(batch_id)
+    return {
+        "success": success,
+        "batch_id": batch_id,
+        "cancelled_count": cancelled_count,
+    }
+
+
+@router.get("/batch/{batch_id}/export")
+async def export_batch(batch_id: str, format: str = "json") -> Dict[str, Any]:
+    """
+    导出批量任务结果
+    format: json / csv / md
+    """
+    spawner = get_batch_spawner()
+    if format not in ("json", "csv", "md"):
+        raise HTTPException(
+            status_code=400, detail=f"Unsupported format: {format}"
+        )
+    try:
+        content = spawner.export_batch(batch_id, format=format)
+    except KeyError:
+        raise HTTPException(status_code=404, detail=f"Batch not found: {batch_id}")
+    return {
+        "success": True,
+        "batch_id": batch_id,
+        "format": format,
+        "content": content,
+    }
+
+
+@router.get("/batch/_stats")
+async def get_batch_stats() -> Dict[str, Any]:
+    """批量任务统计"""
+    spawner = get_batch_spawner()
+    return {
+        "success": True,
+        "stats": spawner.get_stats(),
     }

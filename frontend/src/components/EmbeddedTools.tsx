@@ -1,11 +1,11 @@
 /**
  * # ============================================================
- * EmbeddedTools - 内嵌工具矩阵组件 (v1.2.0)
+ * EmbeddedTools - 内嵌工具矩阵组件 (v1.3.0)
  * Cycle 60+ Solo 重构 - 对标 Trae Solo / Codex 内嵌工具
  * # ====================================
- * 核心作用：在右栏提供内嵌的工具面板：编辑器、终端、浏览器、代码变更、内存、文件浏览、阶段检测等
+ * 核心作用：在右栏提供内嵌的工具面板：编辑器、终端、浏览器、代码变更、内存、文件浏览、阶段检测、批量任务等
  * 设计要点（v1.1.0 G60-FIX-17）：
- *   - Tab 切换：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage
+ *   - Tab 切换：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch
  *   - 内嵌 iframe / 自实现组件
  *   - 与 ToolsMatrixPanel 协同（外层按钮 + 内嵌细节）
  *   - 可折叠/展开
@@ -20,6 +20,9 @@
  *     - 新增 stage tab
  *     - Auto-Follow 联动：当 stage 变化且 auto_follow 启用时自动切换 tab
  *     - 阶段变化通过 useStage 订阅
+ *   - v1.3.0 G65-02 批量任务集成：
+ *     - 新增 batch tab（嵌入 BatchSpawnPanel）
+ *     - Auto-Follow 阶段 → batch tab 暂不联动（避免误触发）
  * 输入参数：
  *   - defaultTab?: EmbeddedTool
  *   - sessionId?: string 当前 session
@@ -39,12 +42,16 @@
  *                                - 新增 stage tab（嵌入 StageDetectorView）
  *                                - Auto-Follow 联动逻辑
  *                                - wsUrl 参数透传
+ *   - 2026-08-04 | v1.3.0 | G65-02 批量任务集成：
+ *                                - 新增 batch tab（嵌入 BatchSpawnPanel）
+ *                                - EmbeddedTool 联合类型扩展
  * ====================================
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ContextSelector } from './ContextSelector';
 import { StageDetectorView } from './StageDetectorView';
+import { BatchSpawnPanel } from './BatchSpawnPanel';
 import { useStage, type StageId } from '../hooks/useStage';
 
 // ============================================================
@@ -61,7 +68,8 @@ export type EmbeddedTool =
   | 'files'
   | 'metrics'
   | 'context'
-  | 'stage';
+  | 'stage'
+  | 'batch';
 
 export interface EmbeddedToolsProps {
   sessionId?: string | null;
@@ -73,7 +81,7 @@ export interface EmbeddedToolsProps {
 
 // ============================================================
 // Tab 配置
-// ====================================
+// ============================================================
 
 const TOOL_META: Record<EmbeddedTool, { label: string; emoji: string; description: string }> = {
   overview: { label: '概览', emoji: '📊', description: '会话概览 + 关键指标' },
@@ -86,6 +94,7 @@ const TOOL_META: Record<EmbeddedTool, { label: string; emoji: string; descriptio
   metrics: { label: '指标', emoji: '📈', description: 'Token/耗时/费用指标' },
   context: { label: '上下文', emoji: '📎', description: '多源上下文选择器（文件/代码/终端/Git/文档/网页）' },
   stage: { label: '阶段', emoji: '🎯', description: '阶段检测器 + Auto-Follow 联动' },
+  batch: { label: '批量', emoji: '🚀', description: 'CSV 批量 spawn agents（G65-02）' },
 };
 
 /**
@@ -278,6 +287,50 @@ const StageView: React.FC<{
   </div>
 );
 
+const BatchView: React.FC<{
+  batchOpen: boolean;
+  onOpen: () => void;
+  onClose: () => void;
+}> = ({ batchOpen, onOpen, onClose }) => (
+  <div className="h-full" data-testid="embedded-tool-batch">
+    {!batchOpen ? (
+      <div className="p-6 flex flex-col items-center justify-center h-full text-center">
+        <div className="text-4xl mb-3">🚀</div>
+        <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
+          CSV 批量任务
+        </h3>
+        <p className="text-[11px] text-[var(--text-secondary)] max-w-md mb-4">
+          通过 CSV 一次性创建多个 Agent 实例，支持并发控制、进度跟踪、结果导出（对标 Codex batch_spawn_agents）
+        </p>
+        <button
+          type="button"
+          onClick={onOpen}
+          className="px-3 py-1.5 text-xs bg-hermes-500 text-white rounded hover:bg-hermes-600"
+          data-testid="embedded-batch-open-btn"
+        >
+          📂 打开批量任务面板
+        </button>
+        <div className="mt-6 grid grid-cols-2 gap-2 max-w-md w-full text-[10px] text-[var(--text-tertiary)]">
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            ⚙️ 并发控制（1-50）
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            🎭 角色调度
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            📊 实时进度
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            📥 多格式导出
+          </div>
+        </div>
+      </div>
+    ) : (
+      <BatchSpawnPanel isOpen={batchOpen} onClose={onClose} />
+    )}
+  </div>
+);
+
 // ============================================================
 // 主组件
 // ====================================
@@ -290,6 +343,7 @@ export const EmbeddedTools: React.FC<EmbeddedToolsProps> = ({
   'data-testid': testId = 'embedded-tools',
 }) => {
   const [tab, setTab] = useState<EmbeddedTool>(defaultTab || readTool());
+  const [batchOpen, setBatchOpen] = useState(false);
   // Auto-Follow 是否已由用户手动锁定（用户手动切换 tab 后会设为 true，
   // 阶段触发的自动切换不再覆盖；点击 Auto-Follow 按钮或显式重置时清空）
   const [userLocked, setUserLocked] = useState(false);
@@ -364,6 +418,14 @@ export const EmbeddedTools: React.FC<EmbeddedToolsProps> = ({
                 // 忽略
               }
             }}
+          />
+        );
+      case 'batch':
+        return (
+          <BatchView
+            batchOpen={batchOpen}
+            onOpen={() => setBatchOpen(true)}
+            onClose={() => setBatchOpen(false)}
           />
         );
       default:
