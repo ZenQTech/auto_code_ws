@@ -782,6 +782,24 @@ app.include_router(multi_task_router, prefix="/api", tags=["multi-task"])
 from .api.multi_context import router as multi_context_router
 app.include_router(multi_context_router, prefix="/api", tags=["multi-context"])
 
+# v1.0.0 Cycle 63 G63-01: PRD 生成器
+# 自然语言需求 → 结构化 PRD（含目标/场景/验收/任务分解）
+# 对标 Trae SOLO Builder 工作流
+from .api.prd import router as prd_router
+app.include_router(prd_router, prefix="/api", tags=["prd"])
+
+# v1.0.0 Cycle 63 G63-02: 自定义 Agent 角色
+# 4 个内置角色 + TOML 自定义 + spawn 实例生命周期管理
+# 对标 Codex CLI v0.105+ sub-agent 系统
+from .api.agent_roles import router as agent_roles_router
+app.include_router(agent_roles_router, prefix="/api", tags=["agent-roles"])
+
+# v1.0.0 Cycle 63 G63-03: 阶段检测器
+# 规则引擎 + 状态机 + WebSocket 实时推送 + Auto-Follow
+# 对标 Trae SOLO Auto-Follow
+from .api.stage import router as stage_router
+app.include_router(stage_router, prefix="/api", tags=["stage"])
+
 # v6.11.0 (P0 Cycle 2) 新增：注册 MCP (Model Context Protocol) API 路由
 from .api.mcp import router as mcp_router
 app.include_router(mcp_router, prefix="/api/mcp", tags=["mcp"])
