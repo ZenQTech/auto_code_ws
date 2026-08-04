@@ -307,7 +307,7 @@ class TestPlanExecuteFromPlan:
     def test_execute_existing_plan(self, client):
         # 先创建一个 plan
         service = get_service()
-        plan = asyncio.get_event_loop().run_until_complete(
+        plan = asyncio.run(
             service.create_plan(
                 title="Existing",
                 steps=[{"step_id": "s1", "title": "S1", "action": "noop"}],
