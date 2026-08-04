@@ -1,308 +1,297 @@
 /**
  * # ============================================================
- * TaskTabs - 多任务并行 Tab Bar (v1.1.0)
- * Cycle 60+ Solo 重构 - 对标 Trae Solo 多任务并行 / Codex 多会话
- * # ============================================================
- * 核心作用：在 Solo 模式主壳顶部提供多任务（多 session / 多 workflow）tab 切换
- * 设计要点（v1.1.0 G60-FIX-17）：
- *   - 独立 tab = 独立 session / workflow
- *   - 状态指示器：运行中/暂停/错误/完成
- *   - 拖拽排序（可选，本期跳过）
- *   - 关闭按钮 + 中键关闭
- *   - + 按钮新建任务
- *   - 持久化 tab 列表到 localStorage
- *   - 超长 tab 列表可滚动
- *   - v1.1.0 视觉优化：
- *     - 高度 36px (h-9)，与 LoopStatusBar 对齐
- *     - 左/右滚动按钮更紧凑（w-6 h-6 圆角按钮）
- *     - tab 字号 11px，统一全局字号
- *     - active tab 使用主题色边框，与 LoopStatusBar 阶段徽章风格统一
- *     - 关闭按钮 opacity 100/0 切换，hover 态更明显
- * 输入参数：
- *   - tabs: Tab[] 任务列表
- *   - activeId: string 当前激活 tab id
- *   - onSelect: (id) => void
- *   - onClose: (id) => void
- *   - onNew: () => void
- *   - onRename?: (id, title) => void
- * 输出结果：UI 组件
- * ====================================
- * 修改记录：
- *   - 2026-08-04 | v1.0.0 | Solo 重构 - 初次创建
- *   - 2026-08-04 | v1.1.0 | G60-FIX-17 视觉优化：
- *                                - 高度 h-9 (36px)，与 LoopStatusBar 对齐
- *                                - 滚动按钮 w-6 h-6 紧凑圆角
- *                                - tab 字号 11px
- *                                - active tab 边框使用 hermes-500/50
- *                                - 关闭按钮 hover 态更明显
- * ============================================================
+ * # TaskTabs 组件 (v1.0.0)
+ * # Cycle 62 G62-01
+ * # ====================================
+ * # 核心作用：多任务标签页 UI
+ * # 运行流程：
+ * #   1. 显示所有任务（含活跃/历史）
+ * #   2. 标签页切换查看不同任务
+ * #   3. 支持新建/启动/暂停/取消/删除
+ * #   4. 状态徽章 + 实时进度
+ * # 输入参数：testId, useMultiTask
+ * # 输出结果：JSX
+ * # ====================================
+ * # 修改记录：
+ * #   - 2026-08-04 | v1.0.0 | Cycle 62 G62-01 初次创建
+ * # ====================================
  */
 
-import React, { useState, useRef, useEffect } from 'react';
+import { useState } from 'react';
+import { useMultiTask, type Task, type TaskStatus } from '../hooks/useMultiTask';
 
-// ============================================================
-// 类型
-// ====================================
-
-export type TaskStatus = 'idle' | 'running' | 'paused' | 'error' | 'done';
-
-export interface TaskTab {
-  id: string;
-  title: string;
-  status: TaskStatus;
-  /** 副标题/描述 */
-  subtitle?: string;
-  /** 进度 0-100（用于 progress bar） */
-  progress?: number;
-  /** 是否可关闭（不可关闭时隐藏 X） */
-  closable?: boolean;
-  /** 模型（显示在 tooltip） */
-  model?: string;
-  /** 创建时间 */
-  createdAt?: string;
-}
-
-export interface TaskTabsProps {
-  tabs: TaskTab[];
-  activeId: string | null;
-  onSelect: (id: string) => void;
-  onClose: (id: string) => void;
-  onNew: () => void;
-  onRename?: (id: string, title: string) => void;
-  className?: string;
-  'data-testid'?: string;
-}
-
-// ============================================================
-// 状态颜色
-// ====================================
-
-const STATUS_META: Record<TaskStatus, { color: string; emoji: string; pulse: boolean }> = {
-  idle: { color: 'var(--text-tertiary, #94a3b8)', emoji: '○', pulse: false },
-  running: { color: 'var(--hermes-500, #10b981)', emoji: '●', pulse: true },
-  paused: { color: 'var(--hermes-400, #f59e0b)', emoji: '◐', pulse: false },
-  error: { color: '#ef4444', emoji: '✕', pulse: false },
-  done: { color: '#3b82f6', emoji: '✓', pulse: false },
+const STATUS_COLORS: Record<TaskStatus, string> = {
+  pending: 'bg-gray-500',
+  running: 'bg-blue-500 animate-pulse',
+  paused: 'bg-yellow-500',
+  completed: 'bg-green-500',
+  failed: 'bg-red-500',
+  cancelled: 'bg-gray-400',
 };
 
-// ============================================================
-// 组件
-// ====================================
+const STATUS_LABELS: Record<TaskStatus, string> = {
+  pending: '等待中',
+  running: '运行中',
+  paused: '已暂停',
+  completed: '已完成',
+  failed: '失败',
+  cancelled: '已取消',
+};
 
-export const TaskTabs: React.FC<TaskTabsProps> = ({
-  tabs,
-  activeId,
-  onSelect,
-  onClose,
-  onNew,
-  onRename,
-  className = '',
-  'data-testid': testId = 'task-tabs',
-}) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editValue, setEditValue] = useState('');
+export interface TaskTabsProps {
+  testId?: string;
+  initialPrompt?: string;
+  onTaskSelect?: (task: Task) => void;
+}
 
-  // 自动滚动到 active tab
-  useEffect(() => {
-    if (!scrollRef.current || !activeId) return;
-    const el = scrollRef.current.querySelector(`[data-tab-id="${activeId}"]`);
-    if (el && 'scrollIntoView' in el) {
-      (el as HTMLElement).scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+export function TaskTabs({
+  testId = 'task-tabs',
+  initialPrompt = '',
+  onTaskSelect,
+}: TaskTabsProps) {
+  const {
+    tasks,
+    activeTaskId,
+    setActiveTaskId,
+    loading,
+    error,
+    createTask,
+    startTask,
+    pauseTask,
+    resumeTask,
+    cancelTask,
+    deleteTask,
+  } = useMultiTask();
+
+  const [showCreate, setShowCreate] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newPrompt, setNewPrompt] = useState(initialPrompt);
+
+  const activeTask = tasks.find((t) => t.task_id === activeTaskId) || tasks[0];
+
+  const handleCreate = async () => {
+    if (!newPrompt.trim()) return;
+    const task = await createTask({
+      title: newTitle.trim() || newPrompt.slice(0, 30),
+      prompt: newPrompt,
+    });
+    if (task) {
+      setShowCreate(false);
+      setNewTitle('');
+      setNewPrompt('');
+      setActiveTaskId(task.task_id);
+      // 自动启动
+      await startTask(task.task_id);
     }
-  }, [activeId]);
-
-  const handleStartRename = (tab: TaskTab) => {
-    if (!onRename) return;
-    setEditingId(tab.id);
-    setEditValue(tab.title);
   };
 
-  const handleFinishRename = () => {
-    if (editingId && onRename && editValue.trim()) {
-      onRename(editingId, editValue.trim());
-    }
-    setEditingId(null);
-    setEditValue('');
-  };
-
-  const handleAuxClick = (e: React.MouseEvent, tab: TaskTab) => {
-    if (e.button === 1 && tab.closable !== false) {
-      e.preventDefault();
-      onClose(tab.id);
-    }
+  const handleSelect = (task: Task) => {
+    setActiveTaskId(task.task_id);
+    onTaskSelect?.(task);
   };
 
   return (
     <div
-      className={`flex items-center bg-[var(--bg-panel)]/40
-                  border-b border-[var(--border-color)]
-                  h-9 px-1 select-none ${className}`}
+      className="flex flex-col h-full bg-[var(--bg-panel)] text-[var(--text-primary)]"
       data-testid={testId}
-      role="tablist"
     >
-      {/* 左滚动按钮 - v1.1.0 紧凑圆角按钮 */}
-      {tabs.length > 0 && (
-        <button
-          onClick={() => {
-            if (scrollRef.current) scrollRef.current.scrollBy({ left: -200, behavior: 'smooth' });
-          }}
-          className="w-6 h-6 rounded text-[var(--text-secondary)]
-                     hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]
-                     flex items-center justify-center flex-shrink-0 transition-colors"
-          title="向左滚动"
-          aria-label="向左滚动"
-          data-testid={`${testId}-scroll-left`}
-        >
-          ‹
-        </button>
-      )}
-
-      {/* Tab 列表 */}
+      {/* 顶部标签栏 */}
       <div
-        ref={scrollRef}
-        className="flex-1 flex items-center gap-1 overflow-x-auto
-                   scrollbar-none px-1"
-        style={{ scrollbarWidth: 'none' }}
+        className="flex items-center gap-1 p-2 border-b border-[var(--border-color)] overflow-x-auto"
+        data-testid={`${testId}-tabbar`}
       >
-        {tabs.length === 0 && (
-          <div className="px-3 text-[11px] text-[var(--text-tertiary)]">
-            暂无任务，点击 + 创建
-          </div>
-        )}
-
-        {tabs.map((tab) => {
-          const meta = STATUS_META[tab.status];
-          const active = tab.id === activeId;
-          const isEditing = editingId === tab.id;
-
-          return (
-            <div
-              key={tab.id}
-              data-tab-id={tab.id}
-              onClick={() => onSelect(tab.id)}
-              onMouseDown={(e) => handleAuxClick(e, tab)}
-              onDoubleClick={() => handleStartRename(tab)}
-              className={`group flex items-center gap-1.5 h-7 px-2.5
-                          rounded-md text-[11px] cursor-pointer
-                          flex-shrink-0 max-w-[200px] transition-all
-                          ${active
-                            ? 'bg-[var(--bg-elevated)] border border-hermes-500/50 text-[var(--text-primary)] font-medium'
-                            : 'bg-transparent border border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]/60 hover:text-[var(--text-primary)]'
-                          }`}
-              role="tab"
-              aria-selected={active}
-              title={
-                tab.subtitle || tab.model
-                  ? [
-                      tab.title,
-                      tab.subtitle,
-                      tab.model ? `模型: ${tab.model}` : null,
-                    ]
-                      .filter(Boolean)
-                      .join('\n')
-                  : tab.title
-              }
-              data-testid={`${testId}-tab-${tab.id}`}
-            >
-              {/* 状态指示 */}
-              <span
-                className={`flex-shrink-0 ${meta.pulse ? 'animate-pulse' : ''}`}
-                style={{ color: meta.color }}
-              >
-                {meta.emoji}
-              </span>
-
-              {/* 标题 */}
-              {isEditing ? (
-                <input
-                  autoFocus
-                  value={editValue}
-                  onChange={(e) => setEditValue(e.target.value)}
-                  onBlur={handleFinishRename}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') handleFinishRename();
-                    if (e.key === 'Escape') {
-                      setEditingId(null);
-                      setEditValue('');
-                    }
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                  className="w-24 bg-transparent border-b border-hermes-500
-                             outline-none text-[11px]"
-                />
-              ) : (
-                <span className="truncate">{tab.title}</span>
-              )}
-
-              {/* 进度条（小） */}
-              {typeof tab.progress === 'number' && tab.status === 'running' && (
-                <div className="w-10 h-1 bg-[var(--bg-app)] rounded overflow-hidden flex-shrink-0">
-                  <div
-                    className="h-full bg-hermes-500 transition-all"
-                    style={{ width: `${Math.max(0, Math.min(100, tab.progress))}%` }}
-                  />
-                </div>
-              )}
-
-              {/* 关闭按钮 */}
-              {tab.closable !== false && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onClose(tab.id);
-                  }}
-                  className={`flex-shrink-0 w-4 h-4 rounded-sm
-                              hover:bg-[var(--bg-app)]
-                              text-[var(--text-tertiary)] hover:text-[var(--text-primary)]
-                              ${active ? 'opacity-70' : 'opacity-0 group-hover:opacity-70 hover:!opacity-100'}
-                              flex items-center justify-center text-base leading-none`}
-                  title="关闭 (⌘W)"
-                  aria-label="关闭"
-                  data-testid={`${testId}-close-${tab.id}`}
-                >
-                  ×
-                </button>
-              )}
-            </div>
-          );
-        })}
+        {tasks.slice(0, 10).map((task) => (
+          <button
+            key={task.task_id}
+            onClick={() => handleSelect(task)}
+            className={`flex items-center gap-1 px-3 py-1 rounded-t text-xs whitespace-nowrap ${
+              activeTask?.task_id === task.task_id
+                ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)] font-medium'
+                : 'bg-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)]'
+            }`}
+            data-testid={`${testId}-tab-${task.task_id}`}
+          >
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${STATUS_COLORS[task.status]}`}
+              data-testid={`${testId}-status-${task.status}`}
+            />
+            <span className="max-w-[120px] truncate">{task.title}</span>
+          </button>
+        ))}
+        <button
+          onClick={() => setShowCreate(true)}
+          className="px-3 py-1 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+          data-testid={`${testId}-new-btn`}
+        >
+          + 新建
+        </button>
       </div>
 
-      {/* 右滚动按钮 - v1.1.0 紧凑圆角按钮 */}
-      {tabs.length > 0 && (
-        <button
-          onClick={() => {
-            if (scrollRef.current) scrollRef.current.scrollBy({ left: 200, behavior: 'smooth' });
-          }}
-          className="w-6 h-6 rounded text-[var(--text-secondary)]
-                     hover:text-[var(--text-primary)] hover:bg-[var(--bg-elevated)]
-                     flex items-center justify-center flex-shrink-0 transition-colors"
-          title="向右滚动"
-          aria-label="向右滚动"
-          data-testid={`${testId}-scroll-right`}
+      {/* 错误提示 */}
+      {error && (
+        <div
+          className="px-3 py-2 text-xs bg-red-100 text-red-700 border-b border-red-200"
+          data-testid={`${testId}-error`}
         >
-          ›
-        </button>
+          {error}
+        </div>
       )}
 
-      {/* 分隔线 + 新建任务 */}
-      <div className="h-4 w-px bg-[var(--border-color)] mx-1 flex-shrink-0" />
-      <button
-        onClick={onNew}
-        className="w-7 h-7 rounded-md
-                   hover:bg-[var(--bg-elevated)]
-                   text-[var(--text-secondary)] hover:text-hermes-500
-                   flex items-center justify-center flex-shrink-0
-                   transition-colors text-base"
-        title="新建任务 (⌘T)"
-        aria-label="新建任务"
-        data-testid={`${testId}-new`}
-      >
-        +
-      </button>
+      {/* 创建对话框 */}
+      {showCreate && (
+        <div
+          className="p-3 border-b border-[var(--border-color)] bg-[var(--bg-elevated)]"
+          data-testid={`${testId}-create-form`}
+        >
+          <input
+            type="text"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            placeholder="任务标题（可选）"
+            className="w-full px-2 py-1 mb-2 text-xs rounded border border-[var(--border-color)] bg-[var(--bg-app)]"
+            data-testid={`${testId}-input-title`}
+          />
+          <textarea
+            value={newPrompt}
+            onChange={(e) => setNewPrompt(e.target.value)}
+            placeholder="任务描述..."
+            rows={3}
+            className="w-full px-2 py-1 mb-2 text-xs rounded border border-[var(--border-color)] bg-[var(--bg-app)]"
+            data-testid={`${testId}-input-prompt`}
+          />
+          <div className="flex gap-2">
+            <button
+              onClick={handleCreate}
+              disabled={!newPrompt.trim()}
+              className="px-3 py-1 text-xs rounded bg-hermes-500 text-white hover:bg-hermes-600 disabled:opacity-50"
+              data-testid={`${testId}-create-submit`}
+            >
+              创建并启动
+            </button>
+            <button
+              onClick={() => setShowCreate(false)}
+              className="px-3 py-1 text-xs rounded border border-[var(--border-color)]"
+              data-testid={`${testId}-create-cancel`}
+            >
+              取消
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 任务详情区 */}
+      {activeTask ? (
+        <div
+          className="flex-1 p-3 overflow-y-auto"
+          data-testid={`${testId}-detail`}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h3
+              className="text-sm font-medium"
+              data-testid={`${testId}-detail-title`}
+            >
+              {activeTask.title}
+            </h3>
+            <span
+              className={`px-2 py-0.5 text-[10px] rounded text-white ${STATUS_COLORS[activeTask.status]}`}
+              data-testid={`${testId}-detail-status`}
+            >
+              {STATUS_LABELS[activeTask.status]}
+            </span>
+          </div>
+
+          {/* 控制按钮 */}
+          <div className="flex gap-1 mb-3">
+            {activeTask.status === 'pending' && (
+              <button
+                onClick={() => startTask(activeTask.task_id)}
+                className="px-2 py-1 text-xs rounded bg-green-500 text-white"
+                data-testid={`${testId}-action-start`}
+              >
+                启动
+              </button>
+            )}
+            {activeTask.status === 'running' && (
+              <>
+                <button
+                  onClick={() => pauseTask(activeTask.task_id)}
+                  className="px-2 py-1 text-xs rounded bg-yellow-500 text-white"
+                  data-testid={`${testId}-action-pause`}
+                >
+                  暂停
+                </button>
+                <button
+                  onClick={() => cancelTask(activeTask.task_id)}
+                  className="px-2 py-1 text-xs rounded bg-red-500 text-white"
+                  data-testid={`${testId}-action-cancel`}
+                >
+                  取消
+                </button>
+              </>
+            )}
+            {activeTask.status === 'paused' && (
+              <button
+                onClick={() => resumeTask(activeTask.task_id)}
+                className="px-2 py-1 text-xs rounded bg-blue-500 text-white"
+                data-testid={`${testId}-action-resume`}
+              >
+                恢复
+              </button>
+            )}
+            {['completed', 'failed', 'cancelled'].includes(activeTask.status) && (
+              <button
+                onClick={() => deleteTask(activeTask.task_id)}
+                className="px-2 py-1 text-xs rounded border border-[var(--border-color)]"
+                data-testid={`${testId}-action-delete`}
+              >
+                删除
+              </button>
+            )}
+          </div>
+
+          {/* 资源使用 */}
+          <div
+            className="text-xs space-y-1 text-[var(--text-secondary)]"
+            data-testid={`${testId}-resource`}
+          >
+            <div>耗时: {activeTask.elapsed_s.toFixed(1)}s</div>
+            <div>Token: {activeTask.resource_usage.tokens_used}</div>
+            <div>内存: {activeTask.resource_usage.memory_mb.toFixed(0)} MB</div>
+          </div>
+
+          {/* 错误信息 */}
+          {activeTask.error && (
+            <div
+              className="mt-2 p-2 text-xs bg-red-50 text-red-700 rounded"
+              data-testid={`${testId}-error-detail`}
+            >
+              {activeTask.error}
+            </div>
+          )}
+
+          {/* Prompt */}
+          <details
+            className="mt-3 text-xs"
+            data-testid={`${testId}-prompt-section`}
+          >
+            <summary className="cursor-pointer text-[var(--text-secondary)]">
+              原始 Prompt
+            </summary>
+            <pre className="mt-1 p-2 bg-[var(--bg-app)] rounded text-[var(--text-primary)] whitespace-pre-wrap">
+              {activeTask.prompt}
+            </pre>
+          </details>
+        </div>
+      ) : (
+        <div
+          className="flex-1 flex items-center justify-center text-sm text-[var(--text-tertiary)]"
+          data-testid={`${testId}-empty`}
+        >
+          {loading ? '加载中...' : '暂无任务，点击 + 新建创建第一个任务'}
+        </div>
+      )}
     </div>
   );
-};
+}
 
 export default TaskTabs;
