@@ -1,6 +1,6 @@
 /**
  * # ============================================================
- * React Router v6 SPA Mode 路由配置 (v1.2.0) - Cycle 7 P1-2
+ * React Router v6 SPA Mode 路由配置 (v1.4.0) - Cycle 60+ Solo 重构
  * # ============================================================
  * 核心作用：使用 BrowserRouter + Routes 实现 SPA 路由
  *           支持嵌套布局、懒加载、错误边界、类型安全参数
@@ -8,16 +8,18 @@
  *   1. 用户访问 URL → 匹配路由树
  *   2. 父布局 (RootLayout) 渲染 → Outlet 显示子路由
  *   3. 子路由组件懒加载 → 减少首屏 bundle
- #   4. 默认 / 路由渲染 App 主界面（包含所有现有功能）
- # 输入参数：无
- # 输出结果：AppRouter 可消费的路由树
-* # 修改记录：
- * #   - 2026-07-27 | v1.0.0 | Cycle 7 P1-2 新建 - SPA 路由配置
- * #   - 2026-07-27 | v1.1.0 | 集成 App.tsx 主界面作为默认路由
- * #   - 2026-07-27 | v1.2.0 | 清理未使用的页面 import（App.tsx 统一渲染）
- * #   - 2026-08-03 | v1.3.0 | Cycle 58 G58-01 新增 /vibe-coding 路由
- * # 兼容：react-router-dom@^6.3.0 (JSX 路由模式)
- # ============================================================
+ *   4. v1.4.0 默认 / 路由直接进入 Solo 模式（对标 Codex/Trae Solo）
+ * 输入参数：无
+ * 输出结果：AppRouter 可消费的路由树
+ * ====================================
+ * 修改记录：
+ *   - 2026-07-27 | v1.0.0 | Cycle 7 P1-2 新建 - SPA 路由配置
+ *   - 2026-07-27 | v1.1.0 | 集成 App.tsx 主界面作为默认路由
+ *   - 2026-07-27 | v1.2.0 | 清理未使用的页面 import（App.tsx 统一渲染）
+ *   - 2026-08-03 | v1.3.0 | Cycle 58 G58-01 新增 /vibe-coding 路由
+ *   - 2026-08-04 | v1.4.0 | Solo 重构 - 默认 / 路由直接进入 Solo 模式
+ * 兼容：react-router-dom@^6.3.0 (JSX 路由模式)
+ * ====================================
  */
 
 import React, { lazy, Suspense } from 'react';
@@ -64,8 +66,11 @@ const GoalAutomationPage = lazy(() => import('../pages/GoalAutomationPage'));
 // v1.0.0 (Cycle 14 P1-5) 新增：Goal Templates 模板库独立访问页面
 const GoalTemplatesPage = lazy(() => import('../pages/GoalTemplatesPage'));
 
-// v1.0.0 (Cycle 58 G58-01) 新增：Vibe Coding 模式主页面
+// v1.0.0 (Cycle 58 G58-01) 新增：Vibe Coding 模式独立访问页面
 const VibeCodingPage = lazy(() => import('../pages/VibeCodingPage'));
+
+// v1.0.0 (Cycle 61 G61-03-T5) 新增：Claude CLI Workbench 页面
+const ClaudeCLIWorkbenchPage = lazy(() => import('../pages/ClaudeCLIWorkbenchPage'));
 
 // v1.0.0 (Cycle 60 G60-2.3) 新增：Solo 模式主壳（对标 Codex/Trae Solo）
 const VibeSoloShell = lazy(() => import('../pages/VibeSoloShell'));
@@ -90,8 +95,9 @@ export const AppRouter: React.FC = () => {
       <Routes>
         {/* 根布局 */}
         <Route path="/" element={<RootLayout />}>
-          {/* 默认 / 路由 → App 主界面 (包含聊天/编程模式 + ModeSelector) */}
-          <Route index element={<App />} />
+          {/* v1.4.0 (Solo 重构) 默认 / 路由 → Solo 模式（对标 Codex/Trae Solo）
+              用户访问根 URL 即进入统一工作台，无需选择模式 */}
+          <Route index element={lazyPage(VibeSoloShell)} />
 
           {/* 聊天路由 → 渲染 App（URL 包含模式信息） */}
           <Route path="chat" element={<App />}>
@@ -138,11 +144,16 @@ export const AppRouter: React.FC = () => {
           {/* v1.0.0 (Cycle 58 G58-01) 新增：Vibe Coding 模式独立访问路由 */}
           <Route path="vibe-coding" element={lazyPage(VibeCodingPage)} />
 
+          {/* v1.0.0 (Cycle 61 G61-03-T5) 新增：Claude CLI Workbench 集成工作台
+              集成 G61-01 (Claude CLI) + G61-03 (Auto-Follow v2) 完整闭环 */}
+          <Route path="claude-workbench" element={lazyPage(ClaudeCLIWorkbenchPage)} />
+
           {/* v1.0.0 (Cycle 60 G60-2.3) 新增：Solo 模式主壳（对标 Codex/Trae Solo）
-              完整三栏布局 + Goal 岛台 + 会话历史 + 工具矩阵 */}
+              完整三栏布局 + Goal 岛台 + 会话历史 + 工具矩阵
+              v1.4.0 升级：多任务并行 + Plan 模式 + 7 contexts + 入门引导 */}
           <Route path="solo" element={lazyPage(VibeSoloShell)} />
 
-          {/* 模式选择 - 保留独立路由 */}
+          {/* 模式选择 - 保留独立路由（可从 Solo 模式右上角进入） */}
           <Route path="select-mode" element={lazyPage(ModeSelectorPage)} />
 
           {/* 兜底: 未匹配路由回到首页 */}
