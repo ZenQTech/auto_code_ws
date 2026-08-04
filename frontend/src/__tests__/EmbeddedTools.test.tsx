@@ -104,7 +104,8 @@ describe('EmbeddedTools', () => {
   it('每个 tab 都有 role=tab', () => {
     render(<EmbeddedTools />);
     const tabs = screen.getAllByRole('tab');
-    expect(tabs.length).toBe(8);
+    // 9 个内嵌工具：overview / editor / terminal / browser / diff / memory / files / metrics / context
+    expect(tabs.length).toBe(9);
   });
 
   it('active tab 有 aria-selected=true', () => {

@@ -1,170 +1,198 @@
 /**
- * TaskTabs 单元测试
+ * TaskTabs 单元测试 (G62-01 重写版)
+ * 匹配 useMultiTask Hook 接口的版本
  */
 
+// @vitest-environment happy-dom
+import '@testing-library/jest-dom/vitest';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
-import TaskTabs, { type TaskTab } from '../components/TaskTabs';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import TaskTabs from '../components/TaskTabs';
 
-const sampleTabs: TaskTab[] = [
-  { id: 't1', title: '任务 1', status: 'running', progress: 30 },
-  { id: 't2', title: '任务 2', status: 'paused' },
-  { id: 't3', title: '任务 3', status: 'error' },
-  { id: 't4', title: '任务 4', status: 'done' },
-  { id: 't5', title: '任务 5', status: 'idle' },
-];
+// ============================================================
+// Mock useMultiTask Hook
+// ============================================================
+const mockState = {
+  tasks: [] as any[],
+  activeTaskId: null as string | null,
+  setActiveTaskId: vi.fn(),
+  loading: false,
+  error: null as string | null,
+  createTask: vi.fn(),
+  startTask: vi.fn(),
+  pauseTask: vi.fn(),
+  resumeTask: vi.fn(),
+  cancelTask: vi.fn(),
+  deleteTask: vi.fn(),
+};
+
+vi.mock('../hooks/useMultiTask', () => ({
+  useMultiTask: () => mockState,
+}));
+
+// 工具函数：重置 mock
+function resetMock() {
+  mockState.tasks = [];
+  mockState.activeTaskId = null;
+  mockState.loading = false;
+  mockState.error = null;
+  mockState.setActiveTaskId.mockClear();
+  mockState.createTask.mockReset();
+  mockState.startTask.mockReset();
+  mockState.pauseTask.mockReset();
+  mockState.resumeTask.mockReset();
+  mockState.cancelTask.mockReset();
+  mockState.deleteTask.mockReset();
+  // 默认 createTask 返回成功
+  mockState.createTask.mockResolvedValue({
+    task_id: 'new-task-id',
+    title: '新任务',
+    prompt: '测试 prompt',
+    status: 'pending',
+    elapsed_s: 0,
+    resource_usage: { tokens_used: 0, memory_mb: 0 },
+    error: null,
+  });
+  mockState.startTask.mockResolvedValue(undefined);
+  mockState.pauseTask.mockResolvedValue(undefined);
+  mockState.resumeTask.mockResolvedValue(undefined);
+  mockState.cancelTask.mockResolvedValue(undefined);
+  mockState.deleteTask.mockResolvedValue(undefined);
+}
 
 describe('TaskTabs', () => {
   beforeEach(() => {
-    window.localStorage.clear();
+    resetMock();
   });
 
-  it('空 tab 列表显示提示', () => {
-    render(<TaskTabs tabs={[]} activeId={null} onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    expect(screen.getByText('暂无任务，点击 + 创建')).toBeInTheDocument();
+  it('空任务列表显示提示', () => {
+    render(<TaskTabs />);
+    expect(screen.getByText(/暂无任务/)).toBeInTheDocument();
   });
 
-  it('渲染所有 tabs', () => {
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    expect(screen.getByText('任务 1')).toBeInTheDocument();
-    expect(screen.getByText('任务 2')).toBeInTheDocument();
-    expect(screen.getByText('任务 3')).toBeInTheDocument();
-    expect(screen.getByText('任务 4')).toBeInTheDocument();
-    expect(screen.getByText('任务 5')).toBeInTheDocument();
+  it('加载中状态', () => {
+    mockState.loading = true;
+    render(<TaskTabs />);
+    expect(screen.getByText('加载中...')).toBeInTheDocument();
   });
 
-  it('点击 tab 触发 onSelect', () => {
-    const onSelect = vi.fn();
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={onSelect} onClose={vi.fn()} onNew={vi.fn()} />);
+  it('错误状态显示错误信息', () => {
+    mockState.error = '加载失败';
+    render(<TaskTabs />);
+    expect(screen.getByText('加载失败')).toBeInTheDocument();
+  });
+
+  it('渲染任务列表', () => {
+    mockState.tasks = [
+      { task_id: 't1', title: '任务 1', status: 'running', prompt: 'p1', elapsed_s: 1.0, resource_usage: { tokens_used: 100, memory_mb: 50 }, error: null },
+      { task_id: 't2', title: '任务 2', status: 'paused', prompt: 'p2', elapsed_s: 2.0, resource_usage: { tokens_used: 200, memory_mb: 80 }, error: null },
+      { task_id: 't3', title: '任务 3', status: 'completed', prompt: 'p3', elapsed_s: 3.0, resource_usage: { tokens_used: 300, memory_mb: 60 }, error: null },
+    ];
+    mockState.activeTaskId = 't1';
+    render(<TaskTabs />);
+    // 每个任务在 tab 栏和 detail 区中均会渲染，使用 getAllByText
+    expect(screen.getAllByText('任务 1').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('任务 2').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText('任务 3').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('点击 tab 切换 active', () => {
+    mockState.tasks = [
+      { task_id: 't1', title: '任务 1', status: 'running', prompt: 'p1', elapsed_s: 0, resource_usage: { tokens_used: 0, memory_mb: 0 }, error: null },
+      { task_id: 't2', title: '任务 2', status: 'paused', prompt: 'p2', elapsed_s: 0, resource_usage: { tokens_used: 0, memory_mb: 0 }, error: null },
+    ];
+    mockState.activeTaskId = 't1';
+    render(<TaskTabs />);
     fireEvent.click(screen.getByTestId('task-tabs-tab-t2'));
-    expect(onSelect).toHaveBeenCalledWith('t2');
+    expect(mockState.setActiveTaskId).toHaveBeenCalledWith('t2');
   });
 
-  it('点击关闭按钮触发 onClose', () => {
-    const onClose = vi.fn();
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={onClose} onNew={vi.fn()} />);
-    fireEvent.click(screen.getByTestId('task-tabs-close-t2'));
-    expect(onClose).toHaveBeenCalledWith('t2');
+  it('点击 + 按钮显示创建表单', () => {
+    render(<TaskTabs />);
+    fireEvent.click(screen.getByTestId('task-tabs-new-btn'));
+    expect(screen.getByTestId('task-tabs-create-form')).toBeInTheDocument();
+    expect(screen.getByTestId('task-tabs-input-title')).toBeInTheDocument();
+    expect(screen.getByTestId('task-tabs-input-prompt')).toBeInTheDocument();
   });
 
-  it('点击 + 触发 onNew', () => {
-    const onNew = vi.fn();
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={onNew} />);
-    fireEvent.click(screen.getByTestId('task-tabs-new'));
-    expect(onNew).toHaveBeenCalled();
+  it('创建任务时调用 createTask + startTask', async () => {
+    render(<TaskTabs />);
+    fireEvent.click(screen.getByTestId('task-tabs-new-btn'));
+    fireEvent.change(screen.getByTestId('task-tabs-input-prompt'), {
+      target: { value: '新建 prompt' },
+    });
+    fireEvent.click(screen.getByTestId('task-tabs-create-submit'));
+    await waitFor(() => {
+      expect(mockState.createTask).toHaveBeenCalled();
+      expect(mockState.startTask).toHaveBeenCalled();
+    });
   });
 
-  it('active tab 样式区分', () => {
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    const activeTab = screen.getByTestId('task-tabs-tab-t1');
-    expect(activeTab).toHaveAttribute('aria-selected', 'true');
-    const otherTab = screen.getByTestId('task-tabs-tab-t2');
-    expect(otherTab).toHaveAttribute('aria-selected', 'false');
+  it('取消创建关闭表单', () => {
+    render(<TaskTabs />);
+    fireEvent.click(screen.getByTestId('task-tabs-new-btn'));
+    expect(screen.getByTestId('task-tabs-create-form')).toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('task-tabs-create-cancel'));
+    expect(screen.queryByTestId('task-tabs-create-form')).not.toBeInTheDocument();
   });
 
-  it('中键点击关闭 tab', () => {
-    const onClose = vi.fn();
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={onClose} onNew={vi.fn()} />);
-    const tab = screen.getByTestId('task-tabs-tab-t2');
-    fireEvent.mouseDown(tab, { button: 1 });
-    expect(onClose).toHaveBeenCalledWith('t2');
+  it('空 prompt 不能创建', () => {
+    render(<TaskTabs />);
+    fireEvent.click(screen.getByTestId('task-tabs-new-btn'));
+    const submit = screen.getByTestId('task-tabs-create-submit') as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
   });
 
-  it('closable=false 隐藏关闭按钮', () => {
-    const tabs: TaskTab[] = [
-      { id: 'fixed', title: '固定 Tab', status: 'running', closable: false },
+  it('active 任务 pending 状态显示启动按钮', () => {
+    mockState.tasks = [
+      { task_id: 't1', title: '待启动', status: 'pending', prompt: 'p', elapsed_s: 0, resource_usage: { tokens_used: 0, memory_mb: 0 }, error: null },
     ];
-    render(<TaskTabs tabs={tabs} activeId="fixed" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    expect(screen.queryByTestId('task-tabs-close-fixed')).not.toBeInTheDocument();
+    mockState.activeTaskId = 't1';
+    render(<TaskTabs />);
+    expect(screen.getByTestId('task-tabs-action-start')).toBeInTheDocument();
   });
 
-  it('双击触发重命名（输入框出现）', () => {
-    const onRename = vi.fn();
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} onRename={onRename} />);
-    const tab = screen.getByTestId('task-tabs-tab-t1');
-    fireEvent.doubleClick(tab);
-    const input = screen.getByRole('textbox');
-    expect(input).toBeInTheDocument();
-  });
-
-  it('进度条仅在 running + progress 时显示', () => {
-    const { container } = render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    // t1 running + progress=30 应该有进度条
-    const t1 = screen.getByTestId('task-tabs-tab-t1');
-    // v1.1.0 G60-FIX-17: 进度条使用 Tailwind bg-hermes-500 类名
-    expect(t1.querySelector('.bg-hermes-500')).toBeInTheDocument();
-  });
-
-  it('role=tablist 标识', () => {
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    expect(screen.getByRole('tablist')).toBeInTheDocument();
-  });
-
-  it('每个 tab 都是 role=tab', () => {
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    const tabs = screen.getAllByRole('tab');
-    expect(tabs.length).toBe(sampleTabs.length);
-  });
-
-  it('subtitle 显示在 title 属性', () => {
-    const tabs: TaskTab[] = [
-      { id: 't1', title: 'Test', subtitle: '子标题', status: 'running' },
+  it('active 任务 running 状态显示暂停/取消按钮', () => {
+    mockState.tasks = [
+      { task_id: 't1', title: '运行中', status: 'running', prompt: 'p', elapsed_s: 5, resource_usage: { tokens_used: 100, memory_mb: 50 }, error: null },
     ];
-    render(<TaskTabs tabs={tabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    const tab = screen.getByTestId('task-tabs-tab-t1');
-    expect(tab.getAttribute('title')).toContain('子标题');
+    mockState.activeTaskId = 't1';
+    render(<TaskTabs />);
+    expect(screen.getByTestId('task-tabs-action-pause')).toBeInTheDocument();
+    expect(screen.getByTestId('task-tabs-action-cancel')).toBeInTheDocument();
   });
 
-  it('model 显示在 tooltip', () => {
-    const tabs: TaskTab[] = [
-      { id: 't1', title: 'Test', status: 'running', model: 'claude-sonnet-4' },
+  it('active 任务 paused 状态显示恢复按钮', () => {
+    mockState.tasks = [
+      { task_id: 't1', title: '已暂停', status: 'paused', prompt: 'p', elapsed_s: 5, resource_usage: { tokens_used: 100, memory_mb: 50 }, error: null },
     ];
-    render(<TaskTabs tabs={tabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    const tab = screen.getByTestId('task-tabs-tab-t1');
-    expect(tab.getAttribute('title')).toContain('claude-sonnet-4');
+    mockState.activeTaskId = 't1';
+    render(<TaskTabs />);
+    expect(screen.getByTestId('task-tabs-action-resume')).toBeInTheDocument();
   });
 
-  it('status=error 使用红色 emoji', () => {
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    const t3 = screen.getByTestId('task-tabs-tab-t3');
-    const indicator = t3.querySelector('span');
-    expect(indicator?.textContent).toBe('✕');
-  });
-
-  it('status=done 使用对勾', () => {
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    const t4 = screen.getByTestId('task-tabs-tab-t4');
-    const indicator = t4.querySelector('span');
-    expect(indicator?.textContent).toBe('✓');
-  });
-
-  it('status=running 时指示器有 pulse 动画', () => {
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    const t1 = screen.getByTestId('task-tabs-tab-t1');
-    const indicator = t1.querySelector('.animate-pulse');
-    expect(indicator).toBeInTheDocument();
-  });
-
-  it('进度条宽度匹配 progress', () => {
-    const tabs: TaskTab[] = [
-      { id: 't1', title: 'Test', status: 'running', progress: 50 },
+  it('active 任务 completed 状态显示删除按钮', () => {
+    mockState.tasks = [
+      { task_id: 't1', title: '已完成', status: 'completed', prompt: 'p', elapsed_s: 5, resource_usage: { tokens_used: 100, memory_mb: 50 }, error: null },
     ];
-    const { container } = render(<TaskTabs tabs={tabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    const progressBar = container.querySelector('[style*="width: 50%"]');
-    expect(progressBar).toBeInTheDocument();
+    mockState.activeTaskId = 't1';
+    render(<TaskTabs />);
+    expect(screen.getByTestId('task-tabs-action-delete')).toBeInTheDocument();
   });
 
-  it('进度 100% 时样式正确', () => {
-    const tabs: TaskTab[] = [
-      { id: 't1', title: 'Test', status: 'running', progress: 100 },
+  it('暂停按钮点击触发 pauseTask', () => {
+    mockState.tasks = [
+      { task_id: 't1', title: '运行中', status: 'running', prompt: 'p', elapsed_s: 5, resource_usage: { tokens_used: 100, memory_mb: 50 }, error: null },
     ];
-    const { container } = render(<TaskTabs tabs={tabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} />);
-    const progressBar = container.querySelector('[style*="width: 100%"]');
-    expect(progressBar).toBeInTheDocument();
+    mockState.activeTaskId = 't1';
+    render(<TaskTabs />);
+    fireEvent.click(screen.getByTestId('task-tabs-action-pause'));
+    expect(mockState.pauseTask).toHaveBeenCalledWith('t1');
   });
 
   it('data-testid 可定制', () => {
-    render(<TaskTabs tabs={sampleTabs} activeId="t1" onSelect={vi.fn()} onClose={vi.fn()} onNew={vi.fn()} data-testid="custom-tabs" />);
+    render(<TaskTabs testId="custom-tabs" />);
     expect(screen.getByTestId('custom-tabs')).toBeInTheDocument();
+    expect(screen.getByTestId('custom-tabs-new-btn')).toBeInTheDocument();
   });
 });
