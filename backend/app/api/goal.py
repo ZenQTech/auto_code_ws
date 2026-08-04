@@ -45,9 +45,14 @@ from app.core.goal import (
     AcceptanceCriterion,
     AcceptanceStatus,
     Goal,
+    GoalPlan,
     GoalStatus,
+    PlanStatus,
+    PlanStep,
     ProgressEntry,
     ProgressStatus,
+    StepStatus,
+    StepStrategy,
     TokenBudget,
     VerifyItem,
     VerifyStatus,
@@ -652,3 +657,203 @@ async def stats() -> Dict[str, Any]:
         "success": True,
         "stats": manager.get_stats(),
     }
+
+
+# ============================================================
+# Plan / Step API (Cycle 61 G61-02 - Goal 三层可视化)
+# ============================================================
+
+
+class CreatePlanRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = ""
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class AddStepRequest(BaseModel):
+    title: str = Field(..., min_length=1, max_length=200)
+    description: str = ""
+    prompt: str = ""
+    tool: str = ""
+    command: str = ""
+    file_path: str = ""
+    strategy: str = "retry"  # retry/skip/abort
+    max_retries: int = Field(3, ge=0, le=10)
+    verify_item_id: Optional[str] = None
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class UpdateStepStatusRequest(BaseModel):
+    status: str  # pending/running/success/failed/skipped/cancelled
+    output: str = ""
+    error: str = ""
+    exit_code: Optional[int] = None
+
+
+@router.post("/goals/{goal_id}/plans")
+async def create_plan(goal_id: str, request: CreatePlanRequest) -> Dict[str, Any]:
+    """为指定 Goal 创建 Plan"""
+    manager = get_manager()
+    try:
+        plan = manager.create_plan(goal_id, request.title, request.description)
+        return {
+            "success": True,
+            "plan": plan.to_dict(),
+        }
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/goals/{goal_id}/plans")
+async def list_plans(goal_id: str) -> Dict[str, Any]:
+    """列出 Goal 的所有 Plan"""
+    manager = get_manager()
+    try:
+        plans = manager.list_plans(goal_id)
+        return {
+            "success": True,
+            "plans": [p.to_dict() for p in plans],
+            "count": len(plans),
+        }
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.get("/plans/{plan_id}")
+async def get_plan(plan_id: str) -> Dict[str, Any]:
+    """获取 Plan 详情"""
+    manager = get_manager()
+    plan = manager.get_plan(plan_id)
+    if plan is None:
+        raise HTTPException(status_code=404, detail=f"Plan not found: {plan_id}")
+    return {
+        "success": True,
+        "plan": plan.to_dict(),
+    }
+
+
+@router.delete("/plans/{plan_id}")
+async def delete_plan(plan_id: str) -> Dict[str, Any]:
+    """删除 Plan"""
+    manager = get_manager()
+    try:
+        manager.delete_plan(plan_id)
+        return {"success": True, "plan_id": plan_id}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/plans/{plan_id}/start")
+async def start_plan(plan_id: str) -> Dict[str, Any]:
+    """启动 Plan"""
+    manager = get_manager()
+    try:
+        plan = manager.start_plan(plan_id)
+        return {"success": True, "plan": plan.to_dict()}
+    except (KeyError, ValueError) as e:
+        code = 404 if isinstance(e, KeyError) else 400
+        raise HTTPException(status_code=code, detail=str(e))
+
+
+@router.post("/plans/{plan_id}/pause")
+async def pause_plan(plan_id: str) -> Dict[str, Any]:
+    """暂停 Plan"""
+    manager = get_manager()
+    try:
+        plan = manager.pause_plan(plan_id)
+        return {"success": True, "plan": plan.to_dict()}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/plans/{plan_id}/resume")
+async def resume_plan(plan_id: str) -> Dict[str, Any]:
+    """恢复 Plan"""
+    manager = get_manager()
+    try:
+        plan = manager.resume_plan(plan_id)
+        return {"success": True, "plan": plan.to_dict()}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/plans/{plan_id}/complete")
+async def complete_plan(plan_id: str) -> Dict[str, Any]:
+    """完成 Plan（需所有 Step 成功）"""
+    manager = get_manager()
+    try:
+        plan = manager.complete_plan(plan_id)
+        return {"success": True, "plan": plan.to_dict()}
+    except (KeyError, ValueError) as e:
+        code = 404 if isinstance(e, KeyError) else 400
+        raise HTTPException(status_code=code, detail=str(e))
+
+
+@router.post("/plans/{plan_id}/cancel")
+async def cancel_plan(plan_id: str) -> Dict[str, Any]:
+    """取消 Plan"""
+    manager = get_manager()
+    try:
+        plan = manager.cancel_plan(plan_id)
+        return {"success": True, "plan": plan.to_dict()}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.post("/plans/{plan_id}/steps")
+async def add_step(plan_id: str, request: AddStepRequest) -> Dict[str, Any]:
+    """向 Plan 添加 Step"""
+    manager = get_manager()
+    try:
+        step = manager.add_step(
+            plan_id=plan_id,
+            title=request.title,
+            description=request.description,
+            prompt=request.prompt,
+            tool=request.tool,
+            command=request.command,
+            file_path=request.file_path,
+            strategy=StepStrategy(request.strategy),
+            max_retries=request.max_retries,
+            verify_item_id=request.verify_item_id,
+            metadata=request.metadata,
+        )
+        return {"success": True, "step": step.to_dict()}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.put("/plans/{plan_id}/steps/{step_id}/status")
+async def update_step_status(
+    plan_id: str, step_id: str, request: UpdateStepStatusRequest
+) -> Dict[str, Any]:
+    """更新 Step 状态"""
+    manager = get_manager()
+    try:
+        new_status = StepStatus(request.status)
+        step = manager.update_step_status(
+            plan_id=plan_id,
+            step_id=step_id,
+            new_status=new_status,
+            output=request.output,
+            error=request.error,
+            exit_code=request.exit_code,
+        )
+        return {"success": True, "step": step.to_dict()}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.get("/plans/{plan_id}/progress")
+async def get_plan_progress(plan_id: str) -> Dict[str, Any]:
+    """获取 Plan 进度摘要"""
+    manager = get_manager()
+    try:
+        progress = manager.get_plan_progress(plan_id)
+        return {"success": True, "progress": progress}
+    except KeyError as e:
+        raise HTTPException(status_code=404, detail=str(e))

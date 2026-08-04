@@ -30,6 +30,7 @@ from .base import (
     GoalStatus,
     TokenBudget,
 )
+from .plan import GoalPlan, PlanStatus, PlanStep, StepStatus, StepStrategy
 from .progress import ProgressEntry, ProgressLog, ProgressStatus
 from .verify_item import (
     VerifyItem,
@@ -72,6 +73,8 @@ class GoalManager:
         self._goals: Dict[str, Goal] = {}
         self._progress_logs: Dict[str, ProgressLog] = {}
         self._verify_items: Dict[str, List[VerifyItem]] = {}  # goal_id -> items
+        self._plans: Dict[str, GoalPlan] = {}  # plan_id -> GoalPlan
+        self._goal_plans: Dict[str, List[str]] = {}  # goal_id -> [plan_id]
 
         # 加载已有数据
         self._load()
@@ -152,6 +155,12 @@ class GoalManager:
             del self._goals[goal_id]
             self._progress_logs.pop(goal_id, None)
             self._verify_items.pop(goal_id, None)
+            # 关联删除 Plan
+            for plan_id in self._goal_plans.pop(goal_id, []):
+                self._plans.pop(plan_id, None)
+                plan_file = self.storage_dir / f"{plan_id}.plan.json"
+                if plan_file.exists():
+                    plan_file.unlink()
             # 删除文件
             goal_file = self.storage_dir / f"{goal_id}.json"
             if goal_file.exists():
@@ -448,6 +457,202 @@ class GoalManager:
         with open(goal_file, "w", encoding="utf-8") as f:
             json.dump(goal.to_dict(), f, ensure_ascii=False, indent=2)
 
+    # ============================================================
+    # Plan + Step 三层管理 (Cycle 61 G61-02)
+    # ============================================================
+
+    def create_plan(self, goal_id: str, title: str, description: str = "") -> GoalPlan:
+        """为指定 Goal 创建 Plan"""
+        with self._lock:
+            self.get_or_raise(goal_id)  # 校验 Goal 存在
+            plan = GoalPlan(goal_id=goal_id, title=title, description=description)
+            self._plans[plan.plan_id] = plan
+            self._goal_plans.setdefault(goal_id, []).append(plan.plan_id)
+            self._save_plan(plan)
+            self._add_progress(
+                goal_id,
+                ProgressEntry(
+                    status=ProgressStatus.INFO,
+                    action=__import__('app.core.goal.progress', fromlist=['ProgressAction']).ProgressAction(
+                        description=f"Plan created: {title} ({plan.plan_id})",
+                        target=plan.plan_id,
+                    ),
+                ),
+            )
+            return plan
+
+    def get_plan(self, plan_id: str) -> Optional[GoalPlan]:
+        """获取 Plan"""
+        with self._lock:
+            return self._plans.get(plan_id)
+
+    def get_plan_or_raise(self, plan_id: str) -> GoalPlan:
+        """获取 Plan，不存在则抛异常"""
+        plan = self.get_plan(plan_id)
+        if plan is None:
+            raise KeyError(f"Plan not found: {plan_id}")
+        return plan
+
+    def list_plans(self, goal_id: str) -> List[GoalPlan]:
+        """列出 Goal 的所有 Plan"""
+        with self._lock:
+            plan_ids = self._goal_plans.get(goal_id, [])
+            return [self._plans[pid] for pid in plan_ids if pid in self._plans]
+
+    def add_step(
+        self,
+        plan_id: str,
+        title: str,
+        description: str = "",
+        **kwargs: Any,
+    ) -> PlanStep:
+        """向 Plan 添加 Step"""
+        with self._lock:
+            plan = self.get_plan_or_raise(plan_id)
+            step = plan.add_step(title=title, description=description, **kwargs)
+            plan.update_progress()
+            self._save_plan(plan)
+            return step
+
+    def update_step_status(
+        self,
+        plan_id: str,
+        step_id: str,
+        new_status: StepStatus,
+        output: str = "",
+        error: str = "",
+        exit_code: Optional[int] = None,
+    ) -> PlanStep:
+        """更新 Step 状态"""
+        with self._lock:
+            plan = self.get_plan_or_raise(plan_id)
+            for step in plan.steps:
+                if step.step_id == step_id:
+                    if new_status == StepStatus.RUNNING:
+                        step.start()
+                    elif new_status == StepStatus.SUCCESS:
+                        step.finish_success(output=output)
+                    elif new_status == StepStatus.FAILED:
+                        step.finish_failed(error=error or "unknown", exit_code=exit_code)
+                    elif new_status == StepStatus.SKIPPED:
+                        step.skip(reason=error)
+                    elif new_status == StepStatus.CANCELLED:
+                        step.cancel()
+                    plan.update_progress()
+                    self._save_plan(plan)
+                    return step
+            raise KeyError(f"Step not found: {step_id}")
+
+    def start_plan(self, plan_id: str) -> GoalPlan:
+        """启动 Plan"""
+        with self._lock:
+            plan = self.get_plan_or_raise(plan_id)
+            plan.start()
+            self._save_plan(plan)
+            self._add_progress(
+                plan.goal_id,
+                ProgressEntry(
+                    status=ProgressStatus.IN_PROGRESS,
+                    action=__import__('app.core.goal.progress', fromlist=['ProgressAction']).ProgressAction(
+                        description=f"Plan started: {plan.title}",
+                        target=plan.plan_id,
+                    ),
+                ),
+            )
+            return plan
+
+    def pause_plan(self, plan_id: str) -> GoalPlan:
+        """暂停 Plan"""
+        with self._lock:
+            plan = self.get_plan_or_raise(plan_id)
+            plan.pause()
+            self._save_plan(plan)
+            return plan
+
+    def resume_plan(self, plan_id: str) -> GoalPlan:
+        """恢复 Plan"""
+        with self._lock:
+            plan = self.get_plan_or_raise(plan_id)
+            plan.resume()
+            self._save_plan(plan)
+            return plan
+
+    def complete_plan(self, plan_id: str) -> GoalPlan:
+        """完成 Plan（所有 Step 都成功）"""
+        with self._lock:
+            plan = self.get_plan_or_raise(plan_id)
+            failed = [s for s in plan.steps if s.status == StepStatus.FAILED]
+            if failed:
+                raise ValueError(f"Cannot complete: {len(failed)} steps failed")
+            plan.complete()
+            self._save_plan(plan)
+            self._add_progress(
+                plan.goal_id,
+                ProgressEntry(
+                    status=ProgressStatus.COMPLETED,
+                    action=__import__('app.core.goal.progress', fromlist=['ProgressAction']).ProgressAction(
+                        description=f"Plan completed: {plan.title}",
+                        target=plan.plan_id,
+                    ),
+                ),
+            )
+            return plan
+
+    def cancel_plan(self, plan_id: str) -> GoalPlan:
+        """取消 Plan"""
+        with self._lock:
+            plan = self.get_plan_or_raise(plan_id)
+            plan.cancel()
+            self._save_plan(plan)
+            return plan
+
+    def delete_plan(self, plan_id: str) -> None:
+        """删除 Plan"""
+        with self._lock:
+            plan = self.get_plan_or_raise(plan_id)
+            self._plans.pop(plan_id, None)
+            if plan.goal_id in self._goal_plans:
+                self._goal_plans[plan.goal_id] = [
+                    pid for pid in self._goal_plans[plan.goal_id] if pid != plan_id
+                ]
+            plan_file = self.storage_dir / f"{plan_id}.plan.json"
+            if plan_file.exists():
+                plan_file.unlink()
+
+    def get_plan_progress(self, plan_id: str) -> Dict[str, Any]:
+        """获取 Plan 进度摘要"""
+        with self._lock:
+            plan = self.get_plan_or_raise(plan_id)
+            plan.update_progress()
+            stats = plan.step_stats()
+            return {
+                "plan_id": plan.plan_id,
+                "goal_id": plan.goal_id,
+                "status": plan.status.value,
+                "progress": plan.progress,
+                "step_stats": stats,
+                "total_steps": len(plan.steps),
+                "duration_ms": plan.duration_ms(),
+                "running_step": plan.running_step().step_id if plan.running_step() else None,
+            }
+
+    def _save_plan(self, plan: GoalPlan) -> None:
+        """持久化 Plan"""
+        plan_file = self.storage_dir / f"{plan.plan_id}.plan.json"
+        with open(plan_file, "w", encoding="utf-8") as f:
+            json.dump(plan.to_dict(), f, ensure_ascii=False, indent=2)
+
+    def _load_plans(self) -> None:
+        """从磁盘加载 Plans"""
+        for plan_file in self.storage_dir.glob("*.plan.json"):
+            try:
+                with open(plan_file, "r", encoding="utf-8") as f:
+                    plan = GoalPlan.from_dict(json.load(f))
+                self._plans[plan.plan_id] = plan
+                self._goal_plans.setdefault(plan.goal_id, []).append(plan.plan_id)
+            except Exception as e:
+                logger.warning(f"Failed to load plan {plan_file}: {e}")
+
     def _save_index(self) -> None:
         """保存索引"""
         with open(self.index_file, "w", encoding="utf-8") as f:
@@ -512,6 +717,8 @@ class GoalManager:
                         logger.warning(f"Failed to load goal: {e}")
         except Exception as e:
             logger.warning(f"Failed to load index: {e}")
+        # 加载 Plans
+        self._load_plans()
 
 
 # 全局单例
@@ -526,3 +733,10 @@ def get_manager() -> GoalManager:
         if _manager_instance is None:
             _manager_instance = GoalManager()
     return _manager_instance
+
+
+def reset_manager() -> None:
+    """重置单例（仅供测试）"""
+    global _manager_instance
+    with _manager_lock:
+        _manager_instance = None

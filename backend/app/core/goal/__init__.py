@@ -23,11 +23,25 @@ from .markdown import (
     render_progress_md,
     render_verify_md,
 )
+from .plan import (
+    GoalPlan,
+    PlanStatus,
+    PlanStep,
+    StepStatus,
+    StepStrategy,
+)
 from .progress import (
     ProgressAction,
     ProgressEntry,
     ProgressLog,
     ProgressStatus,
+)
+from .step_verifier import (
+    StepVerifyResult,
+    StepVerifier,
+    VerifierError,
+    get_step_verifier,
+    reset_step_verifier,
 )
 from .verify_item import (
     VerifyItem,
@@ -45,6 +59,9 @@ __all__ = [
     "ProgressStatus",
     "VerifyStatus",
     "VerifyType",
+    "PlanStatus",
+    "StepStatus",
+    "StepStrategy",
     # 模型
     "Goal",
     "AcceptanceCriterion",
@@ -55,11 +72,18 @@ __all__ = [
     "VerifyItem",
     "VerifyResult",
     "VerifyReport",
+    "GoalPlan",
+    "PlanStep",
     # 服务
     "GoalManager",
     "get_manager",
     "Verifier",
     "get_verifier",
+    "StepVerifier",
+    "get_step_verifier",
+    "reset_step_verifier",
+    "StepVerifyResult",
+    "VerifierError",
     # Markdown
     "render_goal_md",
     "render_verify_md",
@@ -68,5 +92,5 @@ __all__ = [
 ]
 
 
-__version__ = "1.0.0"
-__cycle__ = "Cycle 12 P0-2"
+__version__ = "1.1.0"
+__cycle__ = "Cycle 12 P0-2 + Cycle 61 G61-02"
