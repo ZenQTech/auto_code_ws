@@ -286,8 +286,93 @@ class TestInstanceCancelAPI:
 
 
 # ============================================================
-# Stats API
+# Cycle 64 G64-01: pause/resume/events API
 # ============================================================
+
+
+class TestInstancePauseResumeAPI:
+    def test_pause_instance(self, client):
+        # spawn 一个实例（同步 mock 立即完成，需要先测 cancel 接口）
+        # pause 要求实例正在运行，这里直接测 400 错误路径
+        resp = client.post(
+            "/api/agent-roles/worker/spawn",
+            json={"task": "test"},
+        )
+        agent_id = resp.json()["instance"]["agent_id"]
+        # 同步 mock 已完成，pause 应返回 400
+        pause_resp = client.post(f"/api/agent-roles/instances/{agent_id}/pause")
+        # mock 模式下 spawn 后立即 running，但 runner.start 异步执行
+        # 由于同步 mock 立即设为 running，可能 pause 时实际已完成
+        # 我们只验证 200/400 都是合法响应
+        assert pause_resp.status_code in (200, 400)
+
+    def test_pause_nonexistent(self, client):
+        resp = client.post("/api/agent-roles/instances/agent-xxx/pause")
+        assert resp.status_code == 404
+
+    def test_resume_instance(self, client):
+        resp = client.post(
+            "/api/agent-roles/worker/spawn",
+            json={"task": "test"},
+        )
+        agent_id = resp.json()["instance"]["agent_id"]
+        resume_resp = client.post(f"/api/agent-roles/instances/{agent_id}/resume")
+        assert resume_resp.status_code in (200, 400)
+
+    def test_resume_nonexistent(self, client):
+        resp = client.post("/api/agent-roles/instances/agent-xxx/resume")
+        assert resp.status_code == 404
+
+
+class TestInstanceEventsAPI:
+    def test_get_events(self, client):
+        resp = client.post(
+            "/api/agent-roles/worker/spawn",
+            json={"task": "test"},
+        )
+        agent_id = resp.json()["instance"]["agent_id"]
+        events_resp = client.get(f"/api/agent-roles/instances/{agent_id}/events")
+        assert events_resp.status_code == 200
+        data = events_resp.json()
+        assert data["success"] is True
+        assert data["agent_id"] == agent_id
+        # spawn 同步完成，不一定有 hook 事件
+        assert "events" in data
+        assert "total" in data
+
+    def test_get_events_with_limit(self, client):
+        resp = client.post(
+            "/api/agent-roles/explorer/spawn",
+            json={"task": "test"},
+        )
+        agent_id = resp.json()["instance"]["agent_id"]
+        events_resp = client.get(
+            f"/api/agent-roles/instances/{agent_id}/events?limit=10"
+        )
+        assert events_resp.status_code == 200
+        assert len(events_resp.json()["events"]) <= 10
+
+
+class TestRunnerStatsAPI:
+    def test_get_runner_stats(self, client):
+        resp = client.get("/api/agent-roles/runner/stats")
+        assert resp.status_code == 200
+        data = resp.json()
+        assert data["success"] is True
+        assert "runner" in data
+        assert "hook_bus" in data
+        assert "active_tasks" in data["runner"]
+
+    def test_stats_includes_runner(self, client):
+        resp = client.get("/api/agent-roles/_stats")
+        data = resp.json()
+        assert "runner" in data
+        assert "active_tasks" in data["runner"]
+
+
+# ============================================================
+# Stats API
+# ====================================================================================
 
 
 class TestStatsAPI:

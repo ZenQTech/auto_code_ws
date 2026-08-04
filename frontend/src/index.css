@@ -877,3 +877,33 @@ body {
   border-radius: var(--radius-lg);
   padding: 1rem;
 }
+
+/* ============================================================
+ * Cycle 64 G64-03: StageDetectorBadge 动画
+ * 作用：阶段徽章展开/折叠 + 阶段切换 pulse 动画
+ * 性能：仅使用 transform / opacity（GPU 合成）
+ * ========================================================== */
+
+/* 阶段徽章展开：scale + fade 入场 */
+@keyframes stage-expand {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(-4px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.animate-stage-expand {
+  animation: stage-expand 0.22s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+/* 阶段徽章背景遮罩淡入 */
+@keyframes stage-fade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+.animate-stage-fade {
+  animation: stage-fade 0.15s ease-out both;
+}

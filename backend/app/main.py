@@ -800,6 +800,12 @@ app.include_router(agent_roles_router, prefix="/api", tags=["agent-roles"])
 from .api.stage import router as stage_router
 app.include_router(stage_router, prefix="/api", tags=["stage"])
 
+# v1.0.0 Cycle 64 G64-02: 文件系统 Watch + Stage 联动
+# watchdog / 轮询 fallback + stage 推断规则 + auto-follow
+# 对标 Trae SOLO Auto-Follow 文件级联动
+from .api.fs_watcher import router as fs_watcher_router
+app.include_router(fs_watcher_router, prefix="/api", tags=["fs-watcher"])
+
 # v6.11.0 (P0 Cycle 2) 新增：注册 MCP (Model Context Protocol) API 路由
 from .api.mcp import router as mcp_router
 app.include_router(mcp_router, prefix="/api/mcp", tags=["mcp"])

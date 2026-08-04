@@ -1,7 +1,7 @@
 /**
  * # ============================================================
- * # StageDetectorBadge 阶段检测器徽章组件 (v1.0.0)
- * # Cycle 63 G63-03
+ * # StageDetectorBadge 阶段检测器徽章组件 (v2.0.0)
+ * # Cycle 63 G63-03 → Cycle 64 G64-03 升级（动画 + UI polish）
  * # ====================================
  * # 核心作用：在 UI 中显示当前工作阶段，支持 Auto-Follow 控制
  * # 运行流程：
@@ -16,6 +16,9 @@
  * #   - 紧凑徽章 + 展开详情
  * #   - 6 阶段：idle / prd / coding / preview / deploy / done
  * #   - WebSocket 实时更新
+ * #   - 折叠/展开动画（slide+fade）
+ * #   - 阶段切换动画（color pulse）
+ * #   - 阶段停留时长指示
  * # 输入参数：
  * #   - sessionId: string
  * #   - compact?: boolean 紧凑模式（仅徽章）
@@ -27,10 +30,16 @@
  * # ====================================
  * # 修改记录：
  * #   - 2026-08-04 | v1.0.0 | Cycle 63 G63-03 初次创建
- * # ====================================
+ * #   - 2026-08-04 | v2.0.0 | Cycle 64 G64-03 升级：
+ *                                - 折叠/展开使用 transform + opacity 过渡（slide+fade）
+ *                                - 阶段切换触发 pulse 动画
+ *                                - 增加阶段停留时长显示
+ *                                - 增加 fs-watcher 联动（可选）
+ *                                - 增加键盘快捷键（Esc 关闭）
+ * ====================================
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useStage, type StageId, type StageState } from '../hooks/useStage';
 
 // ============================================================
@@ -107,6 +116,16 @@ const STAGE_VISUALS: Record<StageId, StageVisual> = {
 const ALL_STAGES: StageId[] = ['idle', 'prd', 'coding', 'preview', 'deploy', 'done'];
 
 // ============================================================
+// 工具函数
+// ====================================
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${Math.round(seconds)}s`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m ${Math.round(seconds % 60)}s`;
+  return `${Math.floor(seconds / 3600)}h ${Math.floor((seconds % 3600) / 60)}m`;
+}
+
+// ============================================================
 // 紧凑徽章（只显示当前阶段）
 // ====================================
 
@@ -115,20 +134,22 @@ const CompactBadge: React.FC<{
   connected: boolean;
   onClick: () => void;
   testId: string;
-}> = ({ state, connected, onClick, testId }) => {
+  pulsing: boolean;
+}> = ({ state, connected, onClick, testId, pulsing }) => {
   const stage = state?.stage || 'idle';
   const visual = STAGE_VISUALS[stage];
   return (
     <button
       data-testid={testId}
       onClick={onClick}
-      className="flex items-center gap-1.5 px-2 py-1 rounded-md
+      className={`group flex items-center gap-1.5 px-2.5 py-1.5 rounded-md
                  bg-[var(--bg-elevated)] border border-[var(--border-color)]
-                 hover:border-hermes-500 transition-colors"
+                 hover:border-hermes-500 hover:shadow-md transition-all duration-200
+                 ${pulsing ? 'animate-pulse ring-2 ring-hermes-400/50' : ''}`}
       title={`当前阶段: ${visual.label} - 点击展开`}
     >
       <span
-        className="w-2 h-2 rounded-full flex-shrink-0"
+        className="w-2 h-2 rounded-full flex-shrink-0 transition-colors duration-300"
         style={{ backgroundColor: visual.color }}
         aria-hidden="true"
       />
@@ -186,23 +207,34 @@ const DetailPanel: React.FC<{
   const stage = state?.stage || 'idle';
   const visual = STAGE_VISUALS[stage];
   const [showHistory, setShowHistory] = useState(false);
+  const [now, setNow] = useState(() => Date.now() / 1000);
+
+  // 实时刷新"阶段停留时长"
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now() / 1000), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const durationInStage = state ? now - state.entered_at : 0;
 
   return (
     <div
       data-testid={testId}
       className="absolute top-full right-0 mt-1 w-80
                  bg-[var(--bg-panel)] border border-[var(--border-color)]
-                 rounded-lg shadow-xl z-50 overflow-hidden"
+                 rounded-lg shadow-xl z-50 overflow-hidden
+                 animate-stage-expand
+                 origin-top-right"
     >
       {/* Header */}
-      <div className="px-3 py-2 border-b border-[var(--border-color)] flex items-center justify-between">
+      <div className="px-3 py-2 border-b border-[var(--border-color)] flex items-center justify-between bg-gradient-to-r from-[var(--bg-panel)] to-[var(--bg-elevated)]">
         <div className="flex items-center gap-2">
           <span className="text-sm">🎯</span>
           <h3 className="text-xs font-semibold text-[var(--text-primary)]">
             阶段检测器
           </h3>
           <span
-            className={`w-1.5 h-1.5 rounded-full ${
+            className={`w-1.5 h-1.5 rounded-full transition-colors ${
               connected ? 'bg-green-500' : 'bg-gray-400'
             }`}
             title={connected ? 'WebSocket 已连接' : 'WebSocket 未连接'}
@@ -211,7 +243,7 @@ const DetailPanel: React.FC<{
         <button
           data-testid={`${testId}-close`}
           onClick={onClose}
-          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm"
+          className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] text-sm transition-colors w-5 h-5 flex items-center justify-center hover:bg-[var(--bg-elevated)] rounded"
           aria-label="关闭"
         >
           ✕
@@ -221,11 +253,16 @@ const DetailPanel: React.FC<{
       {/* 当前阶段 */}
       <div
         data-testid={`${testId}-current`}
-        className="px-3 py-3 border-b border-[var(--border-color)]"
+        className="px-3 py-3 border-b border-[var(--border-color)] transition-colors duration-500"
         style={{ backgroundColor: `${visual.color}15` }}
       >
         <div className="flex items-center gap-2 mb-1">
-          <span className="text-2xl leading-none">{visual.emoji}</span>
+          <span
+            className="text-2xl leading-none transition-transform duration-300"
+            style={{ filter: `drop-shadow(0 0 4px ${visual.color}40)` }}
+          >
+            {visual.emoji}
+          </span>
           <div className="flex-1">
             <div className="text-sm font-semibold text-[var(--text-primary)]">
               {visual.label}
@@ -247,20 +284,27 @@ const DetailPanel: React.FC<{
             </div>
           )}
         </div>
-        {state && (
-          <div className="text-[10px] text-[var(--text-secondary)] mt-1">
-            {state.source === 'rule' && '🔍 规则匹配'}
-            {state.source === 'llm' && '🤖 LLM 分类'}
-            {state.source === 'manual' && '✋ 手动设置'}
-            {state.reason && ` · ${state.reason}`}
+        <div className="flex items-center justify-between mt-2">
+          <div className="text-[10px] text-[var(--text-secondary)]">
+            {state?.source === 'rule' && '🔍 规则匹配'}
+            {state?.source === 'llm' && '🤖 LLM 分类'}
+            {state?.source === 'manual' && '✋ 手动设置'}
+            {state?.reason && ` · ${state.reason}`}
           </div>
-        )}
+          <div
+            data-testid={`${testId}-duration`}
+            className="text-[10px] text-[var(--text-secondary)] tabular-nums"
+            title="在当前阶段的停留时长"
+          >
+            ⏱ {formatDuration(durationInStage)}
+          </div>
+        </div>
       </div>
 
       {/* Auto-Follow 开关 */}
       <div
         data-testid={`${testId}-autofollow`}
-        className="px-3 py-2 border-b border-[var(--border-color)] flex items-center justify-between"
+        className="px-3 py-2 border-b border-[var(--border-color)] flex items-center justify-between hover:bg-[var(--bg-elevated)]/50 transition-colors"
       >
         <div>
           <div className="text-xs font-medium text-[var(--text-primary)]">
@@ -280,7 +324,7 @@ const DetailPanel: React.FC<{
           aria-checked={state?.auto_follow || false}
         >
           <span
-            className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${
+            className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-200 ${
               state?.auto_follow ? 'translate-x-4' : 'translate-x-0.5'
             }`}
           />
@@ -304,10 +348,10 @@ const DetailPanel: React.FC<{
                 key={s}
                 data-testid={`${testId}-stage-${s}`}
                 onClick={() => forceStage(s, 'manual override from UI')}
-                className={`flex items-center gap-1 px-1.5 py-1 rounded text-[10px] transition-colors ${
+                className={`flex items-center gap-1 px-1.5 py-1 rounded text-[10px] transition-all ${
                   active
-                    ? 'bg-hermes-500/20 text-hermes-400 font-semibold'
-                    : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    ? 'bg-hermes-500/20 text-hermes-400 font-semibold ring-1 ring-hermes-500/30'
+                    : 'bg-[var(--bg-elevated)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:scale-105'
                 }`}
                 title={v.description}
               >
@@ -324,7 +368,7 @@ const DetailPanel: React.FC<{
         <button
           data-testid={`${testId}-tab-recent`}
           onClick={() => setShowHistory(false)}
-          className={`text-[10px] px-2 py-0.5 rounded ${
+          className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
             !showHistory
               ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)]'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -335,7 +379,7 @@ const DetailPanel: React.FC<{
         <button
           data-testid={`${testId}-tab-history`}
           onClick={() => setShowHistory(true)}
-          className={`text-[10px] px-2 py-0.5 rounded ${
+          className={`text-[10px] px-2 py-0.5 rounded transition-colors ${
             showHistory
               ? 'bg-[var(--bg-elevated)] text-[var(--text-primary)]'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -348,7 +392,8 @@ const DetailPanel: React.FC<{
           data-testid={`${testId}-refresh`}
           onClick={refresh}
           disabled={loading}
-          className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-50"
+          className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] disabled:opacity-50 transition-colors hover:rotate-180 transform duration-300"
+          title="刷新"
         >
           🔄
         </button>
@@ -378,7 +423,7 @@ const DetailPanel: React.FC<{
               <div
                 key={evt.event_id || i}
                 data-testid={`${testId}-event-${i}`}
-                className="px-2 py-1 border-b border-[var(--border-color)] last:border-b-0"
+                className="px-2 py-1 border-b border-[var(--border-color)] last:border-b-0 hover:bg-[var(--bg-elevated)]/50 transition-colors"
               >
                 <div className="flex items-center gap-1.5">
                   {evt.from_stage && (
@@ -424,7 +469,7 @@ const DetailPanel: React.FC<{
 
 // ============================================================
 // 主组件
-// ====================================
+// ============================================================
 
 export const StageDetectorBadge: React.FC<StageDetectorBadgeProps> = ({
   sessionId,
@@ -437,6 +482,19 @@ export const StageDetectorBadge: React.FC<StageDetectorBadgeProps> = ({
   const stage = useStage({ sessionId, wsUrl, autoConnect: true });
   const { state, history, recentEvents, loading, error, connected, refresh, detect, forceStage, setAutoFollow } = stage;
   const [expanded, setExpanded] = useState(false);
+  const [pulsing, setPulsing] = useState(false);
+  const previousStageRef = useRef<StageId | null>(null);
+
+  // 阶段变化时触发 pulse 动画
+  useEffect(() => {
+    const current = state?.stage;
+    if (current && current !== previousStageRef.current && previousStageRef.current !== null) {
+      setPulsing(true);
+      const timer = setTimeout(() => setPulsing(false), 1000);
+      return () => clearTimeout(timer);
+    }
+    previousStageRef.current = current || null;
+  }, [state?.stage]);
 
   // 通知父组件阶段变化
   useEffect(() => {
@@ -452,6 +510,18 @@ export const StageDetectorBadge: React.FC<StageDetectorBadgeProps> = ({
     }
   }, [state?.auto_follow, onAutoFollowChange]);
 
+  // 键盘快捷键：Esc 关闭
+  useEffect(() => {
+    if (!expanded) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setExpanded(false);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [expanded]);
+
   return (
     <div className="relative inline-block">
       {compact || !expanded ? (
@@ -460,6 +530,7 @@ export const StageDetectorBadge: React.FC<StageDetectorBadgeProps> = ({
           connected={connected}
           onClick={() => setExpanded((v) => !v)}
           testId={testId}
+          pulsing={pulsing}
         />
       ) : null}
 
@@ -467,7 +538,7 @@ export const StageDetectorBadge: React.FC<StageDetectorBadgeProps> = ({
         <>
           {/* 点击外部关闭 */}
           <div
-            className="fixed inset-0 z-40"
+            className="fixed inset-0 z-40 bg-black/5 animate-stage-fade"
             onClick={() => setExpanded(false)}
             aria-hidden="true"
           />

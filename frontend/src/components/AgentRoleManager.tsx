@@ -1,26 +1,32 @@
 /**
  * # ============================================================
- * # AgentRoleManager 组件 (v1.0.0)
- * # Cycle 63 G63-02
+ * # AgentRoleManager 组件 (v2.0.0)
+ * # Cycle 63 G63-02 → Cycle 64 G64-01 升级（集成 AgentExecutionPanel）
  * # ====================================
  * # 核心作用：Agent 角色管理 UI（4 个内置角色 + 自定义）
  * # 运行流程：
  * #   1. 列出所有角色（内置标记徽章）
  * #   2. 查看/编辑/删除自定义角色
  * #   3. 注册新角色（name/description/model/sandbox...）
- * #   4. spawn 实例（带 nickname 轮转）
+ * #   4. spawn 实例（带 nickname 轮转）+ 集成 AgentExecutionPanel
  * #   5. 查看运行中实例 / 取消实例
+ * #   6. 点击实例可展开 AgentExecutionPanel 实时跟踪
  * # 输入参数：testId
  * # 输出结果：UI 组件
  * # 对标：Codex CLI v0.105+ sub-agent 系统
  * # ====================================
  * # 修改记录：
  * #   - 2026-08-04 | v1.0.0 | Cycle 63 G63-02 初次创建
- * # ====================================
+ * #   - 2026-08-04 | v2.0.0 | Cycle 64 G64-01 增加：
+ *                                - 集成 AgentExecutionPanel（实时跟踪 + 事件流）
+ *                                - 点击实例展开/折叠
+ *                                - 详情面板显示完整状态
+ * ====================================
  */
 
 import { useEffect, useState } from 'react';
 import { useAgentRoles, type AgentRole } from '../hooks/useAgentRoles';
+import { AgentExecutionPanel } from './AgentExecutionPanel';
 
 export interface AgentRoleManagerProps {
   testId?: string;
@@ -64,6 +70,20 @@ export default function AgentRoleManager(props: AgentRoleManagerProps) {
   const [spawnRole, setSpawnRole] = useState<AgentRole | null>(null);
   const [spawnTask, setSpawnTask] = useState('');
   const [spawnNickname, setSpawnNickname] = useState('');
+  // v2.0.0: 跟踪每个展开的实例（默认展开最新的活动实例）
+  const [expandedInstances, setExpandedInstances] = useState<Set<string>>(new Set());
+
+  const toggleInstanceExpanded = (agentId: string) => {
+    setExpandedInstances((prev) => {
+      const next = new Set(prev);
+      if (next.has(agentId)) {
+        next.delete(agentId);
+      } else {
+        next.add(agentId);
+      }
+      return next;
+    });
+  };
 
   // 新角色表单状态
   const [form, setForm] = useState({
