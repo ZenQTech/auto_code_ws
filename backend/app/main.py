@@ -770,6 +770,10 @@ app.include_router(conversation_fold_router, prefix="/api", tags=["conversation-
 from .api.agents_loader import router as agents_loader_router
 app.include_router(agents_loader_router, prefix="/api", tags=["agents-loader"])
 
+# v6.33.1 Cycle 62 G62-03：注册 LLM 流式输出 API + WebSocket
+from .api.llm_stream import router as llm_stream_router
+app.include_router(llm_stream_router, prefix="/api", tags=["llm-stream"])
+
 # v6.11.0 (P0 Cycle 2) 新增：注册 MCP (Model Context Protocol) API 路由
 from .api.mcp import router as mcp_router
 app.include_router(mcp_router, prefix="/api/mcp", tags=["mcp"])
