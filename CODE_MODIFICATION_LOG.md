@@ -2,6 +2,28 @@
 
 > 本文件记录本项目的所有代码修改，遵循"全程可追溯"原则。每条修改包含：时间戳、模块、Task ID、角色、操作内容。
 
+## 2026-08-04 | v1.0.0 | CYCLE 61 G61-08 对话流自动折叠
+
+| 字段 | 内容 |
+|------|------|
+| **时间戳** | 2026-08-04 17:36:00 |
+| **模块** | `backend/app/services/conversation_folding.py`、`backend/app/api/conversation_folding.py`、`backend/tests/test_conversation_folding.py`、`backend/app/main.py` |
+| **Task ID** | CYCLE61-G61-08 |
+| **角色** | 全栈工程师 |
+| **目标** | 实现长对话流自动管理，支持 LLM 摘要生成 + 多种折叠策略 + 磁盘持久化 + REST API |
+| **提交** | `36563ee feat(cycle61 G61-08): 对话流自动折叠（LLM 摘要 + 状态持久化）` |
+| **详情** | 见 [CODE_MODIFICATION_LOG_G61-08.md](file:///home/qizheng/auto_code_ws/CODE_MODIFICATION_LOG_G61-08.md) |
+
+### 概要
+
+实现 5 种折叠策略（LLM_SUMMARY / TRUNCATE / KEEP_HEAD / KEEP_TAIL / KEEP_BOTH）+ 4 种触发方式（AUTO / MANUAL / TOKEN_LIMIT / TIME_BASED）+ 11 个 REST 端点。36/36 单元测试通过。
+
+### 关键修复
+
+`KEEP_HEAD/KEEP_TAIL/KEEP_BOTH` 策略由"基于 `to_fold` 范围"修正为"基于整个 `active` 对话流首尾"作为摘要锚点，符合用户视角语义。
+
+---
+
 ## 2026-07-31 | v1.1.0 | 修复 ModuleNotFoundError: No module named 'app'
 
 | 字段 | 内容 |
