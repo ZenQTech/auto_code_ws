@@ -750,6 +750,22 @@ app.include_router(ws_router)
 from .api.plan import router as plan_router
 app.include_router(plan_router, prefix="/api/workflow", tags=["plan-mode"])
 
+# v6.32.1 Cycle 58 G58-05 + Cycle 61 G61-04：注册 ComposerPlan API 路由（真正可执行）
+from .api.composer_plan import router as composer_plan_router
+app.include_router(composer_plan_router, prefix="/api", tags=["composer-plan"])
+
+# v6.32.1 Cycle 61 G61-04：注册 Plan 一键执行 API 路由（LLM 分解 + 自动执行）
+from .api.plan_execute import router as plan_execute_router
+app.include_router(plan_execute_router, prefix="/api", tags=["plan-execute"])
+
+# v6.32.2 Cycle 61 G61-07：注册 Rollback API 路由（一键回退 + git 快照管理）
+from .api.rollback import router as rollback_router
+app.include_router(rollback_router, prefix="/api", tags=["rollback"])
+
+# v6.32.3 Cycle 61 G61-08：注册 Conversation Folding API 路由（对话流自动折叠）
+from .api.conversation_folding import router as conversation_fold_router
+app.include_router(conversation_fold_router, prefix="/api", tags=["conversation-fold"])
+
 # v6.11.0 (P0 Cycle 2) 新增：注册 MCP (Model Context Protocol) API 路由
 from .api.mcp import router as mcp_router
 app.include_router(mcp_router, prefix="/api/mcp", tags=["mcp"])
