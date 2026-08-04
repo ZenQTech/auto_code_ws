@@ -79,7 +79,11 @@ class AgentRunner:
     - 管理 agent_id -> asyncio.Task 映射
     - 在任务执行中发出 Hook 事件
     - 支持取消/暂停/恢复
+    - 默认 MOCK 模式（无需真实 LLM 即可运行）
     """
+
+    # 接口契约：与 RealAgentRunner 共享 RunnerMode 标识
+    mode = "mock"
 
     def __init__(self, hook_bus: Optional[HookEventBus] = None):
         self._hook_bus = hook_bus or get_hook_bus()
