@@ -77,6 +77,7 @@ import TaskTabs, { type TaskTab, type TaskStatus } from '../components/TaskTabs'
 import EmbeddedTools from '../components/EmbeddedTools';
 import ShortcutHelpPanel from '../components/ShortcutHelpPanel';
 import SoloOnboarding, { resetSoloOnboarding } from '../components/SoloOnboarding';
+import { StageDetectorBadge } from '../components/StageDetectorBadge';
 
 // ============================================================
 // 多任务并行 Tab 状态管理
@@ -378,6 +379,20 @@ export const VibeSoloShell: React.FC = () => {
             </div>
           )}
         </div>
+
+        {/* 分隔线 */}
+        <div className="h-4 w-px bg-[var(--border-color)]" />
+
+        {/* 阶段检测器徽章（G63-03：Auto-Follow 联动） */}
+        {vibeCoding.session && (
+          <div className="flex-shrink-0" data-testid="solo-stage-detector">
+            <StageDetectorBadge
+              sessionId={vibeCoding.session.id}
+              compact={true}
+              wsUrl={`${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/stage`}
+            />
+          </div>
+        )}
 
         {/* 右段：快捷键按钮组 */}
         <div className="flex items-center gap-1 flex-shrink-0">

@@ -1,11 +1,11 @@
 /**
  * # ============================================================
- * EmbeddedTools - 内嵌工具矩阵组件 (v1.1.0)
+ * EmbeddedTools - 内嵌工具矩阵组件 (v1.2.0)
  * Cycle 60+ Solo 重构 - 对标 Trae Solo / Codex 内嵌工具
- * # ============================================================
- * 核心作用：在右栏提供内嵌的工具面板：编辑器、终端、浏览器、代码变更、内存、文件浏览等
+ * # ====================================
+ * 核心作用：在右栏提供内嵌的工具面板：编辑器、终端、浏览器、代码变更、内存、文件浏览、阶段检测等
  * 设计要点（v1.1.0 G60-FIX-17）：
- *   - Tab 切换：editor / terminal / browser / diff / memory / files
+ *   - Tab 切换：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage
  *   - 内嵌 iframe / 自实现组件
  *   - 与 ToolsMatrixPanel 协同（外层按钮 + 内嵌细节）
  *   - 可折叠/展开
@@ -16,9 +16,14 @@
  *     - active tab 使用底部下划线 + 主题色文字，更接近浏览器风格
  *     - tab 之间分隔更清晰（hover 态背景）
  *     - 内容区域 padding 统一
+ *   - v1.2.0 G63-03 阶段检测器集成：
+ *     - 新增 stage tab
+ *     - Auto-Follow 联动：当 stage 变化且 auto_follow 启用时自动切换 tab
+ *     - 阶段变化通过 useStage 订阅
  * 输入参数：
  *   - defaultTab?: EmbeddedTool
  *   - sessionId?: string 当前 session
+ *   - wsUrl?: string WebSocket URL
  *   - onChange?: (tab) => void
  * 输出结果：UI 组件
  * ====================================
@@ -30,11 +35,17 @@
  *                                - tab 字号 11px
  *                                - emoji 与文字对齐（items-center）
  *                                - hover 态背景更明显
- * ============================================================
+ *   - 2026-08-04 | v1.2.0 | G63-03 阶段检测器集成：
+ *                                - 新增 stage tab（嵌入 StageDetectorView）
+ *                                - Auto-Follow 联动逻辑
+ *                                - wsUrl 参数透传
+ * ====================================
  */
 
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ContextSelector } from './ContextSelector';
+import { StageDetectorView } from './StageDetectorView';
+import { useStage, type StageId } from '../hooks/useStage';
 
 // ============================================================
 // 类型
@@ -49,11 +60,13 @@ export type EmbeddedTool =
   | 'memory'
   | 'files'
   | 'metrics'
-  | 'context';
+  | 'context'
+  | 'stage';
 
 export interface EmbeddedToolsProps {
   sessionId?: string | null;
   defaultTab?: EmbeddedTool;
+  wsUrl?: string;
   className?: string;
   'data-testid'?: string;
 }
@@ -72,6 +85,19 @@ const TOOL_META: Record<EmbeddedTool, { label: string; emoji: string; descriptio
   files: { label: '文件', emoji: '📁', description: '文件浏览器' },
   metrics: { label: '指标', emoji: '📈', description: 'Token/耗时/费用指标' },
   context: { label: '上下文', emoji: '📎', description: '多源上下文选择器（文件/代码/终端/Git/文档/网页）' },
+  stage: { label: '阶段', emoji: '🎯', description: '阶段检测器 + Auto-Follow 联动' },
+};
+
+/**
+ * 阶段 → 默认工具面板的映射表（G63-03 Auto-Follow）
+ * 与后端 STAGE_VISUALS.linkedTab 保持一致
+ */
+const STAGE_TO_TAB: Partial<Record<StageId, EmbeddedTool>> = {
+  prd: 'context',
+  coding: 'editor',
+  preview: 'browser',
+  deploy: 'terminal',
+  done: 'metrics',
 };
 
 const STORAGE_KEY = 'hermes.solo.embeddedTool';
@@ -237,6 +263,21 @@ const ContextView: React.FC<{ sessionId?: string | null }> = ({ sessionId }) => 
   </div>
 );
 
+const StageView: React.FC<{
+  sessionId?: string | null;
+  wsUrl?: string;
+  onTabSwitch?: (tab: EmbeddedTool) => void;
+}> = ({ sessionId, wsUrl, onTabSwitch }) => (
+  <div className="h-full" data-testid="embedded-tool-stage">
+    <StageDetectorView
+      sessionId={sessionId}
+      wsUrl={wsUrl}
+      testId="embedded-stage-view"
+      onTabSwitch={onTabSwitch as ((tab: string) => void) | undefined}
+    />
+  </div>
+);
+
 // ============================================================
 // 主组件
 // ====================================
@@ -244,19 +285,51 @@ const ContextView: React.FC<{ sessionId?: string | null }> = ({ sessionId }) => 
 export const EmbeddedTools: React.FC<EmbeddedToolsProps> = ({
   sessionId,
   defaultTab,
+  wsUrl,
   className = '',
   'data-testid': testId = 'embedded-tools',
 }) => {
   const [tab, setTab] = useState<EmbeddedTool>(defaultTab || readTool());
+  // Auto-Follow 是否已由用户手动锁定（用户手动切换 tab 后会设为 true，
+  // 阶段触发的自动切换不再覆盖；点击 Auto-Follow 按钮或显式重置时清空）
+  const [userLocked, setUserLocked] = useState(false);
+  const lastStageRef = useRef<StageId | null>(null);
 
-  const updateTab = (t: EmbeddedTool) => {
+  // Auto-Follow 阶段订阅：仅在未锁定时跟随
+  const sid = sessionId || undefined;
+  const stageHook = useStage({
+    sessionId: sid || 'embedded-tools-default',
+    wsUrl,
+    autoConnect: !!sid,
+  });
+
+  useEffect(() => {
+    const s = stageHook.state;
+    if (!s || !s.auto_follow) return;
+    if (userLocked) return;
+    // 阶段变化才触发 tab 切换
+    if (lastStageRef.current === s.stage) return;
+    lastStageRef.current = s.stage;
+    const target = STAGE_TO_TAB[s.stage];
+    if (target && target !== tab) {
+      setTab(target);
+      try {
+        window.localStorage.setItem(STORAGE_KEY, target);
+      } catch {
+        // 忽略
+      }
+    }
+  }, [stageHook.state, userLocked, tab]);
+
+  const updateTab = useCallback((t: EmbeddedTool) => {
     setTab(t);
+    setUserLocked(true);
     try {
       window.localStorage.setItem(STORAGE_KEY, t);
     } catch {
       // 忽略
     }
-  };
+  }, []);
 
   const renderContent = () => {
     switch (tab) {
@@ -278,6 +351,21 @@ export const EmbeddedTools: React.FC<EmbeddedToolsProps> = ({
         return <MetricsView />;
       case 'context':
         return <ContextView sessionId={sessionId} />;
+      case 'stage':
+        return (
+          <StageView
+            sessionId={sessionId}
+            wsUrl={wsUrl}
+            onTabSwitch={(t) => {
+              setTab(t as EmbeddedTool);
+              try {
+                window.localStorage.setItem(STORAGE_KEY, t);
+              } catch {
+                // 忽略
+              }
+            }}
+          />
+        );
       default:
         return <OverviewView sessionId={sessionId} />;
     }

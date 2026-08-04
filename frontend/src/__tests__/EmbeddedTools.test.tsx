@@ -20,7 +20,7 @@ describe('EmbeddedTools', () => {
     expect(screen.getByTestId('embedded-tool-overview')).toBeInTheDocument();
   });
 
-  it('显示所有 8 个 tab', () => {
+  it('显示所有 10 个 tab', () => {
     render(<EmbeddedTools />);
     expect(screen.getByTestId('embedded-tools-tab-overview')).toBeInTheDocument();
     expect(screen.getByTestId('embedded-tools-tab-editor')).toBeInTheDocument();
@@ -30,6 +30,8 @@ describe('EmbeddedTools', () => {
     expect(screen.getByTestId('embedded-tools-tab-memory')).toBeInTheDocument();
     expect(screen.getByTestId('embedded-tools-tab-files')).toBeInTheDocument();
     expect(screen.getByTestId('embedded-tools-tab-metrics')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-context')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-stage')).toBeInTheDocument();
   });
 
   it('点击 editor tab 切换内容', () => {
@@ -104,8 +106,28 @@ describe('EmbeddedTools', () => {
   it('每个 tab 都有 role=tab', () => {
     render(<EmbeddedTools />);
     const tabs = screen.getAllByRole('tab');
-    // 9 个内嵌工具：overview / editor / terminal / browser / diff / memory / files / metrics / context
-    expect(tabs.length).toBe(9);
+    // 10 个内嵌工具：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage
+    expect(tabs.length).toBe(10);
+  });
+
+  it('显示所有 10 个 tab 测试 ID', () => {
+    render(<EmbeddedTools />);
+    expect(screen.getByTestId('embedded-tools-tab-overview')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-editor')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-terminal')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-browser')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-diff')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-memory')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-files')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-metrics')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-context')).toBeInTheDocument();
+    expect(screen.getByTestId('embedded-tools-tab-stage')).toBeInTheDocument();
+  });
+
+  it('点击 stage tab 切换内容', () => {
+    render(<EmbeddedTools />);
+    fireEvent.click(screen.getByTestId('embedded-tools-tab-stage'));
+    expect(screen.getByTestId('embedded-tool-stage')).toBeInTheDocument();
   });
 
   it('active tab 有 aria-selected=true', () => {
