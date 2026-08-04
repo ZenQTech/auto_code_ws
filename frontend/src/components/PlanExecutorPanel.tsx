@@ -1,474 +1,451 @@
 /**
  * # ============================================================
- * PlanExecutorPanel - Plan 执行面板 (v1.1.0)
- * Cycle 58 G58-05 升级 v1.1.0：对接后端 /api/composer-plan
- * # ============================================================
- * 核心作用：ComposerPlan 真正可执行的 UI 面板
- * 运行流程：
- *   1. 接收 planId + sessionId
- *   2. 通过 SSE 订阅 /api/composer-plan/{plan_id}/events
- *   3. 实时显示每 step 的状态
- *   4. 提供 start/pause/resume/cancel/retry/skip 控制
- *   5. 显示 step 输出预览
- * 设计要点：
- *   - 独立 panel（不依赖 Vibe Coding 主舞台）
- *   - 可关闭
- *   - 支持嵌入式 step 重试/跳过
- *   - 适配 ComposerPlan 数据模型（plan_id/step_id/action/status）
- * 输入参数：{ planId, sessionId, onClose }
- * 输出结果：Plan 执行进度 UI
- * ====================================
+ * # PlanExecutorPanel 组件 (v1.0.0)
+ * # Cycle 61 G61-04
+ * # ====================================
+ * # 核心作用：ComposerPlan 真正可执行面板
+ * #           - 输入 prompt → 一键执行（LLM 分解 + 自动执行）
+ * #           - 实时显示执行进度（轮询）
+ * #           - 步骤状态可视化
+ * #           - 控制按钮：暂停 / 恢复 / 取消 / 重试 / 跳过
+ * # 运行流程：
+ * #   1. 用户输入 prompt
+ * #   2. 点击"一键执行" → POST /api/plan-execute
+ * #   3. 轮询 /api/plan-execute/{id} 刷新状态
+ * #   4. 步骤状态实时更新
+ * #   5. 支持展开 / 折叠子步骤详情
+ * # 输入参数：onClose, compact
+ * # 输出结果：React 组件
+ * # ====================================
  * # 修改记录：
- * #   - 2026-08-03 | v1.0.0 | Cycle 58 G58-05 初次创建
- * #   - 2026-08-03 | v1.1.0 | 切换到 /api/composer-plan 端点
- * ====================================
+ * #   - 2026-08-04 | v1.0.0 | Cycle 61 G61-04 初次创建
+ * # ====================================
  */
 
-import React, { useEffect, useState } from 'react';
-
-// ============================================================
-// 类型（与后端 ComposerPlan 对齐）
-// ============================================================
-
-export interface PlanStep {
-  step_id: string;
-  title: string;
-  description: string;
-  action: string;
-  depends_on: string[];
-  status: 'pending' | 'ready' | 'running' | 'completed' | 'failed' | 'skipped' | 'cancelled';
-  progress: number;
-  attempts: number;
-  max_attempts: number;
-  error?: string;
-  output?: Record<string, unknown>;
-}
-
-export interface Plan {
-  plan_id: string;
-  title: string;
-  description: string;
-  steps: PlanStep[];
-  status: 'draft' | 'ready' | 'running' | 'paused' | 'completed' | 'failed' | 'cancelled';
-  progress: number;
-  summary: Record<string, number>;
-}
+import React, { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useComposerPlan, ExecutionState, PlanStep } from '../hooks/useComposerPlan';
 
 export interface PlanExecutorPanelProps {
-  planId?: string;
-  sessionId?: string;
-  onClose: () => void;
+  onClose?: () => void;
+  compact?: boolean;
+  testId?: string;
 }
 
-// ============================================================
-// 常量
-// ============================================================
-
-const DEFAULT_BASE_URL = '/api/composer-plan';
-const isBrowser = typeof window !== 'undefined';
-
-const STEP_STATUS_COLORS: Record<PlanStep['status'], string> = {
-  pending: 'bg-slate-100 text-slate-700',
-  ready: 'bg-cyan-100 text-cyan-700',
-  running: 'bg-blue-100 text-blue-700 animate-pulse',
-  completed: 'bg-emerald-100 text-emerald-700',
-  failed: 'bg-red-100 text-red-700',
-  skipped: 'bg-gray-100 text-gray-500 dark:bg-gray-700 dark:text-gray-300',
-  cancelled: 'bg-orange-100 text-orange-700',
+const STATUS_COLORS: Record<string, string> = {
+  pending: 'bg-gray-500/20 text-gray-300',
+  ready: 'bg-blue-500/20 text-blue-300',
+  running: 'bg-amber-500/20 text-amber-300',
+  completed: 'bg-emerald-500/20 text-emerald-300',
+  success: 'bg-emerald-500/20 text-emerald-300',
+  failed: 'bg-red-500/20 text-red-300',
+  skipped: 'bg-slate-500/20 text-slate-400',
+  cancelled: 'bg-slate-500/20 text-slate-400',
+  draft: 'bg-gray-500/20 text-gray-300',
+  paused: 'bg-purple-500/20 text-purple-300',
 };
 
-const STEP_STATUS_LABELS: Record<PlanStep['status'], string> = {
-  pending: '等待依赖',
-  ready: '就绪',
-  running: '执行中',
-  completed: '已完成',
-  failed: '失败',
-  skipped: '已跳过',
-  cancelled: '已取消',
+const STATUS_ICONS: Record<string, string> = {
+  pending: '⏳',
+  ready: '▶️',
+  running: '🔄',
+  completed: '✅',
+  success: '✅',
+  failed: '❌',
+  skipped: '⏭️',
+  cancelled: '🚫',
+  draft: '📝',
+  paused: '⏸️',
 };
 
-const PLAN_STATUS_LABELS: Record<Plan['status'], string> = {
-  draft: '草稿',
-  ready: '就绪',
-  running: '执行中',
-  paused: '已暂停',
-  completed: '已完成',
-  failed: '失败',
-  cancelled: '已取消',
-};
+function StatusBadge({ status }: { status: string }) {
+  const cls = STATUS_COLORS[status] || STATUS_COLORS.pending;
+  const icon = STATUS_ICONS[status] || '•';
+  return (
+    <span className={`px-1.5 py-0.5 rounded text-[10px] font-mono whitespace-nowrap ${cls}`}>
+      {icon} {status}
+    </span>
+  );
+}
 
-// ============================================================
-// 组件
-// ============================================================
+function ProgressBar({ value, label }: { value: number; label?: string }) {
+  const pct = Math.max(0, Math.min(100, (value || 0) * 100));
+  return (
+    <div className="w-full">
+      {label && <div className="text-[10px] text-[var(--text-tertiary)] mb-0.5">{label}</div>}
+      <div className="w-full h-1.5 bg-[var(--bg-elevated)] rounded overflow-hidden">
+        <div
+          className="h-full bg-gradient-to-r from-hermes-500 to-hermes-300 transition-all duration-300"
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
 
-const PlanExecutorPanel: React.FC<PlanExecutorPanelProps> = ({
-  planId,
-  sessionId,
+function StepCard({ step, onRetry, onSkip, compact }: {
+  step: PlanStep;
+  onRetry: (stepId: string) => void;
+  onSkip: (stepId: string) => void;
+  compact: boolean;
+}) {
+  const [expanded, setExpanded] = useState(false);
+  return (
+    <div
+      data-testid={`plan-step-${step.step_id}`}
+      className={`border border-[var(--border-color)] rounded p-2 bg-[var(--bg-panel)] ${compact ? 'text-[10px]' : 'text-xs'}`}
+    >
+      <div className="flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          <span className="font-mono text-[10px] text-[var(--text-tertiary)]">
+            {step.step_id}
+          </span>
+          <span className="font-medium truncate">{step.title}</span>
+        </div>
+        <StatusBadge status={step.status} />
+      </div>
+      {step.action && step.action !== 'noop' && (
+        <div className="mt-1 text-[10px] text-[var(--text-tertiary)] font-mono">
+          action: {step.action}
+        </div>
+      )}
+      {(step.status === 'running' || step.progress > 0) && (
+        <div className="mt-1">
+          <ProgressBar value={step.progress} />
+        </div>
+      )}
+      {step.error && (
+        <div className="mt-1 text-[10px] text-red-400 font-mono truncate" title={step.error}>
+          ⚠ {step.error}
+        </div>
+      )}
+      <div className="mt-1 flex items-center gap-2">
+        <button
+          type="button"
+          data-testid={`plan-step-${step.step_id}-toggle`}
+          onClick={() => setExpanded((v) => !v)}
+          className="text-[10px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+        >
+          {expanded ? '▼ 详情' : '▶ 详情'}
+        </button>
+        {step.status === 'failed' && (
+          <button
+            type="button"
+            data-testid={`plan-step-${step.step_id}-retry`}
+            onClick={() => onRetry(step.step_id)}
+            className="px-2 py-0.5 text-[10px] rounded bg-hermes-500/20 text-hermes-300 hover:bg-hermes-500/30"
+          >
+            🔄 重试
+          </button>
+        )}
+        {(step.status === 'pending' || step.status === 'ready' || step.status === 'failed') && (
+          <button
+            type="button"
+            data-testid={`plan-step-${step.step_id}-skip`}
+            onClick={() => onSkip(step.step_id)}
+            className="px-2 py-0.5 text-[10px] rounded bg-slate-500/20 text-slate-300 hover:bg-slate-500/30"
+          >
+            ⏭️ 跳过
+          </button>
+        )}
+        <span className="ml-auto text-[10px] text-[var(--text-tertiary)]">
+          attempts: {step.attempts}/{step.max_attempts}
+        </span>
+      </div>
+      {expanded && (
+        <div className="mt-2 p-2 bg-[var(--bg-elevated)] rounded text-[10px] font-mono space-y-1">
+          {step.description && (
+            <div className="text-[var(--text-secondary)]">{step.description}</div>
+          )}
+          {step.depends_on && step.depends_on.length > 0 && (
+            <div className="text-[var(--text-tertiary)]">
+              depends_on: [{step.depends_on.join(', ')}]
+            </div>
+          )}
+          {step.params && Object.keys(step.params).length > 0 && (
+            <details>
+              <summary className="cursor-pointer text-[var(--text-tertiary)]">params</summary>
+              <pre className="mt-1 text-[10px] overflow-x-auto">
+                {JSON.stringify(step.params, null, 2)}
+              </pre>
+            </details>
+          )}
+          {step.output && Object.keys(step.output).length > 0 && (
+            <details>
+              <summary className="cursor-pointer text-[var(--text-tertiary)]">output</summary>
+              <pre className="mt-1 text-[10px] overflow-x-auto">
+                {JSON.stringify(step.output, null, 2)}
+              </pre>
+            </details>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export const PlanExecutorPanel: React.FC<PlanExecutorPanelProps> = ({
   onClose,
+  compact = false,
+  testId = 'plan-executor-panel',
 }) => {
-  const [plan, setPlan] = useState<Plan | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [isActing, setIsActing] = useState(false);
+  const composer = useComposerPlan();
+  const [prompt, setPrompt] = useState('');
+  const [autoDecompose, setAutoDecompose] = useState(true);
+  const [maxSteps, setMaxSteps] = useState(8);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  // 拉取 Plan 详情
+  // 加载 plan 列表
   useEffect(() => {
-    if (!isBrowser || !planId) return;
-    const controller = new AbortController();
-    fetch(`${DEFAULT_BASE_URL}/${planId}`, { signal: controller.signal })
-      .then(async (res) => {
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
-        }
-        const data = await res.json();
-        return data.plan as Plan;
-      })
-      .then((data) => setPlan(data))
-      .catch((err) => {
-        if (err.name !== 'AbortError') {
-          setError(`Plan 拉取失败: ${err.message ?? err}`);
-        }
-      });
-    return () => controller.abort();
-  }, [planId]);
+    void composer.refreshPlans();
+  }, [composer.refreshPlans]);
 
-  // 订阅 SSE 事件（/api/composer-plan/{plan_id}/events）
-  useEffect(() => {
-    if (!isBrowser || !planId) return;
-    const es = new EventSource(`${DEFAULT_BASE_URL}/${planId}/events`);
-
-    const refresh = async () => {
-      try {
-        const res = await fetch(`${DEFAULT_BASE_URL}/${planId}`);
-        if (res.ok) {
-          const data = await res.json();
-          setPlan(data.plan);
-        }
-      } catch {
-        /* ignore */
-      }
-    };
-
-    const handleStepEvent = (e: MessageEvent) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (data.type === 'step_status_changed' || data.type === 'step_progress' || data.type === 'step_retry') {
-          refresh();
-        }
-      } catch (err) {
-        console.warn('PlanExecutorPanel: parse step event failed', err);
-      }
-    };
-
-    const handlePlanEvent = (e: MessageEvent) => {
-      try {
-        const data = JSON.parse(e.data);
-        if (
-          data.type === 'plan_completed' ||
-          data.type === 'plan_failed' ||
-          data.type === 'plan_cancelled'
-        ) {
-          refresh();
-          setIsActing(false);
-        } else if (
-          data.type === 'plan_paused' ||
-          data.type === 'plan_resumed' ||
-          data.type === 'plan_started'
-        ) {
-          refresh();
-        }
-      } catch (err) {
-        console.warn('PlanExecutorPanel: parse plan event failed', err);
-      }
-    };
-
-    es.addEventListener('step_status_changed', handleStepEvent as EventListener);
-    es.addEventListener('step_progress', handleStepEvent as EventListener);
-    es.addEventListener('step_retry', handleStepEvent as EventListener);
-    es.addEventListener('plan_started', handlePlanEvent as EventListener);
-    es.addEventListener('plan_paused', handlePlanEvent as EventListener);
-    es.addEventListener('plan_resumed', handlePlanEvent as EventListener);
-    es.addEventListener('plan_completed', handlePlanEvent as EventListener);
-    es.addEventListener('plan_failed', handlePlanEvent as EventListener);
-    es.addEventListener('plan_cancelled', handlePlanEvent as EventListener);
-
-    es.onerror = () => {
-      // EventSource 自动重连
-    };
-
-    return () => es.close();
-  }, [planId]);
-
-  const handleStart = async () => {
-    if (!planId) return;
-    setIsActing(true);
-    setError(null);
-    try {
-      const res = await fetch(`${DEFAULT_BASE_URL}/${planId}/start`, { method: 'POST' });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail ?? `HTTP ${res.status}`);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err);
-      setError(message);
-      setIsActing(false);
+  const handleExecute = useCallback(async () => {
+    if (!prompt.trim()) {
+      composer.setError('请输入 prompt');
+      return;
     }
-  };
+    await composer.execute({
+      prompt: prompt.trim(),
+      auto_decompose: autoDecompose,
+      max_steps: maxSteps,
+    });
+  }, [prompt, autoDecompose, maxSteps, composer]);
 
-  const handlePause = async () => {
-    if (!planId) return;
-    try {
-      const res = await fetch(`${DEFAULT_BASE_URL}/${planId}/pause`, { method: 'POST' });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail ?? `HTTP ${res.status}`);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+  const handleCancel = useCallback(async () => {
+    if (composer.currentExecution) {
+      await composer.cancelPlan(composer.currentExecution.plan_id);
     }
-  };
+  }, [composer]);
 
-  const handleResume = async () => {
-    if (!planId) return;
-    try {
-      const res = await fetch(`${DEFAULT_BASE_URL}/${planId}/resume`, { method: 'POST' });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail ?? `HTTP ${res.status}`);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+  const handlePause = useCallback(async () => {
+    if (composer.currentExecution) {
+      await composer.pausePlan(composer.currentExecution.plan_id);
     }
-  };
+  }, [composer]);
 
-  const handleCancel = async () => {
-    if (!planId) return;
-    try {
-      const res = await fetch(`${DEFAULT_BASE_URL}/${planId}/cancel`, { method: 'POST' });
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail ?? `HTTP ${res.status}`);
-      }
-      setIsActing(false);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+  const handleResume = useCallback(async () => {
+    if (composer.currentExecution) {
+      await composer.resumePlan(composer.currentExecution.plan_id);
     }
-  };
+  }, [composer]);
 
-  const handleRetryStep = async (stepId: string) => {
-    if (!planId) return;
-    try {
-      const res = await fetch(
-        `${DEFAULT_BASE_URL}/${planId}/step/${stepId}/retry`,
-        { method: 'POST' }
-      );
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail ?? `HTTP ${res.status}`);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+  const handleRetryStep = useCallback((stepId: string) => {
+    if (composer.currentExecution) {
+      void composer.retryStep(composer.currentExecution.plan_id, stepId);
     }
-  };
+  }, [composer]);
 
-  const handleSkipStep = async (stepId: string) => {
-    if (!planId) return;
-    try {
-      const res = await fetch(
-        `${DEFAULT_BASE_URL}/${planId}/step/${stepId}/skip`,
-        { method: 'POST' }
-      );
-      if (!res.ok) {
-        const body = await res.json().catch(() => ({}));
-        throw new Error(body.detail ?? `HTTP ${res.status}`);
-      }
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
+  const handleSkipStep = useCallback((stepId: string) => {
+    if (composer.currentExecution) {
+      void composer.skipStep(composer.currentExecution.plan_id, stepId);
     }
-  };
+  }, [composer]);
+
+  const plan = composer.currentExecution?.plan || composer.currentPlan;
+  const execution = composer.currentExecution;
+  const isRunning = execution?.status === 'running';
+  const isPaused = execution?.status === 'paused';
+  const isFinished = execution && ['completed', 'failed', 'cancelled'].includes(execution.status);
 
   return (
     <div
-      className="bg-[var(--bg-panel)] rounded-2xl border border-surface-200 p-4 shadow-sm"
-      data-testid="plan-executor-panel"
+      data-testid={testId}
+      className={`flex flex-col h-full bg-[var(--bg-app)] text-[var(--text-primary)] ${compact ? 'text-xs' : ''}`}
     >
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm font-semibold text-[var(--text-primary)] flex items-center gap-2">
-          <span>📋</span> Plan Executor
-        </h3>
-        <button
-          onClick={onClose}
-          className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
-          aria-label="关闭"
-        >
-          ✕
-        </button>
+      {/* Header */}
+      <div className="flex items-center justify-between px-3 py-2 border-b border-[var(--border-color)] bg-[var(--bg-panel)]">
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-semibold">▶️ Plan Executor</span>
+          {execution && (
+            <span className="text-[10px] text-[var(--text-tertiary)]">
+              {execution.execution_id}
+            </span>
+          )}
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            data-testid={`${testId}-close`}
+            onClick={onClose}
+            className="px-2 py-0.5 text-xs rounded hover:bg-[var(--bg-elevated)]"
+          >
+            ✕
+          </button>
+        )}
       </div>
 
-      {error && (
-        <div className="mb-3 p-2 text-xs bg-red-50 text-red-700 rounded" data-testid="plan-error">
-          {error}
+      {/* Prompt 输入区 */}
+      <div className="p-3 border-b border-[var(--border-color)] space-y-2">
+        <textarea
+          data-testid={`${testId}-prompt`}
+          value={prompt}
+          onChange={(e) => setPrompt(e.target.value)}
+          placeholder="输入用户需求，系统将自动调用 LLM 分解为可执行步骤…"
+          rows={3}
+          disabled={isRunning}
+          className="w-full px-2 py-1.5 text-xs bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded resize-none focus:outline-none focus:border-hermes-500 disabled:opacity-50"
+        />
+        <div className="flex items-center gap-2">
+          <label className="text-[10px] text-[var(--text-tertiary)] flex items-center gap-1">
+            <input
+              type="checkbox"
+              data-testid={`${testId}-auto-decompose`}
+              checked={autoDecompose}
+              onChange={(e) => setAutoDecompose(e.target.checked)}
+              disabled={isRunning}
+            />
+            LLM 分解
+          </label>
+          <label className="text-[10px] text-[var(--text-tertiary)] flex items-center gap-1">
+            max_steps:
+            <input
+              type="number"
+              data-testid={`${testId}-max-steps`}
+              value={maxSteps}
+              onChange={(e) => setMaxSteps(Math.max(1, Math.min(20, parseInt(e.target.value) || 8)))}
+              min={1}
+              max={20}
+              disabled={isRunning}
+              className="w-12 px-1 py-0.5 text-[10px] bg-[var(--bg-elevated)] border border-[var(--border-color)] rounded"
+            />
+          </label>
+          <div className="flex-1" />
+          {!execution && (
+            <button
+              type="button"
+              data-testid={`${testId}-execute`}
+              onClick={() => void handleExecute()}
+              disabled={composer.isExecuting || !prompt.trim()}
+              className="px-3 py-1 text-xs rounded bg-hermes-500 text-white hover:bg-hermes-600 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {composer.isExecuting ? '⏳ 执行中…' : '🚀 一键执行'}
+            </button>
+          )}
+          {execution && isRunning && (
+            <>
+              <button
+                type="button"
+                data-testid={`${testId}-pause`}
+                onClick={() => void handlePause()}
+                className="px-2 py-1 text-xs rounded bg-purple-500/20 text-purple-300 hover:bg-purple-500/30"
+              >
+                ⏸ 暂停
+              </button>
+              <button
+                type="button"
+                data-testid={`${testId}-cancel`}
+                onClick={() => void handleCancel()}
+                className="px-2 py-1 text-xs rounded bg-red-500/20 text-red-300 hover:bg-red-500/30"
+              >
+                ⏹ 取消
+              </button>
+            </>
+          )}
+          {execution && isPaused && (
+            <>
+              <button
+                type="button"
+                data-testid={`${testId}-resume`}
+                onClick={() => void handleResume()}
+                className="px-2 py-1 text-xs rounded bg-emerald-500/20 text-emerald-300 hover:bg-emerald-500/30"
+              >
+                ▶ 恢复
+              </button>
+              <button
+                type="button"
+                data-testid={`${testId}-cancel`}
+                onClick={() => void handleCancel()}
+                className="px-2 py-1 text-xs rounded bg-red-500/20 text-red-300 hover:bg-red-500/30"
+              >
+                ⏹ 取消
+              </button>
+            </>
+          )}
+          {execution && isFinished && (
+            <button
+              type="button"
+              data-testid={`${testId}-reset`}
+              onClick={() => {
+                composer.setError(null);
+                // 重置由 user 重新输入
+              }}
+              className="px-2 py-1 text-xs rounded bg-slate-500/20 text-slate-300 hover:bg-slate-500/30"
+            >
+              🔄 新建
+            </button>
+          )}
+        </div>
+        {composer.error && (
+          <div
+            data-testid={`${testId}-error`}
+            className="px-2 py-1 text-[10px] rounded bg-red-500/10 text-red-300 border border-red-500/30"
+          >
+            ⚠ {composer.error}
+          </div>
+        )}
+      </div>
+
+      {/* 执行状态区 */}
+      {execution && (
+        <div className="p-3 border-b border-[var(--border-color)] space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <StatusBadge status={execution.status} />
+              <span className="text-[10px] text-[var(--text-tertiary)]">
+                {plan?.title || 'Plan'}
+              </span>
+            </div>
+            <span className="text-[10px] text-[var(--text-tertiary)]">
+              {plan?.steps?.length || 0} steps · {Math.round((execution.progress || 0) * 100)}%
+            </span>
+          </div>
+          <ProgressBar value={execution.progress} />
         </div>
       )}
 
-      {!plan ? (
-        <div className="text-xs text-[var(--text-secondary)]" data-testid="plan-empty">
-          {planId ? '加载中...' : '当前没有 Plan'}
-        </div>
-      ) : (
-        <>
-          <div className="mb-3">
-            <div className="text-sm font-medium text-[var(--text-primary)]" data-testid="plan-title">
-              {plan.title}
-            </div>
-            <div className="text-xs text-[var(--text-secondary)] mt-1">{plan.description}</div>
-            <div className="text-xs text-[var(--text-secondary)] mt-1 flex items-center gap-2 flex-wrap">
-              <span>
-                状态:{' '}
-                <span className="font-medium" data-testid="plan-status">
-                  {PLAN_STATUS_LABELS[plan.status]}
-                </span>
-              </span>
-              <span>·</span>
-              <span>
-                进度:{' '}
-                <span data-testid="plan-progress">
-                  {Math.round((plan.progress ?? 0) * 100)}%
-                </span>
-              </span>
-              <span>·</span>
-              <span>step 数: {plan.steps.length}</span>
-            </div>
-            {plan.summary && (
-              <div className="text-xs text-[var(--text-secondary)] mt-1" data-testid="plan-summary">
-                {Object.entries(plan.summary)
-                  .filter(([, n]) => n > 0)
-                  .map(([k, n]) => `${k}=${n}`)
-                  .join(' / ')}
-              </div>
-            )}
+      {/* 步骤列表 */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-2">
+        {!execution && !plan && (
+          <div className="text-center text-xs text-[var(--text-tertiary)] py-8">
+            等待执行…
           </div>
-
-          {/* 控制按钮 */}
-          <div className="flex gap-2 mb-3 flex-wrap" data-testid="plan-controls">
-            {plan.status === 'draft' && !isActing && (
-              <button
-                onClick={handleStart}
-                className="flex-1 min-w-[80px] px-3 py-1.5 text-xs font-medium text-white
-                           bg-gradient-to-r from-fuchsia-500 to-cyan-500 rounded-lg
-                           hover:opacity-90"
-                data-testid="plan-start-btn"
-              >
-                ▶ 启动
-              </button>
-            )}
-            {plan.status === 'running' && (
-              <>
-                <button
-                  onClick={handlePause}
-                  className="flex-1 min-w-[80px] px-3 py-1.5 text-xs bg-amber-100 text-amber-700 rounded-lg
-                             hover:bg-amber-200"
-                  data-testid="plan-pause-btn"
-                >
-                  ⏸ 暂停
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="flex-1 min-w-[80px] px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-lg
-                             hover:bg-red-200"
-                  data-testid="plan-cancel-btn"
-                >
-                  ⏹ 取消
-                </button>
-              </>
-            )}
-            {plan.status === 'paused' && (
-              <>
-                <button
-                  onClick={handleResume}
-                  className="flex-1 min-w-[80px] px-3 py-1.5 text-xs bg-emerald-100 text-emerald-700 rounded-lg
-                             hover:bg-emerald-200"
-                  data-testid="plan-resume-btn"
-                >
-                  ▶ 恢复
-                </button>
-                <button
-                  onClick={handleCancel}
-                  className="flex-1 min-w-[80px] px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-lg
-                             hover:bg-red-200"
-                >
-                  ⏹ 取消
-                </button>
-              </>
-            )}
-          </div>
-
-          {/* Step 列表 */}
-          <div className="space-y-1.5 max-h-96 overflow-y-auto" data-testid="plan-steps-list">
+        )}
+        {plan && plan.steps && plan.steps.length > 0 && (
+          <>
             {plan.steps.map((step) => (
-              <div
+              <StepCard
                 key={step.step_id}
-                className="p-2 bg-surface-50 rounded-lg text-xs space-y-1"
-                data-testid={`plan-step-${step.step_id}`}
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-1.5 min-w-0 flex-1">
-                    <span className="font-mono text-surface-400 flex-shrink-0">
-                      {step.action}
-                    </span>
-                    <span className="font-medium text-surface-800 truncate">
-                      {step.title}
-                    </span>
-                  </div>
-                  <div
-                    className={`px-1.5 py-0.5 rounded-full flex-shrink-0 ${STEP_STATUS_COLORS[step.status]}`}
-                  >
-                    {STEP_STATUS_LABELS[step.status]}
-                  </div>
-                </div>
-                {step.description && (
-                  <div className="text-surface-500 line-clamp-2">{step.description}</div>
-                )}
-                {step.status === 'running' && (
-                  <div className="w-full bg-slate-200 rounded-full h-1.5">
-                    <div
-                      className="bg-blue-500 h-1.5 rounded-full transition-all"
-                      style={{ width: `${Math.round((step.progress ?? 0) * 100)}%` }}
-                    />
-                  </div>
-                )}
-                {step.depends_on && step.depends_on.length > 0 && (
-                  <div className="text-surface-400 text-[10px]">
-                    依赖: {step.depends_on.join(', ')}
-                  </div>
-                )}
-                {step.error && (
-                  <div className="text-red-600 text-[10px]" data-testid={`step-error-${step.step_id}`}>
-                    ❌ {step.error}
-                  </div>
-                )}
-                {(step.status === 'failed' || step.status === 'cancelled') && (
-                  <div className="flex gap-1.5 pt-1">
-                    <button
-                      onClick={() => handleRetryStep(step.step_id)}
-                      className="text-[10px] px-2 py-0.5 bg-blue-100 text-blue-700 rounded hover:bg-blue-200"
-                      data-testid={`step-retry-${step.step_id}`}
-                    >
-                      🔄 重试
-                    </button>
-                    <button
-                      onClick={() => handleSkipStep(step.step_id)}
-                      className="text-[10px] px-2 py-0.5 bg-gray-100 text-gray-600 rounded hover:bg-gray-200"
-                      data-testid={`step-skip-${step.step_id}`}
-                    >
-                      ⏭ 跳过
-                    </button>
-                  </div>
-                )}
-              </div>
+                step={step}
+                onRetry={handleRetryStep}
+                onSkip={handleSkipStep}
+                compact={compact}
+              />
             ))}
+          </>
+        )}
+        {plan && (!plan.steps || plan.steps.length === 0) && (
+          <div className="text-center text-xs text-[var(--text-tertiary)] py-8">
+            计划无步骤
           </div>
-        </>
+        )}
+      </div>
+
+      {/* Footer */}
+      {execution && (
+        <div className="px-3 py-1.5 border-t border-[var(--border-color)] bg-[var(--bg-panel)] text-[10px] text-[var(--text-tertiary)] flex items-center justify-between">
+          <span>
+            {plan?.summary &&
+              Object.entries(plan.summary)
+                .filter(([_, n]) => n > 0)
+                .map(([s, n]) => `${STATUS_ICONS[s] || '•'} ${s}: ${n}`)
+                .join(' · ')}
+          </span>
+          {execution.finished_at && execution.started_at && (
+            <span>
+              {(execution.finished_at - execution.started_at).toFixed(1)}s
+            </span>
+          )}
+        </div>
       )}
     </div>
   );
