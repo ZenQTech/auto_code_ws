@@ -778,6 +778,10 @@ app.include_router(llm_stream_router, prefix="/api", tags=["llm-stream"])
 from .api.multi_task import router as multi_task_router
 app.include_router(multi_task_router, prefix="/api", tags=["multi-task"])
 
+# v6.34.0 Cycle 62 G62-02：注册多源上下文选择器 API
+from .api.multi_context import router as multi_context_router
+app.include_router(multi_context_router, prefix="/api", tags=["multi-context"])
+
 # v6.11.0 (P0 Cycle 2) 新增：注册 MCP (Model Context Protocol) API 路由
 from .api.mcp import router as mcp_router
 app.include_router(mcp_router, prefix="/api/mcp", tags=["mcp"])
