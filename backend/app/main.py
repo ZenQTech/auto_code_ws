@@ -854,6 +854,26 @@ app.include_router(replay_router)  # 路由器内部已定义 /api/replay prefix
 from .api.multimodal_chat import router as multimodal_chat_router
 app.include_router(multimodal_chat_router)  # 路由器内部已定义 /api/multimodal-chat prefix
 
+# Cycle 70 G70-01 新增：注册 AGENTS.md v2 多层级发现 API 路由
+# 对标 Codex CLI v0.124.0+ AGENTS.md 多层级 + override + 字节限制
+from .api.agents_md_v2 import router as agents_md_v2_router
+app.include_router(agents_md_v2_router, prefix="/api", tags=["agents-md-v2"])
+
+# Cycle 70 G70-01 新增：注册 Skills v2 5 位置注册表 API 路由
+# 对标 Codex CLI v0.124.0+ Skills 5 位置（REPO/USER/ADMIN/SYSTEM/DEFAULTS）
+from .api.skills_v2 import router as skills_v2_router
+app.include_router(skills_v2_router, prefix="/api", tags=["skills-v2"])
+
+# Cycle 70 G70-01 新增：注册 Skill Invocation 显式/隐式调用 API 路由
+# 对标 Codex CLI Skills $skill-name 显式 + 关键词隐式调用
+from .api.skill_invocation import router as skill_invocation_router
+app.include_router(skill_invocation_router, prefix="/api", tags=["skill-invocation"])
+
+# Cycle 70 G70-01 新增：注册 Plugins v2 本地注册 API 路由
+# 对标 Codex CLI Plugins 本地安装 + 依赖追踪
+from .api.plugins_v2 import router as plugins_v2_router
+app.include_router(plugins_v2_router, prefix="/api", tags=["plugins-v2"])
+
 # v6.13.0 (Cycle 2 T4) 新增：注册 Skills API 路由
 from .api.skills import router as skills_router
 app.include_router(skills_router, prefix="/api", tags=["skills"])
