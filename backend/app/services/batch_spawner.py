@@ -195,13 +195,20 @@ class CSVTaskParser:
     # 必填列
     REQUIRED_COLUMNS = ["task"]
     # 可选列
-    OPTIONAL_COLUMNS = ["nickname", "role", "model", "context"]
+    OPTIONAL_COLUMNS = [
+        "nickname",
+        "role",
+        "model",
+        "context",
+        "model_reasoning_effort",  # Cycle 66 G66-01 新增
+    ]
     # 字段长度限制
     MAX_TASK_LEN = 4096
     MAX_NICKNAME_LEN = 64
     MAX_ROLE_LEN = 64
     MAX_MODEL_LEN = 128
     MAX_CONTEXT_LEN = 4096
+    MAX_EFFORT_LEN = 16
 
     def __init__(self, max_rows: int = MAX_BATCH_ROWS):
         self.max_rows = max_rows
@@ -389,12 +396,43 @@ class CSVTaskParser:
                 )
                 return None
 
+        # model_reasoning_effort 可选（Cycle 66 G66-01 新增）
+        reasoning_effort_str = (row.get("model_reasoning_effort") or "").strip() or None
+        if reasoning_effort_str and len(reasoning_effort_str) > self.MAX_EFFORT_LEN:
+            self._errors.append(
+                BatchError(
+                    row_index=row_index,
+                    field="model_reasoning_effort",
+                    message=(
+                        f"model_reasoning_effort 长度 {len(reasoning_effort_str)} "
+                        f"超过 {self.MAX_EFFORT_LEN}"
+                    ),
+                    raw=raw,
+                )
+            )
+            return None
+        # 验证 effort 合法性
+        if reasoning_effort_str and reasoning_effort_str not in ("low", "medium", "high"):
+            self._errors.append(
+                BatchError(
+                    row_index=row_index,
+                    field="model_reasoning_effort",
+                    message=(
+                        f"model_reasoning_effort 必须是 low/medium/high 之一，"
+                        f"实际: {reasoning_effort_str}"
+                    ),
+                    raw=raw,
+                )
+            )
+            return None
+
         return {
             "task": task,
             "nickname": nickname,
             "role": role,
             "model": model,
             "context": context,
+            "model_reasoning_effort": reasoning_effort_str,
         }
 
 
@@ -694,6 +732,24 @@ class BatchSpawner:
             job.instances[inst.agent_id] = inst
             job.failed += 1
             return
+
+        # 3.5 应用 reasoning effort（Cycle 66 G66-01）
+        row_effort = row.get("model_reasoning_effort")
+        if row_effort:
+            try:
+                from .reasoning_effort import get_reasoning_controller
+
+                controller = get_reasoning_controller()
+                controller.set_effort(
+                    agent_id=instance.agent_id,
+                    effort=row_effort,
+                    source="csv",
+                )
+            except Exception as e:  # noqa: BLE001
+                logger.warning(
+                    f"设置 reasoning effort 失败: agent_id={instance.agent_id}, "
+                    f"effort={row_effort}, error={e}"
+                )
 
         # 4. 记录 instance
         inst = BatchInstance(

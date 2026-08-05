@@ -23,7 +23,7 @@ describe('EmbeddedTools', () => {
     expect(screen.getByTestId('embedded-tool-overview')).toBeTruthy();
   });
 
-  it('显示所有 11 个 tab', () => {
+  it('显示所有 12 个 tab', () => {
     render(<EmbeddedTools />);
     expect(screen.getByTestId('embedded-tools-tab-overview')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-editor')).toBeTruthy();
@@ -36,6 +36,7 @@ describe('EmbeddedTools', () => {
     expect(screen.getByTestId('embedded-tools-tab-context')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-stage')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-batch')).toBeTruthy();
+    expect(screen.getByTestId('embedded-tools-tab-snapshot')).toBeTruthy();
   });
 
   it('点击 editor tab 切换内容', () => {
@@ -110,11 +111,11 @@ describe('EmbeddedTools', () => {
   it('每个 tab 都有 role=tab', () => {
     render(<EmbeddedTools />);
     const tabs = screen.getAllByRole('tab');
-    // 11 个内嵌工具：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch
-    expect(tabs.length).toBe(11);
+    // 12 个内嵌工具：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch / snapshot
+    expect(tabs.length).toBe(12);
   });
 
-  it('显示所有 11 个 tab 测试 ID', () => {
+  it('显示所有 12 个 tab 测试 ID', () => {
     render(<EmbeddedTools />);
     expect(screen.getByTestId('embedded-tools-tab-overview')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-editor')).toBeTruthy();
@@ -127,6 +128,7 @@ describe('EmbeddedTools', () => {
     expect(screen.getByTestId('embedded-tools-tab-context')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-stage')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-batch')).toBeTruthy();
+    expect(screen.getByTestId('embedded-tools-tab-snapshot')).toBeTruthy();
   });
 
   it('点击 stage tab 切换内容', () => {
@@ -150,6 +152,38 @@ describe('EmbeddedTools', () => {
     render(<EmbeddedTools defaultTab="batch" />);
     fireEvent.click(screen.getByTestId('embedded-batch-open-btn'));
     expect(screen.getByTestId('batch-spawn-panel')).toBeTruthy();
+  });
+
+  it('点击 snapshot tab 切换内容（无 session 显示介绍页）', () => {
+    render(<EmbeddedTools defaultTab="snapshot" />);
+    expect(screen.getByTestId('embedded-tool-snapshot-empty')).toBeTruthy();
+  });
+
+  it('snapshot tab 介绍页有 4 个特性卡片', () => {
+    const { container } = render(<EmbeddedTools defaultTab="snapshot" />);
+    // 介绍页有 4 个 grid 卡片
+    const cards = container.querySelectorAll('.grid-cols-2 > div');
+    expect(cards.length).toBeGreaterThanOrEqual(4);
+  });
+
+  it('点击 snapshot tab 有 sessionId 时显示 SnapshotPanel', () => {
+    render(<EmbeddedTools sessionId="sess-snap" defaultTab="snapshot" />);
+    // SnapshotPanel 自身的 testid
+    expect(screen.getByTestId('snapshot-panel')).toBeTruthy();
+  });
+
+  it('snapshot tab 恢复回调 onRestore 透传', () => {
+    const onRestore = vi.fn();
+    render(
+      <EmbeddedTools
+        sessionId="sess-snap"
+        defaultTab="snapshot"
+        onRestore={onRestore}
+      />,
+    );
+    expect(screen.getByTestId('snapshot-panel')).toBeTruthy();
+    // SnapshotPanel 内部会通过 onRestore 通知
+    // 这里只验证 panel 已挂载，restore 行为在 SnapshotPanel.test.tsx 中覆盖
   });
 
   it('active tab 有 aria-selected=true', () => {

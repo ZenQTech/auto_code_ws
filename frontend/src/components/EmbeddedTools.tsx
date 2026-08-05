@@ -1,28 +1,32 @@
 /**
  * # ============================================================
- * EmbeddedTools - 内嵌工具矩阵组件 (v1.3.0)
+ * EmbeddedTools - 内嵌工具矩阵组件 (v1.4.0)
  * Cycle 60+ Solo 重构 - 对标 Trae Solo / Codex 内嵌工具
  * # ====================================
- * 核心作用：在右栏提供内嵌的工具面板：编辑器、终端、浏览器、代码变更、内存、文件浏览、阶段检测、批量任务等
- * 设计要点（v1.1.0 G60-FIX-17）：
- *   - Tab 切换：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch
- *   - 内嵌 iframe / 自实现组件
- *   - 与 ToolsMatrixPanel 协同（外层按钮 + 内嵌细节）
- *   - 可折叠/展开
- *   - 状态持久化
- *   - v1.1.0 视觉优化：
- *     - tab 头 h-8 (32px)，与工具栏对齐
- *     - tab 字号 11px
- *     - active tab 使用底部下划线 + 主题色文字，更接近浏览器风格
- *     - tab 之间分隔更清晰（hover 态背景）
- *     - 内容区域 padding 统一
- *   - v1.2.0 G63-03 阶段检测器集成：
- *     - 新增 stage tab
- *     - Auto-Follow 联动：当 stage 变化且 auto_follow 启用时自动切换 tab
- *     - 阶段变化通过 useStage 订阅
- *   - v1.3.0 G65-02 批量任务集成：
- *     - 新增 batch tab（嵌入 BatchSpawnPanel）
- *     - Auto-Follow 阶段 → batch tab 暂不联动（避免误触发）
+ * # 核心作用：在右栏提供内嵌的工具面板：编辑器、终端、浏览器、代码变更、内存、文件浏览、阶段检测、批量任务、快照等
+ * # 设计要点（v1.1.0 G60-FIX-17）：
+ * #   - Tab 切换：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch / snapshot
+ * #   - 内嵌 iframe / 自实现组件
+ * #   - 与 ToolsMatrixPanel 协同（外层按钮 + 内嵌细节）
+ * #   - 可折叠/展开
+ * #   - 状态持久化
+ * #   - v1.1.0 视觉优化：
+ * #     - tab 头 h-8 (32px)，与工具栏对齐
+ * #     - tab 字号 11px
+ * #     - active tab 使用底部下划线 + 主题色文字，更接近浏览器风格
+ * #     - tab 之间分隔更清晰（hover 态背景）
+ * #     - 内容区域 padding 统一
+ * #   - v1.2.0 G63-03 阶段检测器集成：
+ * #     - 新增 stage tab
+ * #     - Auto-Follow 联动：当 stage 变化且 auto_follow 启用时自动切换 tab
+ * #     - 阶段变化通过 useStage 订阅
+ * #   - v1.3.0 G65-02 批量任务集成：
+ * #     - 新增 batch tab（嵌入 BatchSpawnPanel）
+ * #     - Auto-Follow 阶段 → batch tab 暂不联动（避免误触发）
+ * #   - v1.4.0 G66-02 快照管理集成：
+ * #     - 新增 snapshot tab（嵌入 SnapshotPanel）
+ * #     - 与 UndoConfirmDialog / DiffPreview 联动
+ * #     - 阶段 → snapshot tab 不联动（按需手动切换）
  * 输入参数：
  *   - defaultTab?: EmbeddedTool
  *   - sessionId?: string 当前 session
@@ -42,16 +46,21 @@
  *                                - 新增 stage tab（嵌入 StageDetectorView）
  *                                - Auto-Follow 联动逻辑
  *                                - wsUrl 参数透传
- *   - 2026-08-04 | v1.3.0 | G65-02 批量任务集成：
- *                                - 新增 batch tab（嵌入 BatchSpawnPanel）
- *                                - EmbeddedTool 联合类型扩展
- * ====================================
+ * #   - 2026-08-04 | v1.3.0 | G65-02 批量任务集成：
+ * #                                - 新增 batch tab（嵌入 BatchSpawnPanel）
+ * #                                - EmbeddedTool 联合类型扩展
+ * #   - 2026-08-04 | v1.4.0 | G66-02 快照管理集成：
+ * #                                - 新增 snapshot tab（嵌入 SnapshotPanel）
+ * #                                - 阶段 → snapshot tab 不联动
+ * #                                - EmbeddedTool 联合类型扩展
+ * # ====================================
  */
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ContextSelector } from './ContextSelector';
 import { StageDetectorView } from './StageDetectorView';
 import { BatchSpawnPanel } from './BatchSpawnPanel';
+import { SnapshotPanel } from './SnapshotPanel';
 import { useStage, type StageId } from '../hooks/useStage';
 
 // ============================================================
@@ -69,7 +78,8 @@ export type EmbeddedTool =
   | 'metrics'
   | 'context'
   | 'stage'
-  | 'batch';
+  | 'batch'
+  | 'snapshot';
 
 export interface EmbeddedToolsProps {
   sessionId?: string | null;
@@ -77,6 +87,7 @@ export interface EmbeddedToolsProps {
   wsUrl?: string;
   className?: string;
   'data-testid'?: string;
+  onRestore?: (snapshotId: string, fileCount: number) => void;
 }
 
 // ============================================================
@@ -95,6 +106,7 @@ const TOOL_META: Record<EmbeddedTool, { label: string; emoji: string; descriptio
   context: { label: '上下文', emoji: '📎', description: '多源上下文选择器（文件/代码/终端/Git/文档/网页）' },
   stage: { label: '阶段', emoji: '🎯', description: '阶段检测器 + Auto-Follow 联动' },
   batch: { label: '批量', emoji: '🚀', description: 'CSV 批量 spawn agents（G65-02）' },
+  snapshot: { label: '快照', emoji: '📸', description: '文件级快照管理 + 操作级回退（G66-02）' },
 };
 
 /**
@@ -331,6 +343,51 @@ const BatchView: React.FC<{
   </div>
 );
 
+const SnapshotView: React.FC<{
+  sessionId?: string | null;
+  onRestore?: (snapshotId: string, fileCount: number) => void;
+}> = ({ sessionId, onRestore }) => {
+  // 必须有 sessionId 才能使用 SnapshotPanel，否则显示介绍页
+  if (!sessionId) {
+    return (
+      <div
+        className="p-6 flex flex-col items-center justify-center h-full text-center"
+        data-testid="embedded-tool-snapshot-empty"
+      >
+        <div className="text-4xl mb-3">📸</div>
+        <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
+          快照管理
+        </h3>
+        <p className="text-[11px] text-[var(--text-secondary)] max-w-md mb-4">
+          文件级快照 + 操作级回退（对标 Codex /undo 与 agent-rollback checkpoint）
+        </p>
+        <div className="grid grid-cols-2 gap-2 max-w-md w-full text-[10px] text-[var(--text-tertiary)]">
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            🗂️ 内容寻址存储
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            🛡️ 冲突检测
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            👁️ Diff 预览
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            ⏪ 一键回退
+          </div>
+        </div>
+        <p className="mt-4 text-[10px] text-[var(--text-tertiary)]">
+          启动一个 session 后即可创建快照
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="h-full" data-testid="embedded-tool-snapshot">
+      <SnapshotPanel sessionId={sessionId} onRestore={onRestore} />
+    </div>
+  );
+};
+
 // ============================================================
 // 主组件
 // ====================================
@@ -341,6 +398,7 @@ export const EmbeddedTools: React.FC<EmbeddedToolsProps> = ({
   wsUrl,
   className = '',
   'data-testid': testId = 'embedded-tools',
+  onRestore,
 }) => {
   const [tab, setTab] = useState<EmbeddedTool>(defaultTab || readTool());
   const [batchOpen, setBatchOpen] = useState(false);
@@ -428,6 +486,8 @@ export const EmbeddedTools: React.FC<EmbeddedToolsProps> = ({
             onClose={() => setBatchOpen(false)}
           />
         );
+      case 'snapshot':
+        return <SnapshotView sessionId={sessionId} onRestore={onRestore} />;
       default:
         return <OverviewView sessionId={sessionId} />;
     }

@@ -806,6 +806,12 @@ app.include_router(stage_router, prefix="/api", tags=["stage"])
 from .api.fs_watcher import router as fs_watcher_router
 app.include_router(fs_watcher_router, prefix="/api", tags=["fs-watcher"])
 
+# v1.0.0 Cycle 66 G66-02: Operation-level Undo 完善
+# 文件级快照 + 安全回退 + 冲突检测
+# 对标 agent-rollback content-addressed snapshots
+from .api.snapshots import router as snapshots_router
+app.include_router(snapshots_router, prefix="/api", tags=["snapshots"])
+
 # v6.11.0 (P0 Cycle 2) 新增：注册 MCP (Model Context Protocol) API 路由
 from .api.mcp import router as mcp_router
 app.include_router(mcp_router, prefix="/api/mcp", tags=["mcp"])

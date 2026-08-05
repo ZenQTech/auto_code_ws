@@ -27,6 +27,11 @@
 #  18. GET    /api/agent-roles/batch/{id}                 查询批量状态
 #  19. POST   /api/agent-roles/batch/{id}/cancel          取消批量任务
 #  20. GET    /api/agent-roles/batch/{id}/export          导出结果
+#  === Cycle 66 G66-01 新增（Reasoning Effort 切换） ===
+#  21. PUT    /api/agent-roles/instances/{id}/reasoning  设置 reasoning effort
+#  22. GET    /api/agent-roles/instances/{id}/reasoning  获取当前 effort
+#  23. GET    /api/agent-roles/instances/{id}/reasoning/history  历史记录
+#  24. GET    /api/agent-roles/reasoning/stats           Reasoning 统计
 # ====================================
 # 修改记录：
 #   - 2026-08-04 | v1.0.0 | Cycle 63 G63-02 初次创建
@@ -41,6 +46,11 @@
 #                                - /batch/{id}/cancel 端点
 #                                - /batch/{id}/export 端点
 #                                - /batch/list 端点
+#   - 2026-08-04 | v4.0.0 | Cycle 66 G66-01 增加：
+#                                - /instances/{id}/reasoning PUT 端点（设置 effort）
+#                                - /instances/{id}/reasoning GET 端点（查询）
+#                                - /instances/{id}/reasoning/history GET 端点
+#                                - /reasoning/stats GET 端点
 # ====================================
 """
 
@@ -638,6 +648,106 @@ async def export_batch(batch_id: str, format: str = "json") -> Dict[str, Any]:
         "batch_id": batch_id,
         "format": format,
         "content": content,
+    }
+
+
+# ============================================================
+# Cycle 66 G66-01: Reasoning Effort API
+# ============================================================
+
+
+class SetReasoningRequest(BaseModel):
+    """设置 reasoning effort 请求"""
+
+    effort: str = Field(..., min_length=1, max_length=16)
+
+
+@router.put("/instances/{agent_id}/reasoning")
+async def set_instance_reasoning(
+    agent_id: str, req: SetReasoningRequest
+) -> Dict[str, Any]:
+    """
+    设置 Agent 实例的 reasoning effort（low/medium/high）
+    实时切换，下次 LLM 调用生效
+    """
+    from ..services.reasoning_effort import (
+        AgentNotFoundForEffortError,
+        InvalidEffortError,
+        get_reasoning_controller,
+    )
+
+    # 校验 agent 存在
+    manager = get_agent_role_manager()
+    try:
+        manager.get_instance(agent_id)
+    except AgentInstanceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    controller = get_reasoning_controller()
+    try:
+        result = controller.set_effort(
+            agent_id=agent_id, effort=req.effort, source="api"
+        )
+    except InvalidEffortError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+    except AgentNotFoundForEffortError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    return result
+
+
+@router.get("/instances/{agent_id}/reasoning")
+async def get_instance_reasoning(agent_id: str) -> Dict[str, Any]:
+    """获取 Agent 实例的当前 reasoning effort"""
+    from ..services.reasoning_effort import get_reasoning_controller
+
+    # 校验 agent 存在
+    manager = get_agent_role_manager()
+    try:
+        manager.get_instance(agent_id)
+    except AgentInstanceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    controller = get_reasoning_controller()
+    return {
+        "success": True,
+        **controller.get_state(agent_id),
+    }
+
+
+@router.get("/instances/{agent_id}/reasoning/history")
+async def get_instance_reasoning_history(
+    agent_id: str,
+    limit: int = Query(default=20, ge=1, le=50),
+) -> Dict[str, Any]:
+    """获取 Agent 实例的 reasoning effort 变更历史"""
+    from ..services.reasoning_effort import get_reasoning_controller
+
+    manager = get_agent_role_manager()
+    try:
+        manager.get_instance(agent_id)
+    except AgentInstanceNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+
+    controller = get_reasoning_controller()
+    history = controller.get_history(agent_id, limit=limit)
+    return {
+        "success": True,
+        "agent_id": agent_id,
+        "history": history,
+        "count": len(history),
+    }
+
+
+@router.get("/reasoning/stats")
+async def get_reasoning_stats() -> Dict[str, Any]:
+    """Reasoning effort 统计信息"""
+    from ..services.reasoning_effort import get_reasoning_controller
+
+    controller = get_reasoning_controller()
+    return {
+        "success": True,
+        "stats": controller.get_stats(),
     }
 
 
