@@ -23,7 +23,7 @@ describe('EmbeddedTools', () => {
     expect(screen.getByTestId('embedded-tool-overview')).toBeTruthy();
   });
 
-  it('显示所有 12 个 tab', () => {
+  it('显示所有 14 个 tab', () => {
     render(<EmbeddedTools />);
     expect(screen.getByTestId('embedded-tools-tab-overview')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-editor')).toBeTruthy();
@@ -37,6 +37,8 @@ describe('EmbeddedTools', () => {
     expect(screen.getByTestId('embedded-tools-tab-stage')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-batch')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-snapshot')).toBeTruthy();
+    expect(screen.getByTestId('embedded-tools-tab-thinking')).toBeTruthy();
+    expect(screen.getByTestId('embedded-tools-tab-stream')).toBeTruthy();
   });
 
   it('点击 editor tab 切换内容', () => {
@@ -111,11 +113,11 @@ describe('EmbeddedTools', () => {
   it('每个 tab 都有 role=tab', () => {
     render(<EmbeddedTools />);
     const tabs = screen.getAllByRole('tab');
-    // 12 个内嵌工具：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch / snapshot
-    expect(tabs.length).toBe(12);
+    // 14 个内嵌工具：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch / snapshot / thinking / stream
+    expect(tabs.length).toBe(14);
   });
 
-  it('显示所有 12 个 tab 测试 ID', () => {
+  it('显示所有 14 个 tab 测试 ID', () => {
     render(<EmbeddedTools />);
     expect(screen.getByTestId('embedded-tools-tab-overview')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-editor')).toBeTruthy();
@@ -129,6 +131,8 @@ describe('EmbeddedTools', () => {
     expect(screen.getByTestId('embedded-tools-tab-stage')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-batch')).toBeTruthy();
     expect(screen.getByTestId('embedded-tools-tab-snapshot')).toBeTruthy();
+    expect(screen.getByTestId('embedded-tools-tab-thinking')).toBeTruthy();
+    expect(screen.getByTestId('embedded-tools-tab-stream')).toBeTruthy();
   });
 
   it('点击 stage tab 切换内容', () => {

@@ -824,6 +824,11 @@ app.include_router(compaction_router, prefix="/api", tags=["compaction"])
 from .api.session_fork_resume import router as fork_resume_router
 app.include_router(fork_resume_router, prefix="/api", tags=["session-fork-resume"])
 
+# Cycle 67 G67-01 新增：注册思考流 (Thinking Stream) API 路由
+# 对标 Codex PR #6006 reasoning stream
+from .api.thinking import router as thinking_router
+app.include_router(thinking_router, prefix="/api", tags=["thinking"])
+
 # v6.13.0 (Cycle 2 T4) 新增：注册 Skills API 路由
 from .api.skills import router as skills_router
 app.include_router(skills_router, prefix="/api", tags=["skills"])

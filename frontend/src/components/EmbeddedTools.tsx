@@ -1,11 +1,11 @@
 /**
  * # ============================================================
- * EmbeddedTools - 内嵌工具矩阵组件 (v1.4.0)
+ * EmbeddedTools - 内嵌工具矩阵组件 (v1.5.0)
  * Cycle 60+ Solo 重构 - 对标 Trae Solo / Codex 内嵌工具
  * # ====================================
- * # 核心作用：在右栏提供内嵌的工具面板：编辑器、终端、浏览器、代码变更、内存、文件浏览、阶段检测、批量任务、快照等
+ * # 核心作用：在右栏提供内嵌的工具面板：编辑器、终端、浏览器、代码变更、内存、文件浏览、阶段检测、批量任务、快照、思考流、Markdown流式渲染等
  * # 设计要点（v1.1.0 G60-FIX-17）：
- * #   - Tab 切换：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch / snapshot
+ * #   - Tab 切换：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch / snapshot / thinking / stream
  * #   - 内嵌 iframe / 自实现组件
  * #   - 与 ToolsMatrixPanel 协同（外层按钮 + 内嵌细节）
  * #   - 可折叠/展开
@@ -27,6 +27,10 @@
  * #     - 新增 snapshot tab（嵌入 SnapshotPanel）
  * #     - 与 UndoConfirmDialog / DiffPreview 联动
  * #     - 阶段 → snapshot tab 不联动（按需手动切换）
+ * #   - v1.5.0 G67-01/02 思考流 + Markdown流式渲染集成：
+ * #     - 新增 thinking tab（嵌入 ThinkingStreamView）
+ * #     - 新增 stream tab（嵌入 StreamingMarkdownView）
+ * #     - 与 WebSocket 实时联动
  * 输入参数：
  *   - defaultTab?: EmbeddedTool
  *   - sessionId?: string 当前 session
@@ -53,6 +57,10 @@
  * #                                - 新增 snapshot tab（嵌入 SnapshotPanel）
  * #                                - 阶段 → snapshot tab 不联动
  * #                                - EmbeddedTool 联合类型扩展
+ * #   - 2026-08-05 | v1.5.0 | G67-01/02 思考流 + Markdown流式渲染集成：
+ * #                                - 新增 thinking tab（嵌入 ThinkingStreamView）
+ * #                                - 新增 stream tab（嵌入 StreamingMarkdownView）
+ * #                                - EmbeddedTool 联合类型扩展（11→13 tabs）
  * # ====================================
  */
 
@@ -61,6 +69,8 @@ import { ContextSelector } from './ContextSelector';
 import { StageDetectorView } from './StageDetectorView';
 import { BatchSpawnPanel } from './BatchSpawnPanel';
 import { SnapshotPanel } from './SnapshotPanel';
+import { ThinkingStreamView } from './ThinkingStreamView';
+import { StreamingMarkdownView } from './StreamingMarkdownView';
 import { useStage, type StageId } from '../hooks/useStage';
 
 // ============================================================
@@ -79,7 +89,9 @@ export type EmbeddedTool =
   | 'context'
   | 'stage'
   | 'batch'
-  | 'snapshot';
+  | 'snapshot'
+  | 'thinking'
+  | 'stream';
 
 export interface EmbeddedToolsProps {
   sessionId?: string | null;
@@ -107,6 +119,8 @@ const TOOL_META: Record<EmbeddedTool, { label: string; emoji: string; descriptio
   stage: { label: '阶段', emoji: '🎯', description: '阶段检测器 + Auto-Follow 联动' },
   batch: { label: '批量', emoji: '🚀', description: 'CSV 批量 spawn agents（G65-02）' },
   snapshot: { label: '快照', emoji: '📸', description: '文件级快照管理 + 操作级回退（G66-02）' },
+  thinking: { label: '思考流', emoji: '💭', description: 'LLM 思考过程实时可视化（G67-01）' },
+  stream: { label: '流渲染', emoji: '📝', description: '渐进式 Markdown 渲染（G67-02）' },
 };
 
 /**
@@ -388,6 +402,102 @@ const SnapshotView: React.FC<{
   );
 };
 
+const ThinkingView: React.FC<{
+  sessionId?: string | null;
+  wsUrl?: string;
+}> = ({ sessionId, wsUrl }) => {
+  if (!sessionId) {
+    return (
+      <div
+        className="p-6 flex flex-col items-center justify-center h-full text-center"
+        data-testid="embedded-tool-thinking-empty"
+      >
+        <div className="text-4xl mb-3">💭</div>
+        <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
+          思考流
+        </h3>
+        <p className="text-[11px] text-[var(--text-secondary)] max-w-md mb-4">
+          LLM 推理过程实时可视化（对标 Codex PR #6006 reasoning stream）
+        </p>
+        <div className="grid grid-cols-2 gap-2 max-w-md w-full text-[10px] text-[var(--text-tertiary)]">
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            ⚡ token-by-token 流
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            📊 累计统计
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            📜 历史折叠
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            💾 导出 MD/JSON
+          </div>
+        </div>
+        <p className="mt-4 text-[10px] text-[var(--text-tertiary)]">
+          启动 session 后 LLM 思考将实时显示
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="h-full" data-testid="embedded-tool-thinking">
+      <ThinkingStreamView
+        sessionId={sessionId}
+        wsUrl={wsUrl}
+        testId="embedded-thinking-stream"
+      />
+    </div>
+  );
+};
+
+const StreamView: React.FC<{
+  sessionId?: string | null;
+  wsUrl?: string;
+}> = ({ sessionId, wsUrl }) => {
+  if (!sessionId) {
+    return (
+      <div
+        className="p-6 flex flex-col items-center justify-center h-full text-center"
+        data-testid="embedded-tool-stream-empty"
+      >
+        <div className="text-4xl mb-3">📝</div>
+        <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">
+          流式渲染
+        </h3>
+        <p className="text-[11px] text-[var(--text-secondary)] max-w-md mb-4">
+          渐进式 Markdown 渲染（对标 Trae SOLO 实时回答 + Codex 流式输出）
+        </p>
+        <div className="grid grid-cols-2 gap-2 max-w-md w-full text-[10px] text-[var(--text-tertiary)]">
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            📦 块级增量渲染
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            🎨 代码高亮
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            📊 进度条
+          </div>
+          <div className="p-2 rounded bg-[var(--bg-elevated)] border border-[var(--border-color)]">
+            📜 自动滚动
+          </div>
+        </div>
+        <p className="mt-4 text-[10px] text-[var(--text-tertiary)]">
+          启动 session 后流式回答将渐进渲染
+        </p>
+      </div>
+    );
+  }
+  return (
+    <div className="h-full" data-testid="embedded-tool-stream">
+      <StreamingMarkdownView
+        sessionId={sessionId}
+        wsUrl={wsUrl}
+        testId="embedded-stream-markdown"
+      />
+    </div>
+  );
+};
+
 // ============================================================
 // 主组件
 // ====================================
@@ -488,6 +598,10 @@ export const EmbeddedTools: React.FC<EmbeddedToolsProps> = ({
         );
       case 'snapshot':
         return <SnapshotView sessionId={sessionId} onRestore={onRestore} />;
+      case 'thinking':
+        return <ThinkingView sessionId={sessionId} wsUrl={wsUrl} />;
+      case 'stream':
+        return <StreamView sessionId={sessionId} wsUrl={wsUrl} />;
       default:
         return <OverviewView sessionId={sessionId} />;
     }

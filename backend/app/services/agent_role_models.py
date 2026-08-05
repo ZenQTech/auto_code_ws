@@ -45,6 +45,10 @@ class HookEventType(str, Enum):
     OUTPUT = "Output"                  # 输出 token
     ERROR = "Error"                    # 错误
     CANCELLED = "Cancelled"            # 取消
+    # G67-01 新增：思考过程事件
+    THINKING_START = "ThinkingStart"   # 思考开始（新一轮 reasoning）
+    THINKING_DELTA = "ThinkingDelta"   # 思考增量（token 级别）
+    THINKING_END = "ThinkingEnd"       # 思考结束（含摘要）
 
 
 class ToolCallRecord(BaseModel):
