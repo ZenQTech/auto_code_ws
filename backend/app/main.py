@@ -829,6 +829,16 @@ app.include_router(fork_resume_router, prefix="/api", tags=["session-fork-resume
 from .api.thinking import router as thinking_router
 app.include_router(thinking_router, prefix="/api", tags=["thinking"])
 
+# Cycle 68 G68-01 新增：注册项目代码库索引 (Codebase Indexer) API 路由
+# 对标 Codex codex-rs/project_index + Trae IDE 混合 BM25+Embedding
+from .api.codebase import router as codebase_router
+app.include_router(codebase_router)  # 路由器内部已定义 /api/codebase prefix，不重复添加
+
+# Cycle 68 G68-02 新增：注册多文件原子编辑 (apply_patch V4A) API 路由
+# 对标 Codex codex-rs/apply_patch + Trae AST-aware transactional edits
+from .api.apply_patch import router as apply_patch_router
+app.include_router(apply_patch_router)  # 路由器内部已定义 /api/apply-patch prefix
+
 # v6.13.0 (Cycle 2 T4) 新增：注册 Skills API 路由
 from .api.skills import router as skills_router
 app.include_router(skills_router, prefix="/api", tags=["skills"])
