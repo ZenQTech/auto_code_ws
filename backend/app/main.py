@@ -839,6 +839,21 @@ app.include_router(codebase_router)  # 路由器内部已定义 /api/codebase pr
 from .api.apply_patch import router as apply_patch_router
 app.include_router(apply_patch_router)  # 路由器内部已定义 /api/apply-patch prefix
 
+# Cycle 69 G69-01 新增：注册容器隔离执行器 (SandboxExecutor) API 路由
+# 对标 Codex codex-sandbox + Docker Sandboxes + codex-lockbox
+from .api.sandbox import router as sandbox_router
+app.include_router(sandbox_router)  # 路由器内部已定义 /api/sandbox prefix
+
+# Cycle 69 G69-02 新增：注册会话回放 (Session Replay) API 路由
+# 对标 Codex codex-replay + Session Picker + HTML 自包含回放
+from .api.replay import router as replay_router
+app.include_router(replay_router)  # 路由器内部已定义 /api/replay prefix
+
+# Cycle 69 G69-03 新增：注册语音输入 + 多模态对话 (Multimodal Chat) API 路由
+# 对标 Trae SOLO Multimodal + Web Speech API + GPT-4o Vision
+from .api.multimodal_chat import router as multimodal_chat_router
+app.include_router(multimodal_chat_router)  # 路由器内部已定义 /api/multimodal-chat prefix
+
 # v6.13.0 (Cycle 2 T4) 新增：注册 Skills API 路由
 from .api.skills import router as skills_router
 app.include_router(skills_router, prefix="/api", tags=["skills"])

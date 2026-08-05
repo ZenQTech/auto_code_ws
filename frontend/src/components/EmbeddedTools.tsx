@@ -1,11 +1,11 @@
 /**
  * # ============================================================
- * EmbeddedTools - 内嵌工具矩阵组件 (v1.5.0)
+ * EmbeddedTools - 内嵌工具矩阵组件 (v1.6.0)
  * Cycle 60+ Solo 重构 - 对标 Trae Solo / Codex 内嵌工具
  * # ====================================
- * # 核心作用：在右栏提供内嵌的工具面板：编辑器、终端、浏览器、代码变更、内存、文件浏览、阶段检测、批量任务、快照、思考流、Markdown流式渲染等
+ * # 核心作用：在右栏提供内嵌的工具面板：编辑器、终端、浏览器、代码变更、内存、文件浏览、阶段检测、批量任务、快照、思考流、Markdown流式渲染、容器沙箱、会话回放、多模态输入等
  * # 设计要点（v1.1.0 G60-FIX-17）：
- * #   - Tab 切换：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch / snapshot / thinking / stream
+ * #   - Tab 切换：overview / editor / terminal / browser / diff / memory / files / metrics / context / stage / batch / snapshot / thinking / stream / sandbox / replay / multimodal
  * #   - 内嵌 iframe / 自实现组件
  * #   - 与 ToolsMatrixPanel 协同（外层按钮 + 内嵌细节）
  * #   - 可折叠/展开
@@ -31,6 +31,11 @@
  * #     - 新增 thinking tab（嵌入 ThinkingStreamView）
  * #     - 新增 stream tab（嵌入 StreamingMarkdownView）
  * #     - 与 WebSocket 实时联动
+ * #   - v1.6.0 G69-01/02/03 容器沙箱 + 会话回放 + 多模态输入集成：
+ * #     - 新增 sandbox tab（嵌入 SandboxPanel）
+ * #     - 新增 replay tab（嵌入 SessionReplayPanel）
+ * #     - 新增 multimodal tab（嵌入 MultimodalInputPanel）
+ * #     - 17 tabs 总数（11→17 tabs）
  * 输入参数：
  *   - defaultTab?: EmbeddedTool
  *   - sessionId?: string 当前 session
@@ -40,27 +45,13 @@
  * ====================================
  * 修改记录：
  *   - 2026-08-04 | v1.0.0 | Solo 重构 - 初次创建
- *   - 2026-08-04 | v1.1.0 | G60-FIX-17 tab 视觉优化：
- *                                - tab 头高度对齐工具栏 h-8
- *                                - active tab 使用底部下划线（hermes 品牌色）
- *                                - tab 字号 11px
- *                                - emoji 与文字对齐（items-center）
- *                                - hover 态背景更明显
- *   - 2026-08-04 | v1.2.0 | G63-03 阶段检测器集成：
- *                                - 新增 stage tab（嵌入 StageDetectorView）
- *                                - Auto-Follow 联动逻辑
- *                                - wsUrl 参数透传
- * #   - 2026-08-04 | v1.3.0 | G65-02 批量任务集成：
- * #                                - 新增 batch tab（嵌入 BatchSpawnPanel）
- * #                                - EmbeddedTool 联合类型扩展
- * #   - 2026-08-04 | v1.4.0 | G66-02 快照管理集成：
- * #                                - 新增 snapshot tab（嵌入 SnapshotPanel）
- * #                                - 阶段 → snapshot tab 不联动
- * #                                - EmbeddedTool 联合类型扩展
- * #   - 2026-08-05 | v1.5.0 | G67-01/02 思考流 + Markdown流式渲染集成：
- * #                                - 新增 thinking tab（嵌入 ThinkingStreamView）
- * #                                - 新增 stream tab（嵌入 StreamingMarkdownView）
- * #                                - EmbeddedTool 联合类型扩展（11→13 tabs）
+ *   - 2026-08-04 | v1.1.0 | G60-FIX-17 tab 视觉优化
+ *   - 2026-08-04 | v1.2.0 | G63-03 阶段检测器集成
+ *   - 2026-08-04 | v1.3.0 | G65-02 批量任务集成
+ *   - 2026-08-04 | v1.4.0 | G66-02 快照管理集成
+ *   - 2026-08-05 | v1.5.0 | G67-01/02 思考流 + Markdown流式渲染集成
+ *   - 2026-08-05 | v1.6.0 | G69-01/02/03 容器沙箱 + 会话回放 + 多模态输入集成
+ *                                     - 17 tabs 总数（新增 sandbox/replay/multimodal）
  * # ====================================
  */
 
@@ -71,11 +62,14 @@ import { BatchSpawnPanel } from './BatchSpawnPanel';
 import { SnapshotPanel } from './SnapshotPanel';
 import { ThinkingStreamView } from './ThinkingStreamView';
 import { StreamingMarkdownView } from './StreamingMarkdownView';
+import { SandboxPanel } from './SandboxPanel';
+import { SessionReplayPanel } from './SessionReplayPanel';
+import { MultimodalInputPanel } from './MultimodalInputPanel';
 import { useStage, type StageId } from '../hooks/useStage';
 
 // ============================================================
 // 类型
-// ====================================
+// ============================================================
 
 export type EmbeddedTool =
   | 'overview'
@@ -91,7 +85,10 @@ export type EmbeddedTool =
   | 'batch'
   | 'snapshot'
   | 'thinking'
-  | 'stream';
+  | 'stream'
+  | 'sandbox'
+  | 'replay'
+  | 'multimodal';
 
 export interface EmbeddedToolsProps {
   sessionId?: string | null;
@@ -121,6 +118,9 @@ const TOOL_META: Record<EmbeddedTool, { label: string; emoji: string; descriptio
   snapshot: { label: '快照', emoji: '📸', description: '文件级快照管理 + 操作级回退（G66-02）' },
   thinking: { label: '思考流', emoji: '💭', description: 'LLM 思考过程实时可视化（G67-01）' },
   stream: { label: '流渲染', emoji: '📝', description: '渐进式 Markdown 渲染（G67-02）' },
+  sandbox: { label: '沙箱', emoji: '🛡️', description: '容器隔离执行器（G69-01）' },
+  replay: { label: '回放', emoji: '▶️', description: '会话回放 + 书签（G69-02）' },
+  multimodal: { label: '多模态', emoji: '🎙️', description: '语音 + 图片 + 截图输入（G69-03）' },
 };
 
 /**
@@ -498,6 +498,24 @@ const StreamView: React.FC<{
   );
 };
 
+const SandboxView: React.FC = () => (
+  <div className="h-full" data-testid="embedded-tool-sandbox">
+    <SandboxPanel testId="embedded-sandbox-panel" />
+  </div>
+);
+
+const ReplayView: React.FC = () => (
+  <div className="h-full" data-testid="embedded-tool-replay">
+    <SessionReplayPanel testId="embedded-replay-panel" />
+  </div>
+);
+
+const MultimodalView: React.FC = () => (
+  <div className="h-full" data-testid="embedded-tool-multimodal">
+    <MultimodalInputPanel testId="embedded-multimodal-panel" />
+  </div>
+);
+
 // ============================================================
 // 主组件
 // ====================================
@@ -602,6 +620,12 @@ export const EmbeddedTools: React.FC<EmbeddedToolsProps> = ({
         return <ThinkingView sessionId={sessionId} wsUrl={wsUrl} />;
       case 'stream':
         return <StreamView sessionId={sessionId} wsUrl={wsUrl} />;
+      case 'sandbox':
+        return <SandboxView />;
+      case 'replay':
+        return <ReplayView />;
+      case 'multimodal':
+        return <MultimodalView />;
       default:
         return <OverviewView sessionId={sessionId} />;
     }

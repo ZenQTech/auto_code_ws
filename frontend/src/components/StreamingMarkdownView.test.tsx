@@ -5,8 +5,6 @@
  * # ====================================
  */
 
-// @vitest-environment happy-dom
-
 import { render, screen, fireEvent, cleanup, act } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { StreamingMarkdownView } from './StreamingMarkdownView';
